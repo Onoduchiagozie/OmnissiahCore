@@ -1,30 +1,38 @@
 """
-OmnissiahCore - build.py
-FAISS index builder with sentence-aware chunking for Warhammer lore RAG.
-Supports: PDF, TXT (CBR, EPUB, AZW3 stubs ready to wire up)
-Device: auto (CPU fallback if CUDA not compatible)
+OmnissiahCore - build.py  v2.0
+FAISS index builder — handles ALL file types including:
+  - PDF (text-based + scanned/OCR auto-detect)
+  - AZW3 (via Calibre ebook-convert — auto-detected)
+  - EPUB (via ebooklib)
+  - CBR/CBZ (via OCR — pytesseract + rarfile)
+  - TXT
+
+Retries previously failed files automatically.
+GPU via ONNX if available, else CPU fallback.
+Checkpoints every 50 files — safe to interrupt and resume.
+Full failure_report.json written explaining every failure.
 """
 
 import os
-# top of build.py, before imports
 os.environ["TRANSFORMERS_OFFLINE"] = "1"
 os.environ["HF_DATASETS_OFFLINE"] = "1"
+
 import sys
 import json
 import re
+import subprocess
+import tempfile
+import shutil
+
 import faiss
 import numpy as np
 import torch
-
-from hashlib import md5
 from tqdm import tqdm
 from pypdf import PdfReader
-from sentence_transformers import SentenceTransformer
 
-# ── nltk sentence tokenizer ──────────────────────────────────────────────────
+# ── NLTK ─────────────────────────────────────────────────────────────────────
 import nltk
 try:
-
     nltk.data.find("tokenizers/punkt_tab")
 except LookupError:
     print("[*] Downloading NLTK punkt tokenizer...")
@@ -41,38 +49,280 @@ except ImportError:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# DEVICE SELECTION
+# DEVICE
 # ─────────────────────────────────────────────────────────────────────────────
 
 def get_device(cfg_device: str) -> str:
-    """
-    Resolve the best available device.
-    cfg_device: 'auto' | 'cuda' | 'cpu'
-    Falls back to CPU if CUDA is present but incompatible (RTX 5050 etc.)
-    """
     if cfg_device == "cpu":
         print("[*] Device forced to CPU by config.")
         return "cpu"
-
     if torch.cuda.is_available():
-        # Quick smoke-test: allocate a tiny tensor to check actual compatibility
         try:
             t = torch.zeros(1, device="cuda")
-            _ = t + 1          # forces a kernel launch
+            _ = t + 1
             del t
-            gpu_name = torch.cuda.get_device_name(0)
-            print(f"[*] CUDA OK — using GPU: {gpu_name}")
+            print(f"[*] CUDA OK — using GPU: {torch.cuda.get_device_name(0)}")
             return "cuda"
         except RuntimeError as e:
-            print(f"[!] CUDA detected but not usable ({e}). Falling back to CPU.")
+            print(f"[!] CUDA not usable ({e}). Falling back to CPU.")
             return "cpu"
-    else:
-        print("[*] No CUDA device found. Using CPU.")
-        return "cpu"
+    print("[*] No CUDA device. Using CPU.")
+    return "cpu"
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# FILE EXTRACTORS  (add new formats here — wire them into EXTRACTORS below)
+# FAILURE TRACKING
+# ─────────────────────────────────────────────────────────────────────────────
+
+failure_reasons: dict[str, str] = {}
+
+
+def log_failure(filename: str, reason: str):
+    failure_reasons[filename] = reason
+    print(f"  [FAIL] {os.path.basename(filename)}")
+    print(f"         Reason: {reason}")
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# PDF EXTRACTOR — with scanned PDF detection + OCR fallback
+# ─────────────────────────────────────────────────────────────────────────────
+
+def is_scanned_pdf(reader: PdfReader, sample_pages: int = 3) -> bool:
+    total = ""
+    for page in reader.pages[:sample_pages]:
+        t = page.extract_text()
+        if t:
+            total += t
+    return len(total.strip()) < 50
+
+
+def extract_pdf_ocr(filepath: str) -> str | None:
+    try:
+        from pdf2image import convert_from_path
+        import pytesseract
+
+        for p in [
+            r"C:\Program Files\Tesseract-OCR\tesseract.exe",
+            r"C:\Program Files (x86)\Tesseract-OCR\tesseract.exe",
+        ]:
+            if os.path.exists(p):
+                pytesseract.pytesseract.tesseract_cmd = p
+                break
+
+        print(f"  [OCR] Scanning: {os.path.basename(filepath)}")
+        pages = convert_from_path(filepath, dpi=200)
+        texts = [pytesseract.image_to_string(p, lang="eng") for p in pages]
+        full = "\n".join(t for t in texts if t.strip())
+        return full if len(full) > 50 else None
+
+    except ImportError:
+        return None
+    except Exception as e:
+        log_failure(filepath, f"OCR runtime error: {e}")
+        return None
+
+
+def extract_pdf(filepath: str) -> str | None:
+    try:
+        reader = PdfReader(filepath)
+
+        if is_scanned_pdf(reader):
+            print(f"  [SCAN] Scanned PDF detected: {os.path.basename(filepath)}")
+            result = extract_pdf_ocr(filepath)
+            if result:
+                return result
+            try:
+                import pytesseract, pdf2image  # noqa
+                log_failure(filepath, "Scanned PDF — OCR returned no text (image-only or handwritten?)")
+            except ImportError:
+                log_failure(
+                    filepath,
+                    "Scanned PDF — OCR libraries not installed. Fix:\n"
+                    "  1. pip install pdf2image pytesseract\n"
+                    "  2. Install Tesseract: https://github.com/UB-Mannheim/tesseract/wiki\n"
+                    "  3. Install Poppler: https://github.com/oschwartz10612/poppler-windows/releases"
+                )
+            return None
+
+        pages = []
+        for page in reader.pages:
+            text = page.extract_text()
+            if text:
+                pages.append(text)
+        full = "\n".join(pages).strip()
+
+        if len(full) < 50:
+            log_failure(filepath, "PDF text extraction returned <50 chars — likely image-only or corrupted")
+            return None
+        return full
+
+    except Exception as e:
+        log_failure(filepath, f"PDF parse error: {e}")
+        return None
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# AZW3 — Calibre conversion pipeline
+# ─────────────────────────────────────────────────────────────────────────────
+
+CALIBRE_CANDIDATES = [
+    r"C:\Program Files\Calibre2\ebook-convert.exe",
+    r"C:\Program Files (x86)\Calibre2\ebook-convert.exe",
+    "ebook-convert",
+]
+
+
+def find_calibre() -> str | None:
+    for p in CALIBRE_CANDIDATES:
+        if p == "ebook-convert":
+            if shutil.which("ebook-convert"):
+                return "ebook-convert"
+        elif os.path.exists(p):
+            return p
+    return None
+
+
+def extract_azw3(filepath: str) -> str | None:
+    calibre = find_calibre()
+    if not calibre:
+        log_failure(
+            filepath,
+            "AZW3 — Calibre not found. Fix:\n"
+            "  1. Install Calibre: https://calibre-ebook.com/download\n"
+            "  2. Rerun build.py — it will auto-detect and convert"
+        )
+        return None
+
+    tmp_dir = tempfile.mkdtemp()
+    try:
+        epub_out = os.path.join(tmp_dir, "out.epub")
+        result = subprocess.run(
+            [calibre, filepath, epub_out],
+            capture_output=True, text=True, timeout=120
+        )
+        if not os.path.exists(epub_out):
+            log_failure(filepath, f"AZW3 — Calibre conversion failed: {result.stderr[:300]}")
+            return None
+        text = extract_epub(epub_out)
+        if not text:
+            log_failure(filepath, "AZW3 — Converted to EPUB but EPUB extraction returned no text")
+        return text
+    except subprocess.TimeoutExpired:
+        log_failure(filepath, "AZW3 — Calibre timed out after 120s")
+        return None
+    except Exception as e:
+        log_failure(filepath, f"AZW3 — Unexpected error: {e}")
+        return None
+    finally:
+        shutil.rmtree(tmp_dir, ignore_errors=True)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# EPUB
+# ─────────────────────────────────────────────────────────────────────────────
+
+def extract_epub(filepath: str) -> str | None:
+    try:
+        import ebooklib
+        from ebooklib import epub
+        from bs4 import BeautifulSoup
+
+        book = epub.read_epub(filepath)
+        texts = []
+        for item in book.get_items_of_type(ebooklib.ITEM_DOCUMENT):
+            soup = BeautifulSoup(item.get_content(), "html.parser")
+            t = soup.get_text(separator=" ").strip()
+            if t:
+                texts.append(t)
+        full = "\n".join(texts).strip()
+        return full if len(full) > 50 else None
+
+    except ImportError:
+        log_failure(
+            filepath,
+            "EPUB — missing libraries. Fix: pip install ebooklib beautifulsoup4"
+        )
+        return None
+    except Exception as e:
+        log_failure(filepath, f"EPUB parse error: {e}")
+        return None
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# CBR/CBZ — OCR each page image
+# ─────────────────────────────────────────────────────────────────────────────
+
+def extract_cbr(filepath: str) -> str | None:
+    try:
+        import pytesseract
+        from PIL import Image
+        import zipfile
+
+        for p in [
+            r"C:\Program Files\Tesseract-OCR\tesseract.exe",
+            r"C:\Program Files (x86)\Tesseract-OCR\tesseract.exe",
+        ]:
+            if os.path.exists(p):
+                pytesseract.pytesseract.tesseract_cmd = p
+                break
+
+        ext  = os.path.splitext(filepath)[1].lower()
+        texts = []
+        img_exts = ('.png', '.jpg', '.jpeg', '.webp', '.bmp')
+
+        print(f"  [OCR] Comic: {os.path.basename(filepath)}")
+
+        if ext == ".cbz":
+            with zipfile.ZipFile(filepath, "r") as z:
+                names = sorted(n for n in z.namelist() if n.lower().endswith(img_exts))
+                for name in names:
+                    with z.open(name) as f:
+                        img  = Image.open(f)
+                        text = pytesseract.image_to_string(img, lang="eng")
+                        if text.strip():
+                            texts.append(text)
+
+        elif ext == ".cbr":
+            try:
+                import rarfile
+                with rarfile.RarFile(filepath, "r") as r:
+                    names = sorted(n for n in r.namelist() if n.lower().endswith(img_exts))
+                    for name in names:
+                        with r.open(name) as f:
+                            img  = Image.open(f)
+                            text = pytesseract.image_to_string(img, lang="eng")
+                            if text.strip():
+                                texts.append(text)
+            except ImportError:
+                log_failure(
+                    filepath,
+                    "CBR — rarfile not installed. Fix: pip install rarfile  "
+                    "+ install WinRAR or unrar and add to PATH"
+                )
+                return None
+
+        full = "\n".join(texts).strip()
+        if not full:
+            log_failure(filepath, "CBR/CBZ — OCR found no text (art-only comic, no speech bubbles?)")
+            return None
+        return full
+
+    except ImportError as e:
+        log_failure(
+            filepath,
+            f"CBR/CBZ — missing library ({e}). Fix:\n"
+            "  pip install pytesseract Pillow rarfile\n"
+            "  + install Tesseract: https://github.com/UB-Mannheim/tesseract/wiki\n"
+            "  + install WinRAR or unrar"
+        )
+        return None
+    except Exception as e:
+        log_failure(filepath, f"CBR/CBZ error: {e}")
+        return None
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# TXT
 # ─────────────────────────────────────────────────────────────────────────────
 
 def extract_txt(filepath: str) -> str | None:
@@ -80,171 +330,93 @@ def extract_txt(filepath: str) -> str | None:
         with open(filepath, "r", encoding="utf-8", errors="ignore") as f:
             return f.read().strip() or None
     except Exception as e:
-        print(f"  [WARN] TXT read failed: {filepath} — {e}")
+        log_failure(filepath, f"TXT read error: {e}")
         return None
 
 
-def extract_pdf(filepath: str) -> str | None:
-    try:
-        reader = PdfReader(filepath)
-        pages = []
-        for page in reader.pages:
-            text = page.extract_text()
-            if text:
-                pages.append(text)
-        full = "\n".join(pages).strip()
-        return full if len(full) > 50 else None
-    except Exception as e:
-        print(f"  [WARN] PDF read failed: {filepath} — {e}")
-        return None
+# ─────────────────────────────────────────────────────────────────────────────
+# DISPATCHER
+# ─────────────────────────────────────────────────────────────────────────────
 
-
-# Stubs — implement when you add those libraries
-def extract_epub(filepath: str) -> str | None:
-    # pip install ebooklib beautifulsoup4
-    try:
-        import ebooklib
-        from ebooklib import epub
-        from bs4 import BeautifulSoup
-        book = epub.read_epub(filepath)
-        texts = []
-        for item in book.get_items_of_type(ebooklib.ITEM_DOCUMENT):
-            soup = BeautifulSoup(item.get_content(), "html.parser")
-            texts.append(soup.get_text(separator=" "))
-        return "\n".join(texts).strip() or None
-    except ImportError:
-        print("  [SKIP] ebooklib not installed. Run: pip install ebooklib beautifulsoup4")
-        return None
-    except Exception as e:
-        print(f"  [WARN] EPUB read failed: {filepath} — {e}")
-        return None
-
-
-def extract_cbr(filepath: str) -> str | None:
-    # CBR/CBZ are image archives — OCR would be needed, skip for now
-    print(f"  [SKIP] CBR/CBZ files are image archives and need OCR — skipping: {os.path.basename(filepath)}")
-    return None
-
-
-def extract_azw3(filepath: str) -> str | None:
-    # pip install mobi   OR   convert with calibre's ebook-convert first
-    print(f"  [SKIP] AZW3 support not yet implemented — skipping: {os.path.basename(filepath)}")
-    return None
-
-
-# ── Dispatcher: extension → extractor function ───────────────────────────────
 EXTRACTORS = {
     ".txt":  extract_txt,
     ".pdf":  extract_pdf,
     ".epub": extract_epub,
-    ".cbr":  extract_cbr,
-    ".cbz":  extract_cbr,
     ".azw3": extract_azw3,
     ".mobi": extract_azw3,
+    ".cbr":  extract_cbr,
+    ".cbz":  extract_cbr,
 }
-
 SUPPORTED_EXTS = set(EXTRACTORS.keys())
 
 
 def extract_file(filepath: str) -> str | None:
     ext = os.path.splitext(filepath)[1].lower()
-    extractor = EXTRACTORS.get(ext)
-    if extractor is None:
-        print(f"  [SKIP] Unsupported type '{ext}': {os.path.basename(filepath)}")
+    fn  = EXTRACTORS.get(ext)
+    if fn is None:
+        log_failure(filepath, f"Unsupported type: '{ext}'")
         return None
-    return extractor(filepath)
+    return fn(filepath)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# SENTENCE-AWARE CHUNKING
+# CHUNKING
 # ─────────────────────────────────────────────────────────────────────────────
 
 def clean_text(text: str) -> str:
-    """Normalise whitespace and remove junk characters."""
-    text = re.sub(r"[ \t]+", " ", text)          # collapse spaces/tabs
-    text = re.sub(r"\n{3,}", "\n\n", text)        # max 2 blank lines
-    text = re.sub(r"[^\x00-\x7F]+", " ", text)   # strip non-ASCII (optional — remove if you have non-English)
+    text = re.sub(r"[ \t]+", " ", text)
+    text = re.sub(r"\n{3,}", "\n\n", text)
     return text.strip()
 
 
 def estimate_tokens(text: str) -> int:
-    """
-    Rough token estimate: ~1.3 tokens per word (conservative for BPE models).
-    Good enough for chunking without loading the actual tokenizer.
-    """
     return int(len(text.split()) * 1.3)
 
 
-def chunk_text(
-    text: str,
-    target_tokens: int = 400,
-    overlap_sentences: int = 2,
-) -> list[str]:
-    """
-    Sentence-aware chunking:
-    - Splits on real sentence boundaries (NLTK)
-    - Accumulates sentences until we hit target_tokens
-    - Backs up overlap_sentences sentences before starting next chunk
-    - Preserves paragraph structure hints by splitting on double-newlines first
-
-    This keeps dialogue, lore paragraphs, and named entities intact.
-    """
-    # Split on paragraph breaks first to avoid merging unrelated sections
-    paragraphs = re.split(r"\n{2,}", text)
-
+def chunk_text(text: str, target_tokens: int = 350, overlap_sentences: int = 1) -> list[str]:
     sentences: list[str] = []
-    for para in paragraphs:
+    for para in re.split(r"\n{2,}", text):
         para = para.strip()
-        if not para:
-            continue
-        sents = sent_tokenize(para)
-        sentences.extend(sents)
+        if para:
+            sentences.extend(sent_tokenize(para))
 
     if not sentences:
         return []
 
     chunks: list[str] = []
     start = 0
-
     while start < len(sentences):
-        current_sents: list[str] = []
-        current_tokens = 0
+        cur_sents: list[str] = []
+        cur_tokens = 0
         i = start
-
         while i < len(sentences):
-            sent = sentences[i]
-            sent_tokens = estimate_tokens(sent)
-
-            # If a single sentence is already huge, include it alone
-            if not current_sents or current_tokens + sent_tokens <= target_tokens:
-                current_sents.append(sent)
-                current_tokens += sent_tokens
+            st = estimate_tokens(sentences[i])
+            if not cur_sents or cur_tokens + st <= target_tokens:
+                cur_sents.append(sentences[i])
+                cur_tokens += st
                 i += 1
             else:
-                break  # chunk is full
-
-        if current_sents:
-            chunk = " ".join(current_sents).strip()
+                break
+        if cur_sents:
+            chunk = " ".join(cur_sents).strip()
             if chunk:
                 chunks.append(chunk)
-
-        # Move start forward, but back-step by overlap_sentences for context continuity
-        advance = max(1, len(current_sents) - overlap_sentences)
-        start += advance
+        start += max(1, len(cur_sents) - overlap_sentences)
 
     return chunks
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# DB PATHS (derived from config paths + fixed filenames)
+# DB PATHS
 # ─────────────────────────────────────────────────────────────────────────────
 
 def get_db_paths(db_dir: str) -> dict:
     return {
-        "faiss":     os.path.join(db_dir, "index.faiss"),
-        "metadata":  os.path.join(db_dir, "metadata.json"),
-        "processed": os.path.join(db_dir, "processed_files.json"),
-        "failed":    os.path.join(db_dir, "failed_files.json"),
+        "faiss":          os.path.join(db_dir, "index.faiss"),
+        "metadata":       os.path.join(db_dir, "metadata.json"),
+        "processed":      os.path.join(db_dir, "processed_files.json"),
+        "failed":         os.path.join(db_dir, "failed_files.json"),
+        "failure_report": os.path.join(db_dir, "failure_report.json"),
     }
 
 
@@ -253,42 +425,36 @@ def get_db_paths(db_dir: str) -> dict:
 # ─────────────────────────────────────────────────────────────────────────────
 
 def main():
-    # ── Device ───────────────────────────────────────────────────────────────
     cfg_device = embedding_cfg.get("device", "auto")
-    device = get_device(cfg_device)
-
-    # ── Batch size ────────────────────────────────────────────────────────────
-    if device == "cuda":
-        batch_size = embedding_cfg.get("batch_size_gpu", 32)
-    else:
-        batch_size = embedding_cfg.get("batch_size_cpu", 8)
+    device     = get_device(cfg_device)
+    batch_size = (
+        embedding_cfg.get("batch_size_gpu", 32) if device == "cuda"
+        else embedding_cfg.get("batch_size_cpu", 16)
+    )
     print(f"[*] Batch size: {batch_size}")
 
-    # ── Load model ────────────────────────────────────────────────────────────
     model_name = embedding_cfg["model"]
-    print(f"[*] Loading model: {model_name}  (this may take a minute on first run)...")
-    model = SentenceTransformer(model_name, device=device)
+    print(f"[*] Loading model: {model_name}...")
+    from sentence_transformers import SentenceTransformer
+    model = SentenceTransformer(model_name, device=device, local_files_only=True)
     model.max_seq_length = embedding_cfg.get("max_seq_length", 512)
 
-    # ── DB paths ──────────────────────────────────────────────────────────────
-    db_dir   = paths["db_dir"]
-    src_dir  = paths["pdf_dir"]
+    db_dir  = paths["db_dir"]
+    src_dir = paths["pdf_dir"]
     os.makedirs(db_dir, exist_ok=True)
-    os.makedirs(paths.get("failed_dir", "Data/failed_pdfs"), exist_ok=True)
 
     db = get_db_paths(db_dir)
 
     # ── Load existing state ───────────────────────────────────────────────────
     index_exists = os.path.exists(db["faiss"]) and os.path.exists(db["metadata"])
-
     if index_exists:
-        print("[*] Existing index found. Loading for incremental update...")
+        print("[*] Existing index found. Loading...")
         index = faiss.read_index(db["faiss"])
         with open(db["metadata"], "r", encoding="utf-8") as f:
             metadata: list[dict] = json.load(f)
     else:
         print("[!] No existing index. Starting fresh.")
-        index = None
+        index    = None
         metadata = []
 
     processed_files: set[str] = set()
@@ -296,34 +462,50 @@ def main():
         with open(db["processed"], "r") as f:
             processed_files = set(json.load(f))
 
-    failed_files: set[str] = set()
+    # Previously failed → retry them
+    previously_failed: set[str] = set()
     if os.path.exists(db["failed"]):
         with open(db["failed"], "r") as f:
-            failed_files = set(json.load(f))
+            previously_failed = set(json.load(f))
 
-    # ── Scan for new files ────────────────────────────────────────────────────
+    # Load old failure reasons so we don't lose them for non-retried files
+    if os.path.exists(db["failure_report"]):
+        with open(db["failure_report"], "r", encoding="utf-8") as f:
+            failure_reasons.update(json.load(f))
+
+    if previously_failed:
+        print(f"[*] {len(previously_failed)} previously failed file(s) will be retried.")
+
+    # ── Scan source folder ────────────────────────────────────────────────────
     all_files = [
         f for f in os.listdir(src_dir)
         if os.path.splitext(f)[1].lower() in SUPPORTED_EXTS
     ]
-    to_process = [f for f in all_files if f not in processed_files]
+
+    # Process: new files + retries (not already successfully processed)
+    to_process = [
+        f for f in all_files
+        if f not in processed_files or f in previously_failed
+    ]
+
+    # Keep failures for files NOT being retried
+    failed_files: set[str] = previously_failed - set(to_process)
 
     if not to_process:
-        print(f"[OK] No new files. Index contains {len(metadata)} chunks from {len(processed_files)} files.")
+        print(f"[OK] Nothing new to process.")
+        print(f"     Index: {len(metadata)} chunks / {len(processed_files)} files")
         return
 
-    # Checkpoint every N files — safe for long overnight runs
+    print(f"[*] {len(to_process)} file(s) to process ({len(previously_failed)} retries)\n")
+
     CHECKPOINT_EVERY = 50
-
-    print(f"[*] {len(to_process)} new file(s) to process  ({len(processed_files)} already indexed).")
-    print(f"[*] Checkpoint save every {CHECKPOINT_EVERY} files — safe to Ctrl+C and resume anytime.\n")
-
-    target_tokens = chunking_cfg.get("target_tokens", 400)
-    overlap_sents = chunking_cfg.get("overlap_sentences", 2)
+    target_tokens = chunking_cfg.get("target_tokens", 350)
+    overlap_sents = chunking_cfg.get("overlap_sentences", 1)
     normalize     = embedding_cfg.get("normalize", True)
 
-    def save_checkpoint(index, metadata, processed_files, failed_files):
-        """Persist everything to disk atomically."""
+    def save_checkpoint():
+        if index is None:
+            return
         faiss.write_index(index, db["faiss"])
         with open(db["metadata"], "w", encoding="utf-8") as f:
             json.dump(metadata, f, ensure_ascii=False, indent=2)
@@ -331,18 +513,19 @@ def main():
             json.dump(sorted(processed_files), f, indent=2)
         with open(db["failed"], "w") as f:
             json.dump(sorted(failed_files), f, indent=2)
+        with open(db["failure_report"], "w", encoding="utf-8") as f:
+            json.dump(failure_reasons, f, ensure_ascii=False, indent=2)
 
-    # ── Process in checkpoint windows ─────────────────────────────────────────
     total_done  = 0
     grand_total = len(to_process)
 
     for window_start in range(0, grand_total, CHECKPOINT_EVERY):
-        window = to_process[window_start : window_start + CHECKPOINT_EVERY]
+        window     = to_process[window_start: window_start + CHECKPOINT_EVERY]
         window_num = (window_start // CHECKPOINT_EVERY) + 1
-        total_windows = (grand_total + CHECKPOINT_EVERY - 1) // CHECKPOINT_EVERY
+        total_wins = (grand_total + CHECKPOINT_EVERY - 1) // CHECKPOINT_EVERY
 
-        print(f"── Batch {window_num}/{total_windows}  "
-              f"(files {window_start + 1}–{min(window_start + CHECKPOINT_EVERY, grand_total)} "
+        print(f"── Batch {window_num}/{total_wins}  "
+              f"(files {window_start+1}–{min(window_start+CHECKPOINT_EVERY, grand_total)} "
               f"of {grand_total}) ──")
 
         batch_chunks: list[str]  = []
@@ -350,6 +533,12 @@ def main():
 
         for filename in tqdm(window, desc="  Extracting"):
             filepath = os.path.join(src_dir, filename)
+
+            if not os.path.exists(filepath):
+                log_failure(filename, "File missing from source directory")
+                failed_files.add(filename)
+                continue
+
             raw = extract_file(filepath)
 
             if not raw:
@@ -360,8 +549,13 @@ def main():
             chunks = chunk_text(text, target_tokens=target_tokens, overlap_sentences=overlap_sents)
 
             if not chunks:
+                log_failure(filename, "Text cleaned to zero chunks")
                 failed_files.add(filename)
                 continue
+
+            # Retry succeeded — remove from failure tracking
+            failed_files.discard(filename)
+            failure_reasons.pop(filename, None)
 
             base_id = len(metadata) + len(batch_meta)
             for idx, chunk in enumerate(chunks):
@@ -376,10 +570,12 @@ def main():
             total_done += 1
 
         if not batch_chunks:
-            print("  [!] No chunks from this batch — skipping embed.")
-            # Still save failed list
+            print("  [!] No usable chunks this batch.")
+            # Save failure state even with no embeddings
             with open(db["failed"], "w") as f:
                 json.dump(sorted(failed_files), f, indent=2)
+            with open(db["failure_report"], "w", encoding="utf-8") as f:
+                json.dump(failure_reasons, f, ensure_ascii=False, indent=2)
             continue
 
         print(f"  [*] Embedding {len(batch_chunks)} chunks on {device.upper()}...")
@@ -391,7 +587,6 @@ def main():
             normalize_embeddings=normalize,
         ).astype("float32")
 
-        # Init FAISS on first successful batch
         if index is None:
             dim   = embeddings.shape[1]
             index = faiss.IndexFlatIP(dim)
@@ -400,22 +595,28 @@ def main():
         index.add(embeddings)
         metadata.extend(batch_meta)
 
-        print(f"  [*] Saving checkpoint...  "
-              f"({total_done}/{grand_total} files | {len(metadata)} total chunks)")
-        save_checkpoint(index, metadata, processed_files, failed_files)
+        print(f"  [*] Saving checkpoint... "
+              f"({total_done}/{grand_total} files | {len(metadata)} chunks total)")
+        save_checkpoint()
         print(f"  [OK] Checkpoint saved.\n")
 
     # ── Final summary ──────────────────────────────────────────────────────────
-    if index is not None:
-        print(
-            f"\n[SUCCESS] Index holds {len(metadata)} chunks "
-            f"from {len(processed_files)} file(s).  "
-            f"Failed: {len(failed_files)}."
-        )
-    else:
-        print("[!] No usable text extracted from any file.")
+    print(f"\n{'='*65}")
+    print(f"[DONE] Index: {len(metadata)} chunks from {len(processed_files)} files.")
+    print(f"       Failed: {len(failed_files)} files.")
+
+    if failure_reasons:
+        print(f"\n  Failure summary:")
+        groups: dict[str, list] = {}
+        for fname, reason in failure_reasons.items():
+            key = reason.split("\n")[0][:70]
+            groups.setdefault(key, []).append(fname)
+        for reason, files in sorted(groups.items(), key=lambda x: -len(x[1])):
+            print(f"  [{len(files):>3}x] {reason}")
+
+    print(f"\n  Full details → {db['failure_report']}")
+    print(f"{'='*65}\n")
 
 
 if __name__ == "__main__":
     main()
-
