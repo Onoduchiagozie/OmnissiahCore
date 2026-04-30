@@ -1,0 +1,2 @@
+Db/faiss.index filter=lfs diff=lfs merge=lfs -text
+Db/metadata.json filter=lfs diff=lfs merge=lfs -text

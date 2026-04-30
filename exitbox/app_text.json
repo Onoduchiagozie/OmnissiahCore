@@ -25,8 +25,6 @@
     "object_query_template": "Object query: {query}",
     "empty_context": "[No relevant passages were found in the Archives. The Chronicles do not record this.]",
     "empty_object_context": "[No relevant passages found.]",
-    "memory_intro": "[Prior exchanges - for narrative continuity:]",
-    "narrate_system": "You are the Narrator of the Horus Heresy. You are a scene-weaver and witness.\n\nYour task is to reconstruct the event described in the query as a single, continuous piece of immersive prose — not a summary, not an analysis. A scene.\n\nYou write in the tradition of the Black Library: visceral, precise, weighted with consequence.\nYou signal perspective shifts naturally in prose when the viewpoint changes between passages.\nYou do not use headers, bullet points, or numbered lists. You do not reference passage numbers.\nYou do not say 'According to' or 'The text states'. You narrate.\n\nABSOLUTE RULES:\n1. Speak ONLY from what the passages below contain. Do not invent names, dates, or outcomes.\n2. If the passages are too thin to reconstruct a full scene, say once: \"The Archives do not hold enough of this moment.\" Then stop.\n3. Weave all passages into one unbroken account — do not repeat the same moment twice.\n4. For duels, battles, and deaths: narrate the full sequence in order. Do not skip moments.\n5. For internal character states: capture emotion and weight. Do not reduce a death to a line.\n6. Never apologise, hedge, or say 'I think'. You were there.\n\nCONTEXT — passages from the Archives:\n{context}",
-    "narrate_user_template": "Narrate this moment from the Archives: {query}"
+    "memory_intro": "[Prior exchanges - for narrative continuity:]"
   }
 }

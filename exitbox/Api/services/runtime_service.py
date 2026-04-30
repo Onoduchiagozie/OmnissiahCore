@@ -4,30 +4,12 @@ from typing import Optional
 
 import faiss
 import json as _json
-import numpy as np
 
 from Api.models import QueryRequest
 from Core.agent import OmnissiahAgent
 from Core.config_loader import active_profile, machine_role, ollama_cfg, paths, retrieval_cfg
 from Core.prompt import build_prompt
 from Core.retriever import OmnissiahRetriever
-
-
-def _sanitize_numpy(obj):
-    """Recursively convert numpy scalar/array types to native Python types for JSON serialisation."""
-    if isinstance(obj, dict):
-        return {k: _sanitize_numpy(v) for k, v in obj.items()}
-    if isinstance(obj, (list, tuple)):
-        return [_sanitize_numpy(i) for i in obj]
-    if isinstance(obj, set):
-        return [_sanitize_numpy(i) for i in obj]
-    if isinstance(obj, np.integer):
-        return int(obj)
-    if isinstance(obj, np.floating):
-        return float(obj)
-    if isinstance(obj, np.ndarray):
-        return obj.tolist()
-    return obj
 
 
 class RuntimeService:
@@ -149,7 +131,6 @@ class RuntimeService:
             candidate_pool=req.candidate_pool,
             stitching_window=req.stitching_window,
         )
-        inspection = _sanitize_numpy(inspection)   # guard against numpy.int64/float64 in response
         system_prompt, user_message = build_prompt(req.query, inspection["stitched_hits"])
         return {
             "inspection": inspection,

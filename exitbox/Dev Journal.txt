@@ -1,0 +1,140 @@
+# OmnissiahCore: Developer Journey & System Documentation
+
+## Project Vision
+OmnissiahCore is a high-performance RAG (Retrieval-Augmented Generation) system specifically engineered for the complex, multi-format lore of the Warhammer 40,000 universe. The goal is to allow fans to query event chronologies, character motivations, and "narrative" lore across thousands of files.
+
+---
+
+## 🛠 The Technical Stack
+- **Embedding Model:** `BAAI/bge-m3` (Via ONNX Runtime).
+- **Vector Store:** `FAISS` (Index FlatIP).
+- **GPU:** RTX 5050 (sm_120) with automated CPU fallback.
+- **System Dependencies:**
+  - **Tesseract OCR:** For scanned PDFs and CBR comics.
+  - **Poppler:** For PDF-to-Image conversion.
+  - **Calibre:** For AZW3 to EPUB conversion.
+  - **7-Zip:** Primary archive extractor for CBR/CBZ.
+
+---
+
+## 📜 The "Chronicles of Error" (Developer Log)
+
+### 1. The CUDA Compatibility Crisis (SM_120)
+**Issue:** PyTorch stable lacked kernels for the RTX 5050.
+**Solution:** Switched to **ONNX Runtime GPU**. Successfully resolved missing `cublasLt64_12.dll` issues by ensuring CUDA 12.x runtimes were in the path alongside CUDA 13.
+
+### 2. The Internet Dependency Wall
+**Issue:** Build crashed during WiFi drops.
+**Solution:** Enforced strict offline mode using environment variables `TRANSFORMERS_OFFLINE="1"` and `HF_DATASETS_OFFLINE="1"`.
+
+### 3. The "Denial of Wallet" Context Limit
+**Issue:** Character-based chunking broke narrative context.
+**Solution:** Implemented **Sentence-Aware Chunking** (NLTK punkt) with overlap.
+
+### 4. The NumPy 2.0 Conflict
+**Issue:** `AttributeError: _ARRAY_API not found`.
+**Solution:** Downgraded to `numpy<2` (specifically `1.26.4`).
+
+### 5. The System Path & Archive Ghost
+**Issue:** WinRAR/rarfile dependencies were unreliable.
+**Solution:** Migrated to a direct `subprocess` call to **7-Zip** (`7z.exe`) for all comic extractions.
+
+### 6. The DLL-Load Failover
+**Issue:** `Error 126` when loading CUDA DLLs in ONNX, causing hard crashes.
+**Solution:** Wrapped GPU initialization in a `try-except` block. If DLLs are missing or incorrect, the system now automatically falls back to **CPU mode** to ensure the build never stops.
+
+---
+
+## 🚀 Optimized Configuration
+- **Batch Size (GPU/ONNX):** 32.
+- **Chunking:** 350 tokens with 1 sentence overlap.
+- **Encoding:** Explicit `UTF-8` on all file operations to prevent Windows charmap errors.
+
+---
+
+## 📂 Handling "The Unprocessed"
+- **Scanned PDFs:** Auto-detected (<100 chars text) and sent to OCR.
+- **CBR/CBZ:** Extracted via 7-Zip, first 50 pages OCR'd.
+- **AZW3:** Calibre `ebook-convert` bridge.
+
+
+
+
+# OmnissiahCore: Developer Journey & System Documentation
+
+## Project Vision
+OmnissiahCore is a high-performance RAG (Retrieval-Augmented Generation) system specifically engineered for the complex, multi-format lore of the Warhammer 40,000 universe. The goal is to allow fans to query event chronologies, character motivations, and "narrative" lore (e.g., "What was the first alarm at the Siege of Terra?") with high fidelity across thousands of PDFs, EPUBs, AZW3s, and comics (CBR).
+
+---
+
+## 🛠 The Technical Stack
+- **Embedding Model:** `BAAI/bge-m3` (Running via ONNX Runtime for GPU acceleration).
+- **Vector Store:** `FAISS` (Index FlatIP).
+- **Core Orchestration:** Python 3.10+
+- **Inference:** Ollama (`qwen3:14b` / `llama3`).
+- **System Dependencies:**
+  - **Tesseract OCR:** For scanned PDFs and CBR comics.
+  - **Poppler:** For PDF-to-Image conversion (OCR pipeline).
+  - **Calibre:** For on-the-fly AZW3 to EPUB conversion.
+  - **7-Zip/Unrar:** For CBR archive extraction.
+
+---
+
+## 📜 The "Chronicles of Error" (Developer Log)
+
+### 1. The CUDA Compatibility Crisis (SM_120)
+**Issue:** PyTorch stable lacked kernels for the RTX 5050 (sm_120), causing `AssertionError: Torch not compiled with CUDA enabled` or kernel image errors.
+**Solution:** Switched to **ONNX Runtime GPU**. By exporting the model to ONNX, we bypassed the pre-compiled kernel requirement.
+**Fixing DLLs:** Encountered `cublasLt64_12.dll` missing. Resolved by ensuring CUDA 12.x runtimes were in the environment path alongside CUDA 13.
+
+### 2. The Internet Dependency Wall
+**Issue:** `SentenceTransformer` and `HuggingFace Hub` would ping the internet on every load, causing the build to crash during WiFi drops.
+**Solution:** Enforced strict offline mode using environment variables:
+```python
+os.environ["TRANSFORMERS_OFFLINE"] = "1"
+os.environ["HF_DATASETS_OFFLINE"] = "1"
+# And model configuration:
+local_files_only=True
+```
+
+### 3. The "Denial of Wallet" Context Limit
+**Issue:** Standard character-based chunking was breaking lore-heavy conversations, losing "who said what" mid-sentence.
+**Solution:** Implemented **Sentence-Aware Chunking** using the NLTK `punkt` tokenizer. This ensures chunks end on actual sentence boundaries and maintain a 1-2 sentence overlap for smooth narrative flow.
+
+### 4. The Version Mismatch Deadlock
+**Issue:** `ImportError: cannot import name 'cached_download' from 'huggingface_hub'`.
+**Solution:** Coordinated upgrade of `sentence-transformers` and `huggingface_hub` to resolve deprecated function calls in older library versions.
+
+### 5. The System Path Ghost
+**Issue:** Poppler and Tesseract installed on Windows but "not found" by Python even when added to system PATH.
+**Solution:** Implemented **Explicit Path Injection** in `build.py`, allowing the script to look in common Windows installation directories (e.g., `C:\poppler\Library\bin`) if the system PATH fails.
+
+### 6. The NumPy 2.0 Breaking Change
+**Issue:** `AttributeError: _ARRAY_API not found` occurs because `onnxruntime` and `faiss` are not yet compatible with the newly released NumPy 2.x.
+**Solution:** Downgraded the environment to use the stable 1.x branch:
+```powershell
+pip install "numpy<2"
+```
+
+---
+
+## 🚀 Optimized Configuration (Beast Mode)
+For the Lenovo Legion (i7-13th Gen, 48GB RAM, RTX 5050):
+- **Batch Size (CPU):** 16 (Sweet spot for thread saturation).
+- **Batch Size (GPU/ONNX):** 32.
+- **Chunking:** 350 tokens with 1 sentence overlap.
+- **Performance Mode:** Keep Legion in "Beast Mode" to uncap CPU boost clocks.
+
+---
+
+## 📂 Handling "The Unprocessed"
+To handle the remaining failures:
+1. **Scanned PDFs:** If a PDF returns zero text, the pipeline automatically switches to OCR mode.
+2. **CBR/CBZ:** The system extracts images from the archives and runs Tesseract OCR per-page.
+3. **AZW3:** Uses the `ebook-convert` CLI from Calibre to bridge the gap to EPUB.
+
+---
+
+## 🖋 Narrative RAG Prompting
+To get the best "Storyteller" results from the build, use this System Prompt in your query interface:
+> "You are a Warhammer 40K lore scholar and storyteller. When asked about events, narrate them chronologically and dramatically. Use the retrieved passages to ground your facts, but maintain the dark, gothic tone of the Black Library. If a specific alarm or sequence is mentioned in the text, describe the sensory details."

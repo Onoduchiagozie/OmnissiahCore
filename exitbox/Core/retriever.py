@@ -197,7 +197,7 @@ class OmnissiahRetriever:
                 continue
             m = self.metadata[idx]
             results.append({
-                "chunk_id": int(m.get("chunk_id", idx)),   # int() prevents numpy.int64 leaking into JSON
+                "chunk_id": m.get("chunk_id", idx),
                 "text": m.get("text", ""),
                 "source": m.get("source", "unknown"),
                 "chapter": m.get("chapter", "unknown"),

@@ -27,5 +27,3 @@ httpx>=0.27.0             # async alternative, used by FastAPI test client
 
 # ── Utilities ─────────────────────────────────────────────────────────────
 tqdm>=4.66.0
-
-pytest

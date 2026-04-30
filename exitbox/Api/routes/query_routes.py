@@ -103,15 +103,12 @@ async def query_narrate_stream(req: QueryRequest):
 
     async def _stream():
         loop = asyncio.get_event_loop()
-        queue: asyncio.Queue = asyncio.Queue()
+        queue = asyncio.Queue()
 
         def _producer():
             try:
                 for token in runtime_service.stream_query_mode(req_narrator, mode="narrator"):
                     asyncio.run_coroutine_threadsafe(queue.put(token), loop)
-            except Exception as exc:
-                err_token = f"data: [ERROR] Narrator stream failed: {exc}\n\n"
-                asyncio.run_coroutine_threadsafe(queue.put(err_token), loop)
             finally:
                 asyncio.run_coroutine_threadsafe(queue.put(None), loop)
 
@@ -122,8 +119,6 @@ async def query_narrate_stream(req: QueryRequest):
             if token is None:
                 break
             yield token
-
-        yield "data: [DONE]\n\n"
 
     return StreamingResponse(
         _stream(),
@@ -146,12 +141,10 @@ async def query_explore(req: QueryRequest):
     return {
         "query": req.query,
         "response": response,
-        "chunks_used": len(chunks),
         "sources": [
             {
                 "source": c.get("source", "?"),
                 "chapter": c.get("chapter", "?"),
-                "stitch_range": c.get("stitch_range", ""),
                 "score": round(
                     c.get("rerank_score")
                     or c.get("query_overlap_score")
