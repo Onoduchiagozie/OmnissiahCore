@@ -1,11 +1,3 @@
-FROM ubuntu:latest
-LABEL authors="daval"
-
-ENTRYPOINT ["top", "-b"]
-
-
-
-
 # OmnissiahCore — Dockerfile
 # Lean runtime image. No torch, no CUDA, no build bloat.
 # Large files (Db/, bge_m3_onnx/) are pulled from Hugging Face at startup.
