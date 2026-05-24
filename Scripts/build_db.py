@@ -1,5 +1,5 @@
 """
-OmnissiahCore - build.py v3.6 "Migration & Sage Edition"
+OmnissiahCoreOld - build.py v3.6 "Migration & Sage Edition"
 Multi-Format Indexer with Automatic Filename Migration.
 
 Changes:
@@ -197,7 +197,7 @@ class OmnissiahBuilder:
         to_proc = [f for f in raw_dir.glob("*") if f.suffix.lower() in ['.pdf', '.epub', '.azw3', '.cbr', '.cbz',
                                                                         '.txt'] and f.name not in self.processed_files]
         if not to_proc:
-            print("[*] OmnissiahCore is fully indexed.")
+            print("[*] OmnissiahCoreOld is fully indexed.")
             self.save({})  # Force manifest creation even if no new files
             return
 

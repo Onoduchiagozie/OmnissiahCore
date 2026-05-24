@@ -22,8 +22,7 @@ Core Stack Hierarchy
 2. Blazor
 3. ASP.NET Core
 4. Ollama
-5. Image/3D generation services later
-6. Better vector database later
+ 6. Better vector database later
 
 Current System Shape
 --------------------

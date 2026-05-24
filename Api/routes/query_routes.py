@@ -33,73 +33,58 @@ def _source_list(chunks: list[dict]) -> list[SourceInfo]:
     ]
 
 
+# ---------------------------------------------------------------------------
+# POST /query/inspect — retrieval diagnostics, no LLM call
+# ---------------------------------------------------------------------------
+
 @router.post("/query/inspect")
 async def query_inspect(req: QueryRequest):
+    """
+    Debug endpoint: shows retrieval results WITHOUT calling the LLM.
+    Use this to verify chunk quality before committing to a full generation.
+    Returns FAISS hits, BM25 hits, grounded hits, stitched hits, and a
+    prompt preview.
+    """
     runtime_service.ensure_ready()
     if not req.query.strip():
         raise HTTPException(status_code=400, detail="Query cannot be empty.")
     loop = asyncio.get_event_loop()
-    return await loop.run_in_executor(_ollama_pool, lambda: runtime_service.inspect_query(req))
-
-
-@router.post("/query", response_model=QueryResponse)
-async def query_sync(req: QueryRequest):
-    runtime_service.ensure_ready()
-    if not req.query.strip():
-        raise HTTPException(status_code=400, detail="Query cannot be empty.")
-
-    loop = asyncio.get_event_loop()
-    response, chunks = await loop.run_in_executor(
+    return await loop.run_in_executor(
         _ollama_pool,
-        lambda: runtime_service.run_query(req, mode="remembrancer", stream=False),
-    )
-    return QueryResponse(
-        query=req.query,
-        response=response,
-        sources=_source_list(chunks),
-        chunks_used=len(chunks),
+        lambda: runtime_service.inspect_query(req)
     )
 
 
-@router.post("/query/stream")
-async def query_stream(req: QueryRequest):
-    runtime_service.ensure_ready()
-    if not req.query.strip():
-        raise HTTPException(status_code=400, detail="Query cannot be empty.")
-
-    return StreamingResponse(
-        runtime_service.stream_query(req),
-        media_type="text/event-stream",
-        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
-    )
-
-
-@router.post("/query/narrate", response_model=QueryResponse)
-async def query_narrate(req: QueryRequest):
-    runtime_service.ensure_ready()
-    if not req.query.strip():
-        raise HTTPException(status_code=400, detail="Query cannot be empty.")
-
-    loop = asyncio.get_event_loop()
-    response, chunks = await loop.run_in_executor(
-        _ollama_pool,
-        lambda: runtime_service.run_query(req, mode="narrator", stream=False),
-    )
-    return QueryResponse(
-        query=req.query,
-        response=response,
-        sources=_source_list(chunks),
-        chunks_used=len(chunks),
-    )
-
+# ---------------------------------------------------------------------------
+# POST /query/narrate/stream — primary user experience (narrator SSE)
+# ---------------------------------------------------------------------------
 
 @router.post("/query/narrate/stream")
 async def query_narrate_stream(req: QueryRequest):
+    """
+    Primary endpoint. Narrator mode streamed via Server-Sent Events.
+
+    Reconstructs events, battles, character arcs, and chronicles as a single
+    flowing cinematic prose narrative. Tokens arrive one by one.
+
+    SSE frame contract:
+      data: token text
+      data: __SOURCES__:[{...}]
+      data: [DONE]
+      data: [ERROR] message
+
+    Recommended parameters for deep narratives:
+      top_k: 15
+      candidate_pool: 80
+      stitching_window: 6
+    """
     runtime_service.ensure_ready()
     if not req.query.strip():
         raise HTTPException(status_code=400, detail="Query cannot be empty.")
 
-    req_narrator = req.model_copy(update={"session_id": req.session_id or "narrate-default"})
+    req_narrator = req.model_copy(
+        update={"session_id": req.session_id or "narrate-default"}
+    )
 
     async def _stream():
         loop = asyncio.get_event_loop()
@@ -107,7 +92,9 @@ async def query_narrate_stream(req: QueryRequest):
 
         def _producer():
             try:
-                for token in runtime_service.stream_query_mode(req_narrator, mode="narrator"):
+                for token in runtime_service.stream_query_mode(
+                    req_narrator, mode="narrator"
+                ):
                     asyncio.run_coroutine_threadsafe(queue.put(token), loop)
             except Exception as exc:
                 err_token = f"data: [ERROR] Narrator stream failed: {exc}\n\n"
@@ -123,6 +110,7 @@ async def query_narrate_stream(req: QueryRequest):
                 break
             yield token
 
+        # Exactly one [DONE] — runtime_service.stream_query_mode does NOT yield it
         yield "data: [DONE]\n\n"
 
     return StreamingResponse(
@@ -132,8 +120,24 @@ async def query_narrate_stream(req: QueryRequest):
     )
 
 
+# ---------------------------------------------------------------------------
+# POST /query/explore — object and artifact analysis (sync)
+# ---------------------------------------------------------------------------
+
 @router.post("/query/explore")
 async def query_explore(req: QueryRequest):
+    """
+    Explorer mode. Synchronous.
+
+    Use for object, weapon, vehicle, relic, and artefact analysis.
+    Returns a structured encyclopedic response describing physical properties,
+    origin, function, and lore significance.
+
+    Example queries:
+      "Describe the laer blade that Fulgrim recovered"
+      "What is known about the Anathame blade"
+      "Describe the Vengeful Spirit flagship"
+    """
     runtime_service.ensure_ready()
     if not req.query.strip():
         raise HTTPException(status_code=400, detail="Query cannot be empty.")
@@ -164,3 +168,4 @@ async def query_explore(req: QueryRequest):
             for c in chunks
         ],
     }
+

@@ -1,5 +1,5 @@
 """
-OmnissiahCore — Scripts/verify_db.py
+OmnissiahCoreOld — Scripts/verify_db.py
 
 Run this on EITHER machine to verify the FAISS index and metadata are healthy.
 Safe to run on Dell — does NOT re-embed anything.
@@ -39,7 +39,7 @@ def check(label: str, condition: bool, warn_only: bool = False) -> bool:
 
 
 print("\n" + "═" * 70)
-print("  OmnissiahCore — Index Verification")
+print("  OmnissiahCoreOld — Index Verification")
 print("═" * 70)
 
 # ── 1. File existence ─────────────────────────────────────────────────────
@@ -122,10 +122,18 @@ if os.path.exists(paths["failed_log"]):
     with open(paths["failed_log"]) as f:
         failed = json.load(f)
     print(f"  {WARN if failed else PASS}  {len(failed)} files in failed log")
+    # NEW
     if failed:
-        reasons = Counter(v for v in failed.values())
-        for reason, cnt in reasons.most_common():
-            print(f"    {cnt:>4}  {reason}")
+        if isinstance(failed, dict):
+            reasons = Counter(v for v in failed.values())
+            for reason, cnt in reasons.most_common():
+                print(f"    {cnt:>4}  {reason}")
+        else:
+            # failed_files.json is a plain list of filenames
+            for name in failed[:10]:
+                print(f"    • {name}")
+            if len(failed) > 10:
+                print(f"    ... and {len(failed) - 10} more")
         print(f"\n  Run:  python Scripts/build_db.py --retry-failed")
 else:
     print(f"  {PASS}  No failed files log.")

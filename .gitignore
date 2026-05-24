@@ -1,4 +1,4 @@
-# OmnissiahCore — .gitignore
+# OmnissiahCoreOld — .gitignore
 # Do NOT commit the FAISS index or metadata — they are huge binary files.
 # Transfer them manually from Lenovo to Dell via USB or network share.
 

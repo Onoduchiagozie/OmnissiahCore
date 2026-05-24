@@ -5,7 +5,7 @@ Interactive CLI for testing the full pipeline locally.
 import json
 import os
 import sys
-
+import time
 import requests
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -51,6 +51,18 @@ def _list_books():
     for s in sources:
         print(f"    {s}")
     print()
+
+
+def _typewriter_print(text: str, delay: float = 0.015):
+    """
+    Prints text horizontally, one character at a time, to create a typewriter effect.
+    Adjust the 'delay' parameter to make the typing faster or slower.
+    """
+    for char in text:
+        sys.stdout.write(char)
+        sys.stdout.flush()
+        time.sleep(delay)
+    print()  # Add a final newline when the text is done
 
 
 def main():
@@ -138,7 +150,10 @@ def main():
                 candidate_pool=40,
                 stitching_window=3,
             )
-            print(f"Remembrancer:\n{response}\n")
+            print("Remembrancer:\n")
+            _typewriter_print(response)
+            print()
+
             if verbose and chunks:
                 print(format_debug(topic, chunks, response))
             else:
@@ -154,7 +169,9 @@ def main():
         )
 
         mode_label = "Object Explorer" if agent.mode == "explorer" else "Remembrancer"
-        print(f"{mode_label}:\n{response}\n")
+        print(f"{mode_label}:\n")
+        _typewriter_print(response)
+        print()
 
         if verbose:
             print(format_debug(raw, chunks, response))

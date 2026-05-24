@@ -1,5 +1,5 @@
 """
-OmnissiahCore - Core/config_loader.py
+OmnissiahCoreOld - Core/config_loader.py
 
 Central configuration loader. Every module imports from here.
 Never hardcode paths, model names, or parameters anywhere else.

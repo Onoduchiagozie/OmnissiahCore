@@ -1,5 +1,5 @@
 """
-OmnissiahCore - Core/agent.py
+OmnissiahCoreOld - Core/agent.py
 
 Coordinates retrieval, prompt construction, Ollama calls, and session memory.
 
@@ -253,7 +253,7 @@ class OmnissiahAgent:
     def memory(self) -> list[dict]:
         return list(self._memory)
 # """
-# OmnissiahCore - Core/agent.py
+# OmnissiahCoreOld - Core/agent.py
 #
 # Coordinates retrieval, prompt construction, Ollama calls, and session memory.
 # """

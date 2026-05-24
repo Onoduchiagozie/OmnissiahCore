@@ -1,5 +1,5 @@
 """
-OmnissiahCore — main.py
+OmnissiahCoreOld — main.py
 
 Entry point dispatcher. Run from project root.
 
@@ -12,6 +12,10 @@ Usage:
 
 import sys
 import os
+os.environ['TRANSFORMERS_OFFLINE'] = '1'
+os.environ['HF_DATASETS_OFFLINE'] = '1'
+os.environ['HF_HUB_OFFLINE'] = '1'
+
 
 COMMANDS = {
     "cli":    ("Scripts/query_test.py",  "Interactive lore query CLI"),
@@ -22,7 +26,7 @@ COMMANDS = {
 
 
 def usage():
-    print("\nOmnissiahCore — Usage:")
+    print("\nOmnissiahCoreOld — Usage:")
     for cmd, (_, desc) in COMMANDS.items():
         print(f"  python main.py {cmd:<8}  {desc}")
     print()
@@ -46,7 +50,7 @@ if mode == "api":
             "uvicorn",
             "Api.server:app",
             "--host",
-            "localhost",
+            "0.0.0.0",
             "--port",
             "8000",
             "--reload",

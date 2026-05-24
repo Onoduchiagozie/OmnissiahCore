@@ -1,4 +1,4 @@
-# OmnissiahCore — requirements.txt
+# OmnissiahCoreOld — requirements.txt
 # Install on BOTH machines unless noted.
 
 # ── Core RAG ──────────────────────────────────────────────────────────────

@@ -6,7 +6,7 @@ Hybrid RAG retriever:
   2. BM25 sparse keyword search
   3. Reciprocal Rank Fusion
   4. Query-overlap grounding boost
-  5. Chunk stitching
+  5. Chunk stitching with global text deduplication
   6. Optional cross-encoder rerank
 """
 
@@ -36,7 +36,6 @@ try:
     _CROSSENCODER_AVAILABLE = True
 except ImportError:
     _CROSSENCODER_AVAILABLE = False
-
 
 STOPWORDS = {
     "the", "a", "an", "and", "or", "of", "to", "in", "on", "for", "with", "at",
@@ -116,13 +115,13 @@ class OmnissiahRetriever:
         print("Retriever ready\n")
 
     def search(
-        self,
-        query: str,
-        top_k: int = None,
-        candidate_pool: int = None,
-        stitching_window: int = None,
-        book_filter: str = None,
-        source_filter: list[str] = None,
+            self,
+            query: str,
+            top_k: int = None,
+            candidate_pool: int = None,
+            stitching_window: int = None,
+            book_filter: str = None,
+            source_filter: list[str] = None,
     ) -> list[dict]:
         top_k = top_k or retrieval_cfg["top_k"]
         candidate_pool = candidate_pool or retrieval_cfg["candidate_pool"]
@@ -149,13 +148,13 @@ class OmnissiahRetriever:
         return stitched
 
     def inspect(
-        self,
-        query: str,
-        top_k: int = None,
-        candidate_pool: int = None,
-        stitching_window: int = None,
-        book_filter: str = None,
-        source_filter: list[str] = None,
+            self,
+            query: str,
+            top_k: int = None,
+            candidate_pool: int = None,
+            stitching_window: int = None,
+            book_filter: str = None,
+            source_filter: list[str] = None,
     ) -> dict:
         top_k = top_k or retrieval_cfg["top_k"]
         candidate_pool = candidate_pool or retrieval_cfg["candidate_pool"]
@@ -197,7 +196,7 @@ class OmnissiahRetriever:
                 continue
             m = self.metadata[idx]
             results.append({
-                "chunk_id": int(m.get("chunk_id", idx)),   # int() prevents numpy.int64 leaking into JSON
+                "chunk_id": int(m.get("chunk_id", idx)),
                 "text": m.get("text", ""),
                 "source": m.get("source", "unknown"),
                 "chapter": m.get("chapter", "unknown"),
@@ -229,11 +228,11 @@ class OmnissiahRetriever:
         return results
 
     def _rrf_merge(
-        self,
-        faiss_hits: list[dict],
-        bm25_hits: list[dict],
-        k: int,
-        rrf_k: int = None,
+            self,
+            faiss_hits: list[dict],
+            bm25_hits: list[dict],
+            k: int,
+            rrf_k: int = None,
     ) -> list[dict]:
         rrf_k = rrf_k or retrieval_cfg.get("rrf_k", 60)
         scores: dict[str, float] = {}
@@ -284,30 +283,50 @@ class OmnissiahRetriever:
         return strong + weak
 
     def _stitch_chunks(self, hits: list[dict], window: int) -> list[dict]:
+        """
+        Stitches surrounding neighbor chunks to establish context window tracking.
+        Applies strict Global Text Deduplication to neutralize duplicate book entries
+        (e.g., cross-format duplication between EPUB and PDF editions) before context injection.
+        """
         if window == 0:
             return hits
 
         seen_ids: set[int] = set()
+        seen_texts_normalized: set[str] = set()
         stitched: list[dict] = []
+
         for hit in hits:
             center_id = hit.get("chunk_id")
             if center_id is None:
+                # Fallback hashing pattern for unbound chunk segments
+                text_hash = _md5(hit.get("text", "").strip().lower())
+                if text_hash in seen_texts_normalized:
+                    continue
+                seen_texts_normalized.add(text_hash)
                 stitched.append(hit)
                 continue
 
             neighbour_ids = list(range(max(0, center_id - window), center_id + window + 1))
             parts = []
             valid_ids = []
+
             for nid in neighbour_ids:
                 if nid in seen_ids:
                     continue
                 if nid in self._id_to_idx:
                     chunk = self.metadata[self._id_to_idx[nid]]
-                    parts.append(chunk.get("text", "").strip())
+                    chunk_text = chunk.get("text", "").strip()
+
+                    # Normalize white-spaces and look for string matches across overlapping chunks
+                    normalized_chunk = re.sub(r"\s+", " ", chunk_text.lower())
+                    if normalized_chunk in seen_texts_normalized:
+                        continue
+
+                    parts.append(chunk_text)
                     valid_ids.append(nid)
+                    seen_texts_normalized.add(normalized_chunk)
 
             if not parts:
-                stitched.append(hit)
                 continue
 
             seen_ids.update(valid_ids)

@@ -1,4 +1,5 @@
 import os
+import re
 from threading import Lock
 from typing import Optional
 
@@ -29,12 +30,75 @@ def _sanitize_numpy(obj):
         return obj.tolist()
     return obj
 
+def clean_response(text: str) -> str:
+    """
+    Aggressive LLM response text cleaning.
+    Applied to full sync responses and accumulated stream responses.
+    """
+    if not text:
+        return text
+
+    # Remove all control characters except newline and tab
+    text = ''.join(c for c in text if ord(c) >= 32 or c in '\n\t')
+
+    # Remove slash artifacts: " / ", "/", "\ ", "\/"
+    text = re.sub(r'\s*/\s*', ' ', text)
+    text = re.sub(r'(?<!\w)/(?!\w)', ' ', text)
+    text = re.sub(r'\\\s*', ' ', text)
+    text = re.sub(r'\\/', ' ', text)
+
+    # Collapse 3+ newlines to double (preserve paragraph breaks)
+    text = re.sub(r'\n{3,}', '\n\n', text)
+
+    # Collapse single newlines within paragraph to space
+    text = re.sub(r'(?<!\n)\n(?!\n)', ' ', text)
+
+    # Collapse multiple spaces
+    text = re.sub(r' {2,}', ' ', text)
+
+    # Strip leading/trailing
+    text = text.strip()
+
+    return text
+# def clean_response(text: str) -> str:
+#     """
+#     Clean LLM response text of common formatting artifacts.
+#     Applied to full sync responses and accumulated stream responses.
+#
+#     Fixes:
+#     - Slash artifacts:  " / " and standalone "/" between words
+#     - Repeated newlines inside paragraphs collapsed to single space
+#     - Multiple consecutive spaces collapsed to one
+#     - Leading and trailing whitespace stripped
+#     - Paragraph breaks (double newline) preserved
+#     """
+#     if not text:
+#         return text
+#
+#     # Remove " / " slash artifacts between words
+#     text = re.sub(r'\s*/\s*', ' ', text)
+#
+#     # Collapse 3+ newlines to double newline (preserve paragraph breaks)
+#     text = re.sub(r'\n{3,}', '\n\n', text)
+#
+#     # Collapse single newlines within a paragraph to a space
+#     # (only if not followed by another newline — that would be a paragraph break)
+#     text = re.sub(r'(?<!\n)\n(?!\n)', ' ', text)
+#
+#     # Collapse multiple spaces to one
+#     text = re.sub(r' {2,}', ' ', text)
+#
+#     # Strip leading and trailing whitespace
+#     text = text.strip()
+#
+#     return text
+
 
 class RuntimeService:
     def __init__(self):
         self._retriever: Optional[OmnissiahRetriever] = None
         self._session_memory: dict[str, list[dict]] = {}
-        self._memory_lock = Lock()   # only protects session_memory dict, not Ollama
+        self._memory_lock = Lock()
         self._metadata_cache: list[dict] = []
 
     @property
@@ -73,11 +137,11 @@ class RuntimeService:
     def run_query(self, req: QueryRequest, mode: str, stream: bool) -> tuple[str, list[dict]]:
         """
         Lock is NOT held during Ollama inference.
-        Memory is read before and written after - the only critical sections.
+        Memory is read before and written after — the only critical sections.
+        clean_response is applied before returning to the route.
         """
         session_id = req.session_id or "default"
 
-        # Build agent with snapshotted memory (no lock held during inference)
         agent = self._build_agent(session_id, mode)
 
         response, chunks = agent.ask(
@@ -90,12 +154,21 @@ class RuntimeService:
             stream=stream,
         )
 
-        # Write back memory after inference completes
         self._set_session_memory(session_id, agent.memory)
+
+        # Clean response text before returning
+        response = clean_response(response)
+
         return response, chunks
 
     def stream_query_mode(self, req: QueryRequest, mode: str = "remembrancer"):
-        """stream_query with selectable mode (remembrancer / narrator / explorer)."""
+        """
+        Stream with selectable mode: remembrancer / narrator / explorer.
+
+        NOTE: This method does NOT yield [DONE]. The route that calls this
+        method is responsible for yielding exactly one [DONE] frame.
+        This prevents the duplicate [DONE] bug.
+        """
         session_id = req.session_id or "default"
         agent = self._build_agent(session_id, mode=mode)
         full_response = ""
@@ -109,36 +182,18 @@ class RuntimeService:
             stitching_window=req.stitching_window,
         ):
             if token.startswith("__SOURCES__:"):
+                # Sources frame — forward as-is, no cleaning needed
                 yield f"data: {token}\n\n"
             else:
                 full_response += token
-                yield f"data: {token}\n\n"
+                # Clean slash artifacts at token level before sending
+                clean_token = token.replace(" / ", " ").replace("/", " ")
+                yield f"data: {clean_token}\n\n"
 
+        # Write back memory after stream completes
         self._set_session_memory(session_id, agent.memory)
-        yield "data: [DONE]\n\n"
 
-    def stream_query(self, req: QueryRequest):
-        session_id = req.session_id or "default"
-
-        agent = self._build_agent(session_id, mode="remembrancer")
-        full_response = ""
-
-        for token in agent.ask_stream(
-            query=req.query,
-            book_filter=req.book_filter,
-            source_filter=req.source_filter,
-            top_k=req.top_k,
-            candidate_pool=req.candidate_pool,
-            stitching_window=req.stitching_window,
-        ):
-            if token.startswith("__SOURCES__:"):
-                yield f"data: {token}\n\n"
-            else:
-                full_response += token
-                yield f"data: {token}\n\n"
-
-        self._set_session_memory(session_id, agent.memory)
-        yield "data: [DONE]\n\n"
+        # DO NOT yield [DONE] here. The route handles it.
 
     def inspect_query(self, req: QueryRequest) -> dict:
         inspection = self._retriever.inspect(
@@ -149,7 +204,7 @@ class RuntimeService:
             candidate_pool=req.candidate_pool,
             stitching_window=req.stitching_window,
         )
-        inspection = _sanitize_numpy(inspection)   # guard against numpy.int64/float64 in response
+        inspection = _sanitize_numpy(inspection)
         system_prompt, user_message = build_prompt(req.query, inspection["stitched_hits"])
         return {
             "inspection": inspection,
@@ -218,7 +273,8 @@ class RuntimeService:
 
     def source_chunks_payload(self, source_name: str, limit: int) -> dict:
         matched = [
-            m for m in self._metadata_cache if source_name.lower() in m.get("source", "").lower()
+            m for m in self._metadata_cache
+            if source_name.lower() in m.get("source", "").lower()
         ][:limit]
         return {
             "source": source_name,
