@@ -4,7 +4,7 @@ OmnissiahCoreOld — main.py
 Entry point dispatcher. Run from project root.
 
 Usage:
-    python main.py cli        → Interactive CLI (query_test.py)
+    python main.py cli        → Interactive CLI (CLI.py)
     python main.py api        → FastAPI server on port 8000
     python main.py verify     → Verify index health
     python main.py build      → Build/update FAISS index (Lenovo only)
@@ -18,7 +18,7 @@ os.environ['HF_HUB_OFFLINE'] = '1'
 
 
 COMMANDS = {
-    "cli":    ("Scripts/query_test.py",  "Interactive lore query CLI"),
+    "cli":    ("Scripts/CLI.py",  "Interactive lore query CLI"),
     "api":    ("Api/server.py",           "FastAPI server (uvicorn)"),
     "verify": ("Scripts/verify_db.py",   "Verify index health"),
     "build":  ("Scripts/build_db.py",    "Build FAISS index (Lenovo only)"),
