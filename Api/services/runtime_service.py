@@ -9,7 +9,7 @@ import numpy as np
 
 from Api.models import QueryRequest
 from Core.agent import OmnissiahAgent
-from Core.config_loader import active_profile, machine_role, ollama_cfg, paths, retrieval_cfg
+from Core.config_loader import active_profile, machine_role, llm_cfg, paths, retrieval_cfg
 from Core.prompt import build_prompt
 from Core.retriever import OmnissiahRetriever
 
@@ -60,38 +60,6 @@ def clean_response(text: str) -> str:
     text = text.strip()
 
     return text
-# def clean_response(text: str) -> str:
-#     """
-#     Clean LLM response text of common formatting artifacts.
-#     Applied to full sync responses and accumulated stream responses.
-#
-#     Fixes:
-#     - Slash artifacts:  " / " and standalone "/" between words
-#     - Repeated newlines inside paragraphs collapsed to single space
-#     - Multiple consecutive spaces collapsed to one
-#     - Leading and trailing whitespace stripped
-#     - Paragraph breaks (double newline) preserved
-#     """
-#     if not text:
-#         return text
-#
-#     # Remove " / " slash artifacts between words
-#     text = re.sub(r'\s*/\s*', ' ', text)
-#
-#     # Collapse 3+ newlines to double newline (preserve paragraph breaks)
-#     text = re.sub(r'\n{3,}', '\n\n', text)
-#
-#     # Collapse single newlines within a paragraph to a space
-#     # (only if not followed by another newline — that would be a paragraph break)
-#     text = re.sub(r'(?<!\n)\n(?!\n)', ' ', text)
-#
-#     # Collapse multiple spaces to one
-#     text = re.sub(r' {2,}', ' ', text)
-#
-#     # Strip leading and trailing whitespace
-#     text = text.strip()
-#
-#     return text
 
 
 class RuntimeService:
@@ -136,7 +104,7 @@ class RuntimeService:
 
     def run_query(self, req: QueryRequest, mode: str, stream: bool) -> tuple[str, list[dict]]:
         """
-        Lock is NOT held during Ollama inference.
+        Lock is NOT held during LLM inference.
         Memory is read before and written after — the only critical sections.
         clean_response is applied before returning to the route.
         """
@@ -219,8 +187,8 @@ class RuntimeService:
             "status": "online",
             "active_profile": active_profile,
             "machine_role": machine_role,
-            "ollama_model": ollama_cfg["model"],
-            "ollama_url": ollama_cfg["url"],
+            "llm_model": llm_cfg["model"],
+            "llm_url": llm_cfg["url"],
             "metadata_loaded": len(self._metadata_cache),
         }
 
@@ -251,13 +219,13 @@ class RuntimeService:
         return {
             "active_profile": active_profile,
             "machine_role": machine_role,
-            "ollama": {
-                "url": ollama_cfg["url"],
-                "model": ollama_cfg["model"],
-                "num_ctx": ollama_cfg["num_ctx"],
-                "timeout": ollama_cfg["timeout"],
-                "temperature": ollama_cfg["temperature"],
-                "top_p": ollama_cfg["top_p"],
+            "llm": {
+                "url": llm_cfg["url"],
+                "model": llm_cfg["model"],
+                "timeout": llm_cfg["timeout"],
+                "temperature": llm_cfg["temperature"],
+                "top_p": llm_cfg["top_p"],
+                "max_tokens": llm_cfg.get("max_tokens"),
             },
             "retrieval": retrieval_cfg,
             "paths": {

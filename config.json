@@ -11,10 +11,10 @@
         "max_seq_length": 512,
         "normalize": true,
         "batch_size_gpu": 32,
-        "batch_size_cpu":16,
+        "batch_size_cpu": 16,
         "device": "auto"
       },
-"retrieval": {
+      "retrieval": {
         "use_faiss": true,
         "use_bm25": true,
         "use_reranker": true,
@@ -23,9 +23,10 @@
         "top_k": 10,
         "stitching_window": 6,
         "rrf_k": 60
-      },      "ollama": {
-        "url": "http://localhost:11434/api/chat",
-        "model": "qwen3:30b-a3b",
+      },
+      "llm": {
+        "url": "http://192.168.100.71:1234/v1/chat/completions",
+        "model": "google/gemma-4-e4b",
         "num_ctx": 16192,
         "temperature": 0.4,
         "top_p": 0.9,
@@ -43,7 +44,6 @@
         "db_dir": "Db"
       }
     },
-
     "dell_query": {
       "_comment": "Low-memory query-only machine. 8GB RAM. Inference only.",
       "machine_role": "query",
@@ -66,9 +66,9 @@
         "stitching_window": 2,
         "rrf_k": 60
       },
-      "ollama": {
-        "url": "http://localhost:11434/api/chat",
-        "model": "llama3",
+      "llm": {
+        "url": "http://localhost:1234/v1/chat/completions",
+        "model": "REPLACE_WITH_YOUR_LM_STUDIO_MODEL_ID",
         "num_ctx": 6144,
         "temperature": 0.4,
         "top_p": 0.9,

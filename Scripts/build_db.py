@@ -28,8 +28,8 @@ TESSERACT_EXE = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
 SEVEN_ZIP_EXE = r"C:\Program Files\7-Zip\7z.exe"
 CALIBRE_CONVERT = r"C:\Program Files\Calibre2\ebook-convert.exe"
 
-os.environ["TRANSFORMERS_OFFLINE"] = "1"
-os.environ["HF_DATASETS_OFFLINE"] = "1"
+os.environ["TRANSFORMERS_OFFLINE"] = "0"
+os.environ["HF_DATASETS_OFFLINE"] = "0"
 
 # Inject paths
 for p in [POPPLER_PATH, os.path.dirname(TESSERACT_EXE), os.path.dirname(SEVEN_ZIP_EXE)]:

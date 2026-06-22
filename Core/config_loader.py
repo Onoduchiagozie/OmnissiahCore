@@ -54,15 +54,15 @@ def _apply_env_overrides(profile: dict) -> dict:
 
     embedding = profile["embedding"]
     retrieval = profile["retrieval"]
-    ollama = profile["ollama"]
+    llm = profile.get("llm", {})  # Use 'llm' instead of 'ollama'
 
     embedding["device"] = os.getenv("OMNISSIAH_EMBED_DEVICE", embedding["device"])
-    ollama["url"] = os.getenv("OMNISSIAH_OLLAMA_URL", ollama["url"])
-    ollama["model"] = os.getenv("OMNISSIAH_OLLAMA_MODEL", ollama["model"])
-    ollama["num_ctx"] = _env_int("OMNISSIAH_OLLAMA_NUM_CTX", ollama["num_ctx"])
-    ollama["timeout"] = _env_int("OMNISSIAH_OLLAMA_TIMEOUT", ollama["timeout"])
-    ollama["temperature"] = _env_float("OMNISSIAH_OLLAMA_TEMPERATURE", ollama["temperature"])
-    ollama["top_p"] = _env_float("OMNISSIAH_OLLAMA_TOP_P", ollama["top_p"])
+    llm["url"] = os.getenv("OMNISSIAH_LLM_URL", llm.get("url", "http://localhost:11434/api/chat"))  # Default URL for LM Studio
+    llm["model"] = os.getenv("OMNISSIAH_LLM_MODEL", llm.get("model", "gemma4:latest"))
+    llm["num_ctx"] = _env_int("OMNISSIAH_LLM_NUM_CTX", llm.get("num_ctx", 16192))
+    llm["timeout"] = _env_int("OMNISSIAH_LLM_TIMEOUT", llm.get("timeout", 900))
+    llm["temperature"] = _env_float("OMNISSIAH_LLM_TEMPERATURE", llm.get("temperature", 0.4))
+    llm["top_p"] = _env_float("OMNISSIAH_LLM_TOP_P", llm.get("top_p", 0.9))
     retrieval["top_k"] = _env_int("OMNISSIAH_TOP_K", retrieval["top_k"])
     retrieval["candidate_pool"] = _env_int("OMNISSIAH_CANDIDATE_POOL", retrieval["candidate_pool"])
     retrieval["stitching_window"] = _env_int(
@@ -91,7 +91,7 @@ def _load_config() -> tuple[str, dict]:
     _require_keys(
         "profile",
         profile,
-        ["machine_role", "embedding", "retrieval", "ollama", "chunking", "paths"],
+        ["machine_role", "embedding", "retrieval", "llm", "chunking", "paths"],  # Use 'llm' instead of 'ollama'
     )
     _require_keys(
         "embedding",
@@ -104,8 +104,8 @@ def _load_config() -> tuple[str, dict]:
         ["use_faiss", "use_bm25", "use_reranker", "candidate_pool", "top_k", "stitching_window", "rrf_k"],
     )
     _require_keys(
-        "ollama",
-        profile["ollama"],
+        "llm",  # Use 'llm' instead of 'ollama'
+        profile["llm"],
         ["url", "model", "num_ctx", "temperature", "top_p", "max_tokens", "stream", "timeout"],
     )
     _require_keys("chunking", profile["chunking"], ["target_tokens", "overlap_sentences"])
@@ -120,7 +120,7 @@ active_profile, _profile = _load_config()
 
 embedding_cfg = _profile["embedding"]
 retrieval_cfg = _profile["retrieval"]
-ollama_cfg = _profile["ollama"]
+llm_cfg = _profile.get("llm", {})  # Use 'llm' instead of 'ollama'
 chunking_cfg = _profile["chunking"]
 machine_role = _profile["machine_role"]
 
