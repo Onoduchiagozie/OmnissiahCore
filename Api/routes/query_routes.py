@@ -59,7 +59,7 @@ async def query_inspect(req: QueryRequest):
 # POST /query/narrate/stream — primary user experience (narrator SSE)
 # ---------------------------------------------------------------------------
 
-@router.post("/query/narrate/stream")
+@router.post("/query/narrate")
 async def query_narrate_stream(req: QueryRequest):
     """
     Primary endpoint. Narrator mode streamed via Server-Sent Events.

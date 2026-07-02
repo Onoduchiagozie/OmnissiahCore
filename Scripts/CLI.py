@@ -46,7 +46,7 @@ def _print_sources(chunks: list[dict]):
 
 def _stream_api(payload: dict):
     """Hits the /query/narrate/stream endpoint. ANIMATION REMOVED."""
-    url = f"{API_BASE_URL}/query/narrate/stream"
+    url = f"{API_BASE_URL}/query/narrate"
     headers = {"Content-Type": "application/json"}
 
     try:
@@ -131,7 +131,6 @@ def main():
         }
 
         print("\n" + "=" * 70)
-        print("  OMNISSIAH DIRECT QUERY INITIATED")
         print("=" * 70)
         print(f"\nQuery: {raw}\n")
         print("Remembrancer (Narrator):\n")

@@ -134,6 +134,7 @@ paths = {
     "manifest": os.path.join(BASE_DIR, _raw_paths["db_dir"], "manifest.json"),
     "processed": os.path.join(BASE_DIR, _raw_paths["db_dir"], "processed_files.json"),
     "failed_log": os.path.join(BASE_DIR, _raw_paths["db_dir"], "failed_files.json"),
+    "bm25_cache": os.path.join(BASE_DIR, _raw_paths["db_dir"], "bm25_cache"),
     "base": BASE_DIR,
 }
 

@@ -16,19 +16,18 @@ import re
 from hashlib import md5
 
 import faiss
-import numpy as np
 import torch
 from sentence_transformers import SentenceTransformer
 
 from Core.config_loader import embedding_cfg, machine_role, paths, retrieval_cfg
 
 try:
-    from rank_bm25 import BM25Okapi
+    import bm25s
 
     _BM25_INSTALLED = True
 except ImportError:
     _BM25_INSTALLED = False
-    print("Warning: rank_bm25 not installed. BM25 disabled.")
+    print("Warning: bm25s not installed. BM25 disabled.")
 
 try:
     from sentence_transformers import CrossEncoder
@@ -90,10 +89,7 @@ class OmnissiahRetriever:
 
         self.bm25 = None
         if retrieval_cfg["use_bm25"] and _BM25_INSTALLED:
-            print("   Building BM25 index...")
-            corpus = [m["text"].lower().split() for m in self.metadata]
-            self.bm25 = BM25Okapi(corpus)
-            print("   BM25 ready")
+            self.bm25 = self._load_or_build_bm25()
         else:
             print("   BM25 disabled (config or missing package)")
 
@@ -114,6 +110,39 @@ class OmnissiahRetriever:
 
         print("Retriever ready\n")
 
+    # def search(
+    #         self,
+    #         query: str,
+    #         top_k: int = None,
+    #         candidate_pool: int = None,
+    #         stitching_window: int = None,
+    #         book_filter: str = None,
+    #         source_filter: list[str] = None,
+    # ) -> list[dict]:
+    #     top_k = top_k or retrieval_cfg["top_k"]
+    #     candidate_pool = candidate_pool or retrieval_cfg["candidate_pool"]
+    #     stitching_window = stitching_window or retrieval_cfg["stitching_window"]
+    #
+    #     enriched_query = self._enrich_query(query)
+    #     faiss_hits = self._faiss_search(enriched_query, k=candidate_pool)
+    #     bm25_hits = self._bm25_search(query, k=candidate_pool) if self.bm25 else []
+    #     merged = self._rrf_merge(faiss_hits, bm25_hits, k=candidate_pool)
+    #
+    #     if book_filter:
+    #         merged = [c for c in merged if book_filter.lower() in c["source"].lower()]
+    #     if source_filter:
+    #         merged = [c for c in merged if c["source"] in source_filter]
+    #
+    #     merged = self._apply_query_grounding(query, merged)
+    #     stitched = self._stitch_chunks(merged[:top_k], window=stitching_window)
+    #
+    #     if self.reranker and len(stitched) > 1:
+    #         stitched = self._rerank(query, stitched, top_k=top_k)
+    #     else:
+    #         stitched = stitched[:top_k]
+    #
+    #     return stitched
+
     def search(
             self,
             query: str,
@@ -122,13 +151,19 @@ class OmnissiahRetriever:
             stitching_window: int = None,
             book_filter: str = None,
             source_filter: list[str] = None,
+            on_stage=None,  # optional callable(str) -> None, fired at each real boundary
     ) -> list[dict]:
         top_k = top_k or retrieval_cfg["top_k"]
         candidate_pool = candidate_pool or retrieval_cfg["candidate_pool"]
         stitching_window = stitching_window or retrieval_cfg["stitching_window"]
 
+        if on_stage:
+            on_stage("embedding")
         enriched_query = self._enrich_query(query)
         faiss_hits = self._faiss_search(enriched_query, k=candidate_pool)
+
+        if on_stage:
+            on_stage("retrieving")
         bm25_hits = self._bm25_search(query, k=candidate_pool) if self.bm25 else []
         merged = self._rrf_merge(faiss_hits, bm25_hits, k=candidate_pool)
 
@@ -141,12 +176,13 @@ class OmnissiahRetriever:
         stitched = self._stitch_chunks(merged[:top_k], window=stitching_window)
 
         if self.reranker and len(stitched) > 1:
+            if on_stage:
+                on_stage("reranking")
             stitched = self._rerank(query, stitched, top_k=top_k)
         else:
             stitched = stitched[:top_k]
 
         return stitched
-
     def inspect(
             self,
             query: str,
@@ -181,6 +217,49 @@ class OmnissiahRetriever:
             "stitched_hits": stitched,
         }
 
+    def _load_or_build_bm25(self):
+        """
+        Loads a saved bm25s index from disk if one exists and is newer than
+        metadata.json. Otherwise builds from scratch and saves for next startup.
+
+        bm25s stores term frequencies as compact sparse arrays instead of
+        rank_bm25's Python list-of-list-of-strings, which is what was costing
+        roughly 12-13GB of peak RAM on first build. Loading a saved bm25s
+        index is also far cheaper than rebuilding from raw text every time.
+        """
+        cache_dir = paths.get("bm25_cache")
+        metadata_path = paths["metadata"]
+
+        if cache_dir and os.path.isdir(cache_dir):
+            cache_mtime = os.path.getmtime(cache_dir)
+            metadata_mtime = os.path.getmtime(metadata_path)
+            if cache_mtime >= metadata_mtime:
+                print("   Loading cached BM25 index (bm25s)...")
+                try:
+                    bm25 = bm25s.BM25.load(cache_dir, load_corpus=False)
+                    print("   BM25 ready (from cache)")
+                    return bm25
+                except Exception as e:
+                    print(f"   Warning: BM25 cache load failed ({e}) - rebuilding")
+            else:
+                print("   BM25 cache is stale (metadata.json changed) - rebuilding")
+
+        print("   Building BM25 index (this is the expensive one-time cost)...")
+        corpus_texts = [m.get("text", "") for m in self.metadata]
+        corpus_tokens = bm25s.tokenize(corpus_texts, stopwords=None, show_progress=False)
+        bm25 = bm25s.BM25()
+        bm25.index(corpus_tokens, show_progress=False)
+        print("   BM25 ready")
+
+        if cache_dir:
+            try:
+                bm25.save(cache_dir)
+                print(f"   BM25 index cached to: {cache_dir}")
+            except Exception as e:
+                print(f"   Warning: failed to write BM25 cache: {e}")
+
+        return bm25
+
     def _faiss_search(self, query: str, k: int) -> list[dict]:
         vec = self.embedder.encode(
             [query],
@@ -207,23 +286,26 @@ class OmnissiahRetriever:
         return results
 
     def _bm25_search(self, query: str, k: int) -> list[dict]:
-        tokens = query.lower().split()
-        scores = self.bm25.get_scores(tokens)
-        top_idx = np.argsort(scores)[::-1][:k]
+        query_tokens = bm25s.tokenize([query], stopwords=None, show_progress=False)
+        actual_k = min(k, len(self.metadata))
+        top_idx_arr, scores_arr = self.bm25.retrieve(query_tokens, k=actual_k, show_progress=False)
+        top_idx = top_idx_arr[0]
+        scores = scores_arr[0]
 
         results = []
-        for rank, idx in enumerate(top_idx):
+        for rank, (idx, score) in enumerate(zip(top_idx, scores)):
+            idx = int(idx)
             if idx >= len(self.metadata):
                 continue
             m = self.metadata[idx]
             results.append({
-                "chunk_id": m.get("chunk_id", int(idx)),
+                "chunk_id": m.get("chunk_id", idx),
                 "text": m.get("text", ""),
                 "source": m.get("source", "unknown"),
                 "chapter": m.get("chapter", "unknown"),
                 "file_type": m.get("file_type", "pdf"),
                 "bm25_rank": rank,
-                "bm25_score": float(scores[idx]),
+                "bm25_score": float(score),
             })
         return results
 

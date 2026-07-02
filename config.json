@@ -26,6 +26,7 @@
       },
       "llm": {
         "url": "http://192.168.100.71:1234/v1/chat/completions",
+
         "model": "google/gemma-4-e4b",
         "num_ctx": 16192,
         "temperature": 0.4,
@@ -68,7 +69,7 @@
       },
       "llm": {
         "url": "http://localhost:1234/v1/chat/completions",
-        "model": "REPLACE_WITH_YOUR_LM_STUDIO_MODEL_ID",
+        "model": "gemma4:latest",
         "num_ctx": 6144,
         "temperature": 0.4,
         "top_p": 0.9,

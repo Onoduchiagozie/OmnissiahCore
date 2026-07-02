@@ -80,15 +80,69 @@ class OmnissiahAgent:
             print(format_debug(query, chunks, response))
 
         return response, chunks
+    #
+    # def ask_stream(
+    #     self,
+    #     query: str,
+    #     book_filter: str = None,
+    #     source_filter: list[str] = None,
+    #     top_k: int = None,
+    #     candidate_pool: int = None,
+    #     stitching_window: int = None,
+    # ) -> Generator[str, None, None]:
+    #     _ = self._classify_intent(query)
+    #
+    #     chunks = self.retriever.search(
+    #         query=query,
+    #         top_k=top_k,
+    #         candidate_pool=candidate_pool,
+    #         stitching_window=stitching_window,
+    #         book_filter=book_filter,
+    #         source_filter=source_filter,
+    #     )
+    #
+    #     if not chunks:
+    #         yield app_text["agent"]["stream_no_chunks_message"]
+    #         return
+    #
+    #     system_prompt, user_msg = self._build_prompt(query, chunks)
+    #
+    #     if self._memory:
+    #         user_msg = self._format_memory() + "\n\n" + user_msg
+    #
+    #     full_response = ""
+    #     for token in self._stream_llm(system_prompt, user_msg):
+    #         full_response += token
+    #         yield token
+    #
+    #     sources_data = [
+    #         {
+    #             "source": c.get("source", "?"),
+    #             "chapter": c.get("chapter", "?"),
+    #             "stitch_range": c.get("stitch_range", ""),
+    #             "score": round(
+    #                 c.get("rerank_score")
+    #                 or c.get("query_overlap_score")
+    #                 or c.get("rrf_score")
+    #                 or c.get("faiss_score")
+    #                 or 0.0,
+    #                 4,
+    #             ),
+    #         }
+    #         for c in chunks
+    #     ]
+    #     self._update_memory(query, full_response)
+    #     yield f"__SOURCES__:{json.dumps(sources_data)}"
 
     def ask_stream(
-        self,
-        query: str,
-        book_filter: str = None,
-        source_filter: list[str] = None,
-        top_k: int = None,
-        candidate_pool: int = None,
-        stitching_window: int = None,
+            self,
+            query: str,
+            book_filter: str = None,
+            source_filter: list[str] = None,
+            top_k: int = None,
+            candidate_pool: int = None,
+            stitching_window: int = None,
+            on_stage=None,  # optional callable(str) -> None
     ) -> Generator[str, None, None]:
         _ = self._classify_intent(query)
 
@@ -99,6 +153,7 @@ class OmnissiahAgent:
             stitching_window=stitching_window,
             book_filter=book_filter,
             source_filter=source_filter,
+            on_stage=on_stage,
         )
 
         if not chunks:
@@ -109,6 +164,9 @@ class OmnissiahAgent:
 
         if self._memory:
             user_msg = self._format_memory() + "\n\n" + user_msg
+
+        if on_stage:
+            on_stage("generating")
 
         full_response = ""
         for token in self._stream_llm(system_prompt, user_msg):
@@ -133,6 +191,7 @@ class OmnissiahAgent:
         ]
         self._update_memory(query, full_response)
         yield f"__SOURCES__:{json.dumps(sources_data)}"
+
 
     def _build_prompt(self, query: str, chunks: list[dict]) -> tuple[str, str]:
         """Dispatch to the right prompt builder based on current mode."""
