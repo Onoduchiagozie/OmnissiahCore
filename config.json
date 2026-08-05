@@ -25,7 +25,7 @@
         "rrf_k": 60
       },
       "llm": {
-        "url": "http://192.168.100.71:1234/v1/chat/completions",
+        "url": "http://192.168.50.74:1234/v1/chat/completions",
 
         "model": "google/gemma-4-e4b",
         "num_ctx": 16192,

@@ -256,7 +256,7 @@ class OmnissiahAgent:
             status = e.response.status_code if e.response is not None else "?"
             if status == 404:
                 return "[ERROR] LM Studio returned 404. No model is currently loaded — open LM Studio and load a model first."
-            return f"[ERROR] LM Studio HTTP {status}: {e}"
+            return f"     [ERROR] LM Studio HTTP {status}: {e}"
         except (KeyError, IndexError, ValueError) as e:
             return f"[ERROR] Unexpected LM Studio response shape: {e}"
         except Exception as e:

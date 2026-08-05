@@ -121,7 +121,7 @@ TEASER: [One sentence. The hook shown on the scene card before the user clicks.
          Make it vivid and specific.]
 
 CHRONICLE:
-[8-10 substantial paragraphs, each at least 150 words. Weave the fragments into
+[8-10 substantial paragraphs, each at least 250 words. Weave the fragments into
 one rich, immersive, flowing account. Begin at the moment of action and carry
 through to the resolution. Describe the combatants, the environment, the stakes,
 the turning points, and the aftermath as present in the fragments.
