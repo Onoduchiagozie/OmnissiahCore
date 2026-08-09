@@ -1,0 +1,1124 @@
+{
+  "books": [
+    {
+      "filename": "A Thousand Sons - Graham McNeill.mobi",
+      "book_order": 1,
+      "title": "A Thousand Sons   Graham McNeill"
+    },
+    {
+      "filename": "Age of Darkness - Christian Dunn.mobi",
+      "book_order": 2,
+      "title": "Age of Darkness   Christian Dunn"
+    },
+    {
+      "filename": "Angel Exterminatus - Graham McNeill.mobi",
+      "book_order": 3,
+      "title": "Angel Exterminatus   Graham McNeill"
+    },
+    {
+      "filename": "Angels of Caliban - Gav Thorpe.mobi",
+      "book_order": 4,
+      "title": "Angels of Caliban   Gav Thorpe"
+    },
+    {
+      "filename": "Battle for the Abyss - Ben Counter.mobi",
+      "book_order": 5,
+      "title": "Battle for the Abyss   Ben Counter"
+    },
+    {
+      "filename": "Betrayer - Aaron Dembski-Bowden.mobi",
+      "book_order": 6,
+      "title": "Betrayer   Aaron Dembski Bowden"
+    },
+    {
+      "filename": "Born of Flame (The Horus Heresy, Book 50) by Nick Kyme.mobi",
+      "book_order": 7,
+      "title": "Born of Flame"
+    },
+    {
+      "filename": "Corax - Gav Thorpe.mobi",
+      "book_order": 8,
+      "title": "Corax   Gav Thorpe"
+    },
+    {
+      "filename": "Deathfire - Nick Kyme.mobi",
+      "book_order": 9,
+      "title": "Deathfire   Nick Kyme"
+    },
+    {
+      "filename": "Deliverance Lost - Gav Thorpe.mobi",
+      "book_order": 10,
+      "title": "Deliverance Lost   Gav Thorpe"
+    },
+    {
+      "filename": "Descent of Angels - Mitchel Scanlon.mobi",
+      "book_order": 11,
+      "title": "Descent of Angels   Mitchel Scanlon"
+    },
+    {
+      "filename": "Eye of Terra - Various.mobi",
+      "book_order": 12,
+      "title": "Eye of Terra   Various"
+    },
+    {
+      "filename": "Fallen Angels - Mike Lee.mobi",
+      "book_order": 13,
+      "title": "Fallen Angels   Mike Lee"
+    },
+    {
+      "filename": "False Gods - Graham McNeill.mobi",
+      "book_order": 14,
+      "title": "False Gods   Graham McNeill"
+    },
+    {
+      "filename": "Fear to Tread - James Swallow.mobi",
+      "book_order": 15,
+      "title": "Fear to Tread   James Swallow"
+    },
+    {
+      "filename": "Fulgrim - Graham McNeill.mobi",
+      "book_order": 16,
+      "title": "Fulgrim   Graham McNeill"
+    },
+    {
+      "filename": "Galaxy in Flames - Ben Counter.mobi",
+      "book_order": 17,
+      "title": "Galaxy in Flames   Ben Counter"
+    },
+    {
+      "filename": "Garro - James Swallow.mobi",
+      "book_order": 18,
+      "title": "Garro   James Swallow"
+    },
+    {
+      "filename": "Horus Heresy 52_ Heralds of the Siege.mobi",
+      "book_order": 19,
+      "title": "Horus Heresy 52  Heralds of the Siege"
+    },
+    {
+      "filename": "Horus Rising - Dan Abnett.mobi",
+      "book_order": 20,
+      "title": "Horus Rising   Dan Abnett"
+    },
+    {
+      "filename": "Know No Fear - Dan Abnett.mobi",
+      "book_order": 21,
+      "title": "Know No Fear   Dan Abnett"
+    },
+    {
+      "filename": "Legacies of Betrayal_ Let the G - Various.mobi",
+      "book_order": 22,
+      "title": "Legacies of Betrayal  Let the G   Various"
+    },
+    {
+      "filename": "Legion - Dan Abnett.mobi",
+      "book_order": 23,
+      "title": "Legion   Dan Abnett"
+    },
+    {
+      "filename": "Mark of Calth - Edited by Laurie Goulding.mobi",
+      "book_order": 24,
+      "title": "Mark of Calth   Edited"
+    },
+    {
+      "filename": "Mechanicum - Graham McNeill.mobi",
+      "book_order": 25,
+      "title": "Mechanicum   Graham McNeill"
+    },
+    {
+      "filename": "Nemesis - James Swallow.mobi",
+      "book_order": 26,
+      "title": "Nemesis   James Swallow"
+    },
+    {
+      "filename": "Old Earth - Nick Kyme.mobi",
+      "book_order": 27,
+      "title": "Old Earth   Nick Kyme"
+    },
+    {
+      "filename": "Pharos - Guy Haley.mobi",
+      "book_order": 28,
+      "title": "Pharos   Guy Haley"
+    },
+    {
+      "filename": "Praetorian of Dorn - John French.mobi",
+      "book_order": 29,
+      "title": "Praetorian of Dorn   John French"
+    },
+    {
+      "filename": "Prospero Burns - Dan Abnett.mobi",
+      "book_order": 30,
+      "title": "Prospero Burns   Dan Abnett"
+    },
+    {
+      "filename": "Ruinstorm - David Annandale.mobi",
+      "book_order": 31,
+      "title": "Ruinstorm   David Annandale"
+    },
+    {
+      "filename": "Scars - Chris Wraight.mobi",
+      "book_order": 32,
+      "title": "Scars   Chris Wraight"
+    },
+    {
+      "filename": "Shadows of Treachery - Edited by Christian Dunn; Nick .mobi",
+      "book_order": 33,
+      "title": "Shadows of Treachery   Edited"
+    },
+    {
+      "filename": "Shattered Legions - Laurie Goulding.mobi",
+      "book_order": 34,
+      "title": "Shattered Legions   Laurie Goulding"
+    },
+    {
+      "filename": "Slaves to Darkness (The Horus Heresy, Book 51) by John French.mobi",
+      "book_order": 35,
+      "title": "Slaves to Darkness"
+    },
+    {
+      "filename": "Tales of Heresy - Nick Kyme;Lindsey Priestley.mobi",
+      "book_order": 36,
+      "title": "Tales of Heresy   Nick Kyme;Lindsey Priestley"
+    },
+    {
+      "filename": "Tallarn - John French.mobi",
+      "book_order": 37,
+      "title": "Tallarn   John French"
+    },
+    {
+      "filename": "The Burden of Loyalty - Various.mobi",
+      "book_order": 38,
+      "title": "The Burden of Loyalty   Various"
+    },
+    {
+      "filename": "The Buried Dagger by James Swallow.mobi",
+      "book_order": 39,
+      "title": "The Buried Dagger"
+    },
+    {
+      "filename": "The Crimson King - Graham McNeill.mobi",
+      "book_order": 40,
+      "title": "The Crimson King   Graham McNeill"
+    },
+    {
+      "filename": "The Damnation of Pythos - David Annandale.mobi",
+      "book_order": 41,
+      "title": "The Damnation of Pythos   David Annandale"
+    },
+    {
+      "filename": "The First Heretic - Aaron Dembski-Bowden.mobi",
+      "book_order": 42,
+      "title": "The First Heretic   Aaron Dembski Bowden"
+    },
+    {
+      "filename": "The Flight of the Eisenstein - James Swallow.mobi",
+      "book_order": 43,
+      "title": "The Flight of the Eisenstein   James Swallow"
+    },
+    {
+      "filename": "The Master of Mankind - Aaron Dembski-Bowden.mobi",
+      "book_order": 44,
+      "title": "The Master of Mankind   Aaron Dembski Bowden"
+    },
+    {
+      "filename": "The Outcast Dead - Graham McNeill.mobi",
+      "book_order": 45,
+      "title": "The Outcast Dead   Graham McNeill"
+    },
+    {
+      "filename": "The Path of Heaven - Chris Wraight.mobi",
+      "book_order": 46,
+      "title": "The Path of Heaven   Chris Wraight"
+    },
+    {
+      "filename": "The Primarchs - Christian Dunn.mobi",
+      "book_order": 47,
+      "title": "The Primarchs   Christian Dunn"
+    },
+    {
+      "filename": "The Silent War - Various.mobi",
+      "book_order": 48,
+      "title": "The Silent War   Various"
+    },
+    {
+      "filename": "The Unremembered Empire - Dan Abnett.mobi",
+      "book_order": 49,
+      "title": "The Unremembered Empire   Dan Abnett"
+    },
+    {
+      "filename": "Titandeath - Guy Haley.mobi",
+      "book_order": 50,
+      "title": "Titandeath   Guy Haley"
+    },
+    {
+      "filename": "Vengeful Spirit - Graham McNeill.mobi",
+      "book_order": 51,
+      "title": "Vengeful Spirit   Graham McNeill"
+    },
+    {
+      "filename": "Vulkan Lives - Nick Kyme.mobi",
+      "book_order": 52,
+      "title": "Vulkan Lives   Nick Kyme"
+    },
+    {
+      "filename": "War Without End - Various.mobi",
+      "book_order": 53,
+      "title": "War Without End   Various"
+    },
+    {
+      "filename": "Wolfsbane - Guy Haley.mobi",
+      "book_order": 54,
+      "title": "Wolfsbane   Guy Haley"
+    },
+    {
+      "filename": "00. John French - The Absolution of Swords (Horusian Wars Short Story).pdf",
+      "book_order": 55,
+      "title": "John French   The Absolution of Swords"
+    },
+    {
+      "filename": "01-02. Dan Abnett, Graham McNeill - The Lightning Tower & The Dark King (The Horus Heresy Short Story, 1-2).pdf",
+      "book_order": 56,
+      "title": "02. Dan Abnett, Graham McNeill   The Lightning Tower & The Dark King"
+    },
+    {
+      "filename": "01. Dan Abnett - Horus Rising (Horus Heresy, Book 1).pdf",
+      "book_order": 57,
+      "title": "Dan Abnett   Horus Rising"
+    },
+    {
+      "filename": "01. David Annandale - Roboute Guilliman. Lord of Ultramar (Horus Heresy, The Primarchs, Book 1).pdf",
+      "book_order": 58,
+      "title": "David Annandale   Roboute Guilliman. Lord of Ultramar"
+    },
+    {
+      "filename": "01. Nick Kyme - Promethean Sun. Into the fires of war (The Horus Heresy, Novella 1).pdf",
+      "book_order": 59,
+      "title": "Nick Kyme   Promethean Sun. Into the fires of war"
+    },
+    {
+      "filename": "02. Aaron Dembski-Bowden - Aurelian The Eye Stares Back (The Horus Heresy, Novella 2).pdf",
+      "book_order": 60,
+      "title": "Aaron Dembski Bowden   Aurelian The Eye Stares Back"
+    },
+    {
+      "filename": "02. Aaron Dembski-Bowden - The Talon of Horus (Black Legion, Book 1).pdf",
+      "book_order": 61,
+      "title": "Aaron Dembski Bowden   The Talon of Horus"
+    },
+    {
+      "filename": "02. Chris Wraight - Leman Russ. The Great Wolf (The Horus Heresy Primarchs, Book 2).pdf",
+      "book_order": 62,
+      "title": "Chris Wraight   Leman Russ. The Great Wolf"
+    },
+    {
+      "filename": "02. Graham McNeill - False Gods (The Horus Heresy, Book 2).pdf",
+      "book_order": 63,
+      "title": "Graham McNeill   False Gods"
+    },
+    {
+      "filename": "03. Ben Counter - Galaxy in Flames (The Horus Heresy, Book 3).pdf",
+      "book_order": 64,
+      "title": "Ben Counter   Galaxy in Flames"
+    },
+    {
+      "filename": "03. Chris Wraight - Brotherhood of the Storm. The Khan rides to war (The Horus Heresy, Novella 3).pdf",
+      "book_order": 65,
+      "title": "Chris Wraight   Brotherhood of the Storm. The Khan rides to war"
+    },
+    {
+      "filename": "03. Graham McNeill - Magnus the Red. Master of Prospero (The Horus Heresy Primarchs, Book 3) (2).pdf",
+      "book_order": 66,
+      "title": "Graham McNeill   Magnus the Red. Master of Prospero"
+    },
+    {
+      "filename": "03. John French - The Maiden of the Dream (Horusian Wars, Book 3).pdf",
+      "book_order": 67,
+      "title": "John French   The Maiden of the Dream"
+    },
+    {
+      "filename": "03. Rob Sanders - Army of One (The Horus Heresy Short Story, 3).pdf",
+      "book_order": 68,
+      "title": "Rob Sanders   Army of One"
+    },
+    {
+      "filename": "04. Graham McNeill - Kryptos The voice of Chaos (The Horus Heresy Short Story, 4).pdf",
+      "book_order": 69,
+      "title": "Graham McNeill   Kryptos The voice of Chaos"
+    },
+    {
+      "filename": "04. Graham McNeill - The Reflection Crack'd (The Horus Heresy, Novella 4).pdf",
+      "book_order": 70,
+      "title": "Graham McNeill   The Reflection Crack'd"
+    },
+    {
+      "filename": "04. Guy Haley - Perturabo. The Hammer of Olympia (The Horus Heresy Primarchs, Book 4).pdf",
+      "book_order": 71,
+      "title": "Guy Haley   Perturabo. The Hammer of Olympia"
+    },
+    {
+      "filename": "04. James Swallow - The Flight of the Eisenstein (The Horus Heresy, Book 4).pdf",
+      "book_order": 72,
+      "title": "James Swallow   The Flight of the Eisenstein"
+    },
+    {
+      "filename": "04. John French - The Purity of Ignorance (Horusian Wars, Book 4).pdf",
+      "book_order": 73,
+      "title": "John French   The Purity of Ignorance"
+    },
+    {
+      "filename": "05. Gav Thorpe - Lorgar. Bearer of the Word (The Horus Heresy Primarchs, Book 5).pdf",
+      "book_order": 74,
+      "title": "Gav Thorpe   Lorgar. Bearer of the Word"
+    },
+    {
+      "filename": "05. Graham McNeill - Fulgrim (The Horus Heresy, Book 5).pdf",
+      "book_order": 75,
+      "title": "Graham McNeill   Fulgrim"
+    },
+    {
+      "filename": "06. Gav Thorpe - The Lion (The Horus Heresy, Novella 6).pdf",
+      "book_order": 76,
+      "title": "Gav Thorpe   The Lion"
+    },
+    {
+      "filename": "06. James Swallow - Lost Sons (The Horus Heresy Short Story, 6).pdf",
+      "book_order": 77,
+      "title": "James Swallow   Lost Sons"
+    },
+    {
+      "filename": "06. John French - The Mistress Of Threads (Horusian Wars, Book 6).pdf",
+      "book_order": 78,
+      "title": "John French   The Mistress Of Threads"
+    },
+    {
+      "filename": "06. Josh Reynolds - Fulgrim. The Palatine Phoenix (The Horus Heresy Primarchs, Book 6).pdf",
+      "book_order": 79,
+      "title": "Josh Reynolds   Fulgrim. The Palatine Phoenix"
+    },
+    {
+      "filename": "06. Mitchel Scanlon - Descent of Angels (The Horus Heresy, Book 6).pdf",
+      "book_order": 80,
+      "title": "Mitchel Scanlon   Descent of Angels"
+    },
+    {
+      "filename": "07. Dan Abnett - Legion (The Horus Heresy, Book 7).pdf",
+      "book_order": 81,
+      "title": "Dan Abnett   Legion"
+    },
+    {
+      "filename": "07. David Guymer - Ferrus Manus. Gorgon of Medusa (The Horus Heresy Primarchs, Book 7).pdf",
+      "book_order": 82,
+      "title": "David Guymer   Ferrus Manus. Gorgon of Medusa"
+    },
+    {
+      "filename": "07. Graham McNeill - Death of a Silversmith (The Horus Heresy Short Story, 7).pdf",
+      "book_order": 83,
+      "title": "Graham McNeill   Death of a Silversmith"
+    },
+    {
+      "filename": "07. Rob Sanders - The Serpent Beneath (The Horus Heresy, Novella 7).pdf",
+      "book_order": 84,
+      "title": "Rob Sanders   The Serpent Beneath"
+    },
+    {
+      "filename": "08. Ben Counter - Battle for the Abyss (The Horus Heresy, Book 8).pdf",
+      "book_order": 85,
+      "title": "Ben Counter   Battle for the Abyss"
+    },
+    {
+      "filename": "08. Chris Wraight - Jaghatai Khan. Warhawk of Chogoris (The Horus Heresy Primarchs, Book 8).pdf",
+      "book_order": 86,
+      "title": "Chris Wraight   Jaghatai Khan. Warhawk of Chogoris"
+    },
+    {
+      "filename": "08. Gav Thorpe - Corax Soulforge. Victory is vengeance (The Horus Heresy, Novella 8).pdf",
+      "book_order": 87,
+      "title": "Gav Thorpe   Corax Soulforge. Victory is vengeance"
+    },
+    {
+      "filename": "08. Gav Thorpe - The Divine Word (The Horus Heresy Short Story, 8).pdf",
+      "book_order": 88,
+      "title": "Gav Thorpe   The Divine Word"
+    },
+    {
+      "filename": "09. David Annandale - Vulkan. Lord of Drakes (The Horus Heresy Primarchs, Book 9) (2).pdf",
+      "book_order": 89,
+      "title": "David Annandale   Vulkan. Lord of Drakes"
+    },
+    {
+      "filename": "09. Graham McNeill - Mechanicum (The Horus Heresy, Book 9).pdf",
+      "book_order": 90,
+      "title": "Graham McNeill   Mechanicum"
+    },
+    {
+      "filename": "09. Graham McNeill - The Kaban Project (The Horus Heresy Short Story, 9).pdf",
+      "book_order": 91,
+      "title": "Graham McNeill   The Kaban Project"
+    },
+    {
+      "filename": "09. Nick Kyme - Scorched Earth. From the ashes of Isstvan (The Horus Heresy, Novella, 9).pdf",
+      "book_order": 92,
+      "title": "Nick Kyme   Scorched Earth. From the ashes of Isstvan"
+    },
+    {
+      "filename": "10. John French - Tallarn Executioner. The battle begins (The Horus Heresy, Novella 10).pdf",
+      "book_order": 93,
+      "title": "John French   Tallarn Executioner. The battle begins"
+    },
+    {
+      "filename": "10. Nick Kyme - The Gates of Terra (The Horus Heresy Short Story, 10).pdf",
+      "book_order": 94,
+      "title": "Nick Kyme   The Gates of Terra"
+    },
+    {
+      "filename": "10. Nick Kyme, Lindsey Priestley - Tales of Heresy (The Horus Heresy, Book 10) [Anthology].pdf",
+      "book_order": 95,
+      "title": "Nick Kyme, Lindsey Priestley   Tales of Heresy"
+    },
+    {
+      "filename": "10. Various - Sons of the Emperor (The Horus Heresy Primarchs, Anthology 10).pdf",
+      "book_order": 96,
+      "title": "Various   Sons of the Emperor"
+    },
+    {
+      "filename": "11. Aaron Dembski-Bowden - Lord Of The Red Sands (The Horus Heresy Short Story, 11).pdf",
+      "book_order": 97,
+      "title": "Aaron Dembski Bowden   Lord Of The Red Sands"
+    },
+    {
+      "filename": "11. Aaron Dembski-Bowden - Prince of Crows (Horus Heresy, Novella 11).pdf",
+      "book_order": 98,
+      "title": "Aaron Dembski Bowden   Prince of Crows"
+    },
+    {
+      "filename": "11. Guy Haley - Corax. Lord of Shadows (The Horus Heresy Primarchs, Book 11) (2).pdf",
+      "book_order": 99,
+      "title": "Guy Haley   Corax. Lord of Shadows"
+    },
+    {
+      "filename": "11. Mike Lee - Fallen Angels (The Horus Heresy, Book 11).pdf",
+      "book_order": 100,
+      "title": "Mike Lee   Fallen Angels"
+    },
+    {
+      "filename": "12. Graham McNeill - A Thousand Sons (The Horus Heresy, Book 12).pdf",
+      "book_order": 101,
+      "title": "Graham McNeill   A Thousand Sons"
+    },
+    {
+      "filename": "12. Ian St Martin - Angron. Slave of Nuceria (The Horus Heresy Primarchs, Book 12).pdf",
+      "book_order": 102,
+      "title": "Ian St Martin   Angron. Slave of Nuceria"
+    },
+    {
+      "filename": "12. John French - Serpent (HH Weekender 2013) (The Horus Heresy Short Story, 12).pdf",
+      "book_order": 103,
+      "title": "John French   Serpent"
+    },
+    {
+      "filename": "12. John French - The Crimson Fist (The Horus Heresy, Novella 12).pdf",
+      "book_order": 104,
+      "title": "John French   The Crimson Fist"
+    },
+    {
+      "filename": "13. Graham McNeill - Luna Mendax (The Horus Heresy Short Story, 13).pdf",
+      "book_order": 105,
+      "title": "Graham McNeill   Luna Mendax"
+    },
+    {
+      "filename": "13. James Swallow - Nemesis (The Horus Heresy, Book 13).pdf",
+      "book_order": 106,
+      "title": "James Swallow   Nemesis"
+    },
+    {
+      "filename": "13. Various - Scions of the Emperor (The Horus Heresy Primarchs, Anthology 13).pdf",
+      "book_order": 107,
+      "title": "Various   Scions of the Emperor"
+    },
+    {
+      "filename": "14. Aaron Dembski-Bowden - The First Heretic (The Horus Heresy, Book 14).pdf",
+      "book_order": 108,
+      "title": "Aaron Dembski Bowden   The First Heretic"
+    },
+    {
+      "filename": "14. Gav Thorpe - Ravenlord. Freedom bought with blood (The Horus Heresy, Novella 14).pdf",
+      "book_order": 109,
+      "title": "Gav Thorpe   Ravenlord. Freedom bought with blood"
+    },
+    {
+      "filename": "14. Guy Haley - Konrad Curze. The Night Haunter (The Horus Heresy Primarchs, Book 14).pdf",
+      "book_order": 110,
+      "title": "Guy Haley   Konrad Curze. The Night Haunter"
+    },
+    {
+      "filename": "14. John French - Riven (The Horus Heresy Short Story, 14).pdf",
+      "book_order": 111,
+      "title": "John French   Riven"
+    },
+    {
+      "filename": "15. Chris Wraight - Bjorn Lone Wolf - (The Horus Heresy Short Story, 15).pdf",
+      "book_order": 112,
+      "title": "Chris Wraight   Bjorn Lone Wolf"
+    },
+    {
+      "filename": "15. Dan Abnett - Prospero Burns (The Horus Heresy, Book 15).pdf",
+      "book_order": 113,
+      "title": "Dan Abnett   Prospero Burns"
+    },
+    {
+      "filename": "15. David Guymer - Lion El'Jonson. Lord of the First (The Horus Heresy Primarchs, Book 15).pdf",
+      "book_order": 114,
+      "title": "David Guymer   Lion El'Jonson. Lord of the First"
+    },
+    {
+      "filename": "15. Graham McNeill - The Seventh Serpent. Cut off the head and the body dies (The Horus Heresy, Novella 15).pdf",
+      "book_order": 115,
+      "title": "Graham McNeill   The Seventh Serpent. Cut off the head and the body dies"
+    },
+    {
+      "filename": "16. Christan Dunn - Age of Darkness (The Horus Heresy, Book 16) [Anthology].pdf",
+      "book_order": 116,
+      "title": "Christan Dunn   Age of Darkness"
+    },
+    {
+      "filename": "16. Graham McNeill - The Wolf of Ash and Fire (The Horus Heresy Short Story, 16).pdf",
+      "book_order": 117,
+      "title": "Graham McNeill   The Wolf of Ash and Fire"
+    },
+    {
+      "filename": "16. John French - Tallarn Ironclad. The Darkness Beneath (The Horus Heresy, Novella 16).pdf",
+      "book_order": 118,
+      "title": "John French   Tallarn Ironclad. The Darkness Beneath"
+    },
+    {
+      "filename": "17. Aaron Dembski-Bowden - Heart of the Conqueror (The Horus Heresy Short Story, 17).pdf",
+      "book_order": 119,
+      "title": "Aaron Dembski Bowden   Heart of the Conqueror"
+    },
+    {
+      "filename": "17. Graham McNeill - The Outcast Dead (The Horus Heresy, Book 17).pdf",
+      "book_order": 120,
+      "title": "Graham McNeill   The Outcast Dead"
+    },
+    {
+      "filename": "17. Rob Sanders - Cybernetica. Mars must be purged (The Horus Heresy, Novella 17).pdf",
+      "book_order": 121,
+      "title": "Rob Sanders   Cybernetica. Mars must be purged"
+    },
+    {
+      "filename": "18. Chris Wraight - Wolf King. The Lord of Winter and War (The Horus Heresy, Novella 18).pdf",
+      "book_order": 122,
+      "title": "Chris Wraight   Wolf King. The Lord of Winter and War"
+    },
+    {
+      "filename": "18. Gav Thorpe - Deliverance Lost (The Horus Heresy, Book 18).pdf",
+      "book_order": 123,
+      "title": "Gav Thorpe   Deliverance Lost"
+    },
+    {
+      "filename": "18. John French - Child of Night (The Horus Heresy Short Story, 18) (1).pdf",
+      "book_order": 124,
+      "title": "John French   Child of Night"
+    },
+    {
+      "filename": "19. Dan Abnett - Know No Fear (Horus Heresy, Book 19).pdf",
+      "book_order": 125,
+      "title": "Dan Abnett   Know No Fear"
+    },
+    {
+      "filename": "19. Gav Thorpe - The Shadowmasters (The Horus Heresy Short Story, 19).pdf",
+      "book_order": 126,
+      "title": "Gav Thorpe   The Shadowmasters"
+    },
+    {
+      "filename": "19. Rob Sanders - The Honoured. Betrayal at Calth (The Horus Heresy, Novella 19).pdf",
+      "book_order": 127,
+      "title": "Rob Sanders   The Honoured. Betrayal at Calth"
+    },
+    {
+      "filename": "20. Christian Dunn - The Primarchs (The Horus Heresy, Book 20) [Anthology].pdf",
+      "book_order": 128,
+      "title": "Christian Dunn   The Primarchs"
+    },
+    {
+      "filename": "20. David Annandale - The Unburdened. Betrayal at Calth (The Horus Heresy, Novella 20).pdf",
+      "book_order": 129,
+      "title": "David Annandale   The Unburdened. Betrayal at Calth"
+    },
+    {
+      "filename": "20. Graham McNeill - The Devine Adoratrice (The Horus Heresy Short Story, 20).pdf",
+      "book_order": 130,
+      "title": "Graham McNeill   The Devine Adoratrice"
+    },
+    {
+      "filename": "21. James Swallow - Fear to Tread (The Horus Heresy, Book 21).pdf",
+      "book_order": 131,
+      "title": "James Swallow   Fear to Tread"
+    },
+    {
+      "filename": "21. James Swallow - Garro Vow of Faith. The Emperor Protects (The Horus Heresy, Novella 21).pdf",
+      "book_order": 132,
+      "title": "James Swallow   Garro Vow of Faith. The Emperor Protects"
+    },
+    {
+      "filename": "22. Christian Dunn - Shadows of Treachery (The Horus Heresy, Book 22) [Anthology].pdf",
+      "book_order": 133,
+      "title": "Christian Dunn   Shadows of Treachery"
+    },
+    {
+      "filename": "22. Nick Kyme - Sons of the Forge. Unscarred, Unbroken (The Horus Heresy, Novella 22).pdf",
+      "book_order": 134,
+      "title": "Nick Kyme   Sons of the Forge. Unscarred, Unbroken"
+    },
+    {
+      "filename": "23. David Guymer - Dreadwing (The Horus Heresy, Novella 23).pdf",
+      "book_order": 135,
+      "title": "David Guymer   Dreadwing"
+    },
+    {
+      "filename": "23. Graham McNeill - Angel Exterminatus (The Horus Heresy, Book 23).pdf",
+      "book_order": 136,
+      "title": "Graham McNeill   Angel Exterminatus"
+    },
+    {
+      "filename": "23. Guy Haley - The Final Compliance of Sixty-Three Fourteen (The Horus Heresy Short Story, 23).pdf",
+      "book_order": 137,
+      "title": "Guy Haley   The Final Compliance of Sixty Three Fourteen"
+    },
+    {
+      "filename": "24. Aaron Dembski Bowden - Betrayer (The Horus Heresy, Book 24).pdf",
+      "book_order": 138,
+      "title": "Aaron Dembski Bowden   Betrayer"
+    },
+    {
+      "filename": "24. David Annandale - Spear of Ultramar (The Horus Heresy, Novella 24).pdf",
+      "book_order": 139,
+      "title": "David Annandale   Spear of Ultramar"
+    },
+    {
+      "filename": "24. Matthew Farrer - Vorax (The Horus Heresy Short Story, 24).pdf",
+      "book_order": 140,
+      "title": "Matthew Farrer   Vorax"
+    },
+    {
+      "filename": "25. Laurie Goulding - Mark of Calth (The Horus Heresy, Book 25) [Anthology].pdf",
+      "book_order": 141,
+      "title": "Laurie Goulding   Mark of Calth"
+    },
+    {
+      "filename": "26. Nick Kyme - Vulkan Lives (Horus Heresy, Book 26).pdf",
+      "book_order": 142,
+      "title": "Nick Kyme   Vulkan Lives"
+    },
+    {
+      "filename": "27. Dan Abnett - The Unremembered Empire (The Horus Heresy, Book 27).pdf",
+      "book_order": 143,
+      "title": "Dan Abnett   The Unremembered Empire"
+    },
+    {
+      "filename": "28. Chris Wraight - Scars (The Horus Heresy, Book 28).pdf",
+      "book_order": 144,
+      "title": "Chris Wraight   Scars"
+    },
+    {
+      "filename": "29. Graham McNeill - Vengeful Spirit (The Horus Heresy, Book 29).pdf",
+      "book_order": 145,
+      "title": "Graham McNeill   Vengeful Spirit"
+    },
+    {
+      "filename": "30. David Annandale - The Damnation of Pythos (Horus Heresy, Book 30).pdf",
+      "book_order": 146,
+      "title": "David Annandale   The Damnation of Pythos"
+    },
+    {
+      "filename": "30. Guy Haley - A Safe and Shadowed Place (The Horus Heresy Short Story, 30).pdf",
+      "book_order": 147,
+      "title": "Guy Haley   A Safe and Shadowed Place"
+    },
+    {
+      "filename": "31. James Swallow - Gunsight (The Horus Heresy Short Story, 31).pdf",
+      "book_order": 148,
+      "title": "James Swallow   Gunsight"
+    },
+    {
+      "filename": "31. Uncredited - Legacies of Betrayal (The Horus Heresy, Book 31) [Anthology].pdf",
+      "book_order": 149,
+      "title": "Uncredited   Legacies of Betrayal"
+    },
+    {
+      "filename": "32. Nick Kyme - Deathfire (The Horus Heresy, Book 32).pdf",
+      "book_order": 150,
+      "title": "Nick Kyme   Deathfire"
+    },
+    {
+      "filename": "33. Graham McNeill - Wolf Mother (The Horus Heresy Short Story, 33).pdf",
+      "book_order": 151,
+      "title": "Graham McNeill   Wolf Mother"
+    },
+    {
+      "filename": "33. Uncredited - War Without End (The Horus Heresy, Book 33) [Anthology].pdf",
+      "book_order": 152,
+      "title": "Uncredited   War Without End"
+    },
+    {
+      "filename": "34. Guy Haley - Pharos (The Horus Heresy, Book 34).pdf",
+      "book_order": 153,
+      "title": "Guy Haley   Pharos"
+    },
+    {
+      "filename": "35. Laurie Goulding - Eye of Terra (The Horus Heresy, Book 35) [Anthology].pdf",
+      "book_order": 154,
+      "title": "Laurie Goulding   Eye of Terra"
+    },
+    {
+      "filename": "35. Nick Kyme - Chirurgeon (The Horus Heresy Short Story, 35).pdf",
+      "book_order": 155,
+      "title": "Nick Kyme   Chirurgeon"
+    },
+    {
+      "filename": "36. Chris Wraight - The Path of Heaven (The Horus Heresy, Book 36).pdf",
+      "book_order": 156,
+      "title": "Chris Wraight   The Path of Heaven"
+    },
+    {
+      "filename": "36. John French - Tallarn Witness (The Horus Heresy Short Story, 36).pdf",
+      "book_order": 157,
+      "title": "John French   Tallarn Witness"
+    },
+    {
+      "filename": "37. Laurie Goulding - The Silent War (The Horus Heresy, Book 37) [Anthology].pdf",
+      "book_order": 158,
+      "title": "Laurie Goulding   The Silent War"
+    },
+    {
+      "filename": "37. Rob Sanders - Ironfire (The Horus Heresy Short Story, 37).pdf",
+      "book_order": 159,
+      "title": "Rob Sanders   Ironfire"
+    },
+    {
+      "filename": "38. Gav Thorpe - Angels of Caliban (The Horus Heresy, Book 38).pdf",
+      "book_order": 160,
+      "title": "Gav Thorpe   Angels of Caliban"
+    },
+    {
+      "filename": "38. Rob Sanders - Hands of the Emperor (The Horus Heresy Short Story, 38).pdf",
+      "book_order": 161,
+      "title": "Rob Sanders   Hands of the Emperor"
+    },
+    {
+      "filename": "39. John French - Praetorian of Dorn (The Horus Heresy, Book 39).pdf",
+      "book_order": 162,
+      "title": "John French   Praetorian of Dorn"
+    },
+    {
+      "filename": "40. Gav Thorpe - Corax (The Horus Heresy, Book 40).pdf",
+      "book_order": 163,
+      "title": "Gav Thorpe   Corax"
+    },
+    {
+      "filename": "41. Aaron Dembski-Bowden - The Master of Mankind (The Horus Heresy, Book 41).pdf",
+      "book_order": 164,
+      "title": "Aaron Dembski Bowden   The Master of Mankind"
+    },
+    {
+      "filename": "42. James Swallow - Garro Weapon of Fate (The Horus Heresy, Book 42).pdf",
+      "book_order": 165,
+      "title": "James Swallow   Garro Weapon of Fate"
+    },
+    {
+      "filename": "43. Laurie Goulding - Shattered Legions (The Horus Heresy, Book 43).pdf",
+      "book_order": 166,
+      "title": "Laurie Goulding   Shattered Legions"
+    },
+    {
+      "filename": "44, 45. James Swallow - Ghosts Speak Not and Patience (The Horus Heresy Short Story, 44, 45).pdf",
+      "book_order": 167,
+      "title": ", 45. James Swallow   Ghosts Speak Not and Patience"
+    },
+    {
+      "filename": "44. Graham McNeill - The Crimson King (The Horus Heresy, Book 44).pdf",
+      "book_order": 168,
+      "title": "Graham McNeill   The Crimson King"
+    },
+    {
+      "filename": "46. David Annandale - Ruinstorm (The Horus Heresy, Book 46).pdf",
+      "book_order": 169,
+      "title": "David Annandale   Ruinstorm"
+    },
+    {
+      "filename": "47. John French - Tallarn Siren (The Horus Heresy Short Story, 47).pdf",
+      "book_order": 170,
+      "title": "John French   Tallarn Siren"
+    },
+    {
+      "filename": "47. Nick Kyme - Old Earth (Horus Heresy, Book 47).pdf",
+      "book_order": 171,
+      "title": "Nick Kyme   Old Earth"
+    },
+    {
+      "filename": "48. Chris Wraight - Blackshield (The Horus Heresy Short Story, 48).pdf",
+      "book_order": 172,
+      "title": "Chris Wraight   Blackshield"
+    },
+    {
+      "filename": "48. Laurie Goulding - The Burden of Loyalty (The Horus Heresy, Book 48).pdf",
+      "book_order": 173,
+      "title": "Laurie Goulding   The Burden of Loyalty"
+    },
+    {
+      "filename": "49. Guy Haley - Wolfsbane (The Horus Heresy, Book 49).pdf",
+      "book_order": 174,
+      "title": "Guy Haley   Wolfsbane"
+    },
+    {
+      "filename": "50. Nick Kyme - Born of Flame (The Horus Heresy, Book 50).pdf",
+      "book_order": 175,
+      "title": "Nick Kyme   Born of Flame"
+    },
+    {
+      "filename": "51. Aaron Dembski-Bowden - Into Exile (The Horus Heresy Short Story, 51).pdf",
+      "book_order": 176,
+      "title": "Aaron Dembski Bowden   Into Exile"
+    },
+    {
+      "filename": "51. John French - Slaves to Darkness (The Horus Heresy, Book 51).pdf",
+      "book_order": 177,
+      "title": "John French   Slaves to Darkness"
+    },
+    {
+      "filename": "52. Gav Thorpe - The Grey Raven (The Horus Heresy Short Story, 52).pdf",
+      "book_order": 178,
+      "title": "Gav Thorpe   The Grey Raven"
+    },
+    {
+      "filename": "52. Nick Kyme, Laurie Goulding - Heralds of the Siege (Horus Heresy, Book 52).pdf",
+      "book_order": 179,
+      "title": "Nick Kyme, Laurie Goulding   Heralds of the Siege"
+    },
+    {
+      "filename": "53. Guy Haley - The Painted Count (The Horus Heresy Short Story, 53).pdf",
+      "book_order": 180,
+      "title": "Guy Haley   The Painted Count"
+    },
+    {
+      "filename": "53. Guy Haley - Titandeath (The Horus Heresy, Book 53).pdf",
+      "book_order": 181,
+      "title": "Guy Haley   Titandeath"
+    },
+    {
+      "filename": "54. James Swallow - Exocytosis (The Horus Heresy Short Story, 54).pdf",
+      "book_order": 182,
+      "title": "James Swallow   Exocytosis"
+    },
+    {
+      "filename": "54. James Swallow - The Buried Dagger (The Horus Heresy, Book 54).pdf",
+      "book_order": 183,
+      "title": "James Swallow   The Buried Dagger"
+    },
+    {
+      "filename": "55. Chris Wraight - The Last Son of Prospero (The Horus Heresy Short Story, 55).pdf",
+      "book_order": 184,
+      "title": "Chris Wraight   The Last Son of Prospero"
+    },
+    {
+      "filename": "56. John French - Ordo Sinister (The Horus Heresy Short Story, 56).pdf",
+      "book_order": 185,
+      "title": "John French   Ordo Sinister"
+    },
+    {
+      "filename": "57. Rob Sanders - The Ember Wolves (The Horus Heresy Short Story, 57).pdf",
+      "book_order": 186,
+      "title": "Rob Sanders   The Ember Wolves"
+    },
+    {
+      "filename": "59. Chris Wraight - Restorer (The Horus Heresy Short Story, 59).pdf",
+      "book_order": 187,
+      "title": "Chris Wraight   Restorer"
+    },
+    {
+      "filename": "62. Guy Haley - Duty Waits (The Horus Heresy Short Story, 62).pdf",
+      "book_order": 188,
+      "title": "Guy Haley   Duty Waits"
+    },
+    {
+      "filename": "63. Chris Wraight - Magisterium (The Horus Heresy Short Story, 63).pdf",
+      "book_order": 189,
+      "title": "Chris Wraight   Magisterium"
+    },
+    {
+      "filename": "64. John French - Now Peals Midnight (The Horus Heresy Short Story, 64).pdf",
+      "book_order": 190,
+      "title": "John French   Now Peals Midnight"
+    },
+    {
+      "filename": "65. Nick Kyme - Dreams of Unity (The Horus Heresy Short Story, 65).pdf",
+      "book_order": 191,
+      "title": "Nick Kyme   Dreams of Unity"
+    },
+    {
+      "filename": "66. Gav Thorpe - The Board is Set (The Horus Heresy Short Story, 66).pdf",
+      "book_order": 192,
+      "title": "Gav Thorpe   The Board is Set"
+    },
+    {
+      "filename": "Aaron Dembski-Bowden - Bringer of Sorrow (The Horus Heresy Short Story).pdf",
+      "book_order": 193,
+      "title": "Aaron Dembski Bowden   Bringer of Sorrow"
+    },
+    {
+      "filename": "Aaron Dembski-Bowden - The Abyssal Edge (The Horus Heresy Primarchs, Short Story).pdf",
+      "book_order": 194,
+      "title": "Aaron Dembski Bowden   The Abyssal Edge"
+    },
+    {
+      "filename": "Alan Merret - The Horus Rebellion.pdf",
+      "book_order": 195,
+      "title": "Alan Merret   The Horus Rebellion"
+    },
+    {
+      "filename": "Andy Smillie - Sins of the Father (The Horus Heresy Short Story).pdf",
+      "book_order": 196,
+      "title": "Andy Smillie   Sins of the Father"
+    },
+    {
+      "filename": "C. Z. Dunn - The Watcher (The Horus Heresy Short Story).pdf",
+      "book_order": 197,
+      "title": "C. Z. Dunn   The Watcher"
+    },
+    {
+      "filename": "Chris Wraight - Child of Chaos (The Horus Heresy Short Story) (1).pdf",
+      "book_order": 198,
+      "title": "Chris Wraight   Child of Chaos"
+    },
+    {
+      "filename": "Chris Wraight - Child of Chaos (The Horus Heresy Short Story).pdf",
+      "book_order": 199,
+      "title": "Chris Wraight   Child of Chaos"
+    },
+    {
+      "filename": "Chris Wraight - Two Metaphysical Blades (The Horus Heresy Short Story).pdf",
+      "book_order": 200,
+      "title": "Chris Wraight   Two Metaphysical Blades"
+    },
+    {
+      "filename": "Chris Wraight - Valdor - Birth of the Imperium (Horus Heresy Characters).pdf",
+      "book_order": 201,
+      "title": "Chris Wraight   Valdor   Birth of the Imperium"
+    },
+    {
+      "filename": "Dan Abnett, Gav Thorpe, Chris Wraight - Meduson - The Shattered Legions Rise (The Horus Heresy Anthology - The Ultimate Edition).pdf",
+      "book_order": 202,
+      "title": "Dan Abnett, Gav Thorpe, Chris Wraight   Meduson   The Shattered Legions Rise"
+    },
+    {
+      "filename": "David Annandale - Abyssal (The Horus Heresy Short Story).pdf",
+      "book_order": 203,
+      "title": "David Annandale   Abyssal"
+    },
+    {
+      "filename": "David Annandale - Prologue To Nikaea (The Horus Heresy Short Story).pdf",
+      "book_order": 204,
+      "title": "David Annandale   Prologue To Nikaea"
+    },
+    {
+      "filename": "David Annandale - The Atonement of Fire (The Horus Heresy Primarchs, Short Story).pdf",
+      "book_order": 205,
+      "title": "David Annandale   The Atonement of Fire"
+    },
+    {
+      "filename": "David Guymer - Canticle (The Horus Heresy Primarchs, Short Story).pdf",
+      "book_order": 206,
+      "title": "David Guymer   Canticle"
+    },
+    {
+      "filename": "Gav Thorpe - Shadow of the Past (The Horus Heresy Primarchs, Short Story).pdf",
+      "book_order": 207,
+      "title": "Gav Thorpe   Shadow of the Past"
+    },
+    {
+      "filename": "Gav Thorpe - The Face of Treachery (The Horus Heresy).pdf",
+      "book_order": 208,
+      "title": "Gav Thorpe   The Face of Treachery"
+    },
+    {
+      "filename": "Graham McNeill - Old Wounds, New Scars (The Horus Heresy Short Story).pdf",
+      "book_order": 209,
+      "title": "Graham McNeill   Old Wounds, New Scars"
+    },
+    {
+      "filename": "Graham McNeill - The Ancient Awaits (The Horus Heresy Primarchs, Short Story).pdf",
+      "book_order": 210,
+      "title": "Graham McNeill   The Ancient Awaits"
+    },
+    {
+      "filename": "Guy Haley - The Emperor's Architect (The Horus Heresy Primarchs, Short Story) (2).pdf",
+      "book_order": 211,
+      "title": "Guy Haley   The Emperor's Architect"
+    },
+    {
+      "filename": "Guy Haley - The Shards of Erebus (The Horus Heresy Short Story).pdf",
+      "book_order": 212,
+      "title": "Guy Haley   The Shards of Erebus"
+    },
+    {
+      "filename": "Guy Haley- Grandfather's Gift (The Horus Heresy Primarchs, Short Story).pdf",
+      "book_order": 213,
+      "title": "Guy Haley  Grandfather's Gift"
+    },
+    {
+      "filename": "Ian St Martin - Ghost of Nuceria (The Horus Heresy Primarchs, Short Story).pdf",
+      "book_order": 214,
+      "title": "Ian St Martin   Ghost of Nuceria"
+    },
+    {
+      "filename": "James Swallow - Lantern's Light (The Horus Heresy Short Story).pdf",
+      "book_order": 215,
+      "title": "James Swallow   Lantern's Light"
+    },
+    {
+      "filename": "John French - Templar (The Horus Heresy Short Story).pdf",
+      "book_order": 216,
+      "title": "John French   Templar"
+    },
+    {
+      "filename": "John French - The Son of Sorrows (Horusian Wars).pdf",
+      "book_order": 217,
+      "title": "John French   The Son of Sorrows"
+    },
+    {
+      "filename": "L. J. Goulding - The Last Council (The Horus Heresy Short Story).pdf",
+      "book_order": 218,
+      "title": "L. J. Goulding   The Last Council"
+    },
+    {
+      "filename": "Laurie Goulding - The Imperial Truth (The Horus Heresy Anthology).pdf",
+      "book_order": 219,
+      "title": "Laurie Goulding   The Imperial Truth"
+    },
+    {
+      "filename": "Rob Sanders - Distant Echoes of Old Night (The Horus Heresy Short Story).pdf",
+      "book_order": 220,
+      "title": "Rob Sanders   Distant Echoes of Old Night"
+    },
+    {
+      "filename": "Various - Angron (After Desh'ea; Lord of the Red Sands; Butcher's Nails) (The Horus Heresy Anthology).pdf",
+      "book_order": 221,
+      "title": "Various   Angron"
+    },
+    {
+      "filename": "Various - Death and Defiance - The Traitor's Gambit (The Horus Heresy Anthology).pdf",
+      "book_order": 222,
+      "title": "Various   Death and Defiance   The Traitor's Gambit"
+    },
+    {
+      "filename": "Various - Sedition's Gate (No Forgiveness; No Respite) (The Horus Heresy Anthology).pdf",
+      "book_order": 223,
+      "title": "Various   Sedition's Gate"
+    },
+    {
+      "filename": "William King - The Emperor and Horus.pdf",
+      "book_order": 224,
+      "title": "William King   The Emperor and Horus"
+    }
+  ]
+}
