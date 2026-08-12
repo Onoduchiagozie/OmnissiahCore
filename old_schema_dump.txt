@@ -1,0 +1,124 @@
+================================================================================
+  SCHEMA DUMP — battle_scenes.db
+================================================================================
+
+--------------------------------------------------------------------------------
+  TABLE: books
+--------------------------------------------------------------------------------
+  COLUMNS:
+    book_id                   TEXT             PRIMARY KEY
+    title                     TEXT             NOT NULL
+    source_raw                TEXT             NOT NULL
+    chunk_count               INTEGER          DEFAULT 0
+
+  ROW COUNT: 1,964
+
+  SAMPLE ROW:
+    book_id              = 'the_alien_beast_within'
+    title                = 'The Alien Beast Within'
+    source_raw           = '0.5 Ian Watson - The Alien Beast Within (Inquisition War, Short Story).txt'
+    chunk_count          = 47
+
+  INDEXES:
+    sqlite_autoindex_books_2  (unique=True)
+    sqlite_autoindex_books_1  (unique=True)
+
+--------------------------------------------------------------------------------
+  TABLE: build_progress
+--------------------------------------------------------------------------------
+  COLUMNS:
+    source_raw                TEXT             PRIMARY KEY
+    book_id                   TEXT            
+    chunk_count               INTEGER         
+    scenes_found              INTEGER          DEFAULT 0
+    top_score                 REAL             DEFAULT 0.0
+    phase1_done               INTEGER          DEFAULT 0
+    phase2_done               INTEGER          DEFAULT 0
+    skipped                   INTEGER          DEFAULT 0
+    skip_reason               TEXT            
+    processed_at              TEXT            
+
+  ROW COUNT: 2,350
+
+  SAMPLE ROW:
+    source_raw           = '0.5 Ian Watson - The Alien Beast Within (Inquisition War, Short Story).txt'
+    book_id              = 'the_alien_beast_within'
+    chunk_count          = 47
+    scenes_found         = 2
+    top_score            = 0.5494586542061594
+    phase1_done          = 1
+    phase2_done          = 1
+    skipped              = 0
+    skip_reason          = None
+    processed_at         = '2026-07-02T17:45:35.598060'
+
+  INDEXES:
+    idx_progress_phase  (unique=False)
+    sqlite_autoindex_build_progress_1  (unique=True)
+
+--------------------------------------------------------------------------------
+  TABLE: scenes
+--------------------------------------------------------------------------------
+  COLUMNS:
+    scene_id                  INTEGER          PRIMARY KEY
+    book_id                   TEXT             NOT NULL
+    scene_name                TEXT            
+    teaser                    TEXT            
+    chronicle                 TEXT            
+    query_prompt              TEXT            
+    stitched_text             TEXT            
+    scene_type                TEXT             DEFAULT 'battle'
+    score                     REAL             NOT NULL
+    rank                      INTEGER          NOT NULL
+    scene_key                 TEXT            
+    woven_at                  TEXT            
+
+  ROW COUNT: 6,180
+
+  SAMPLE ROW:
+    scene_id             = 1
+    book_id              = 'mark_of_heresy'
+    scene_name           = 'The Clearing at Haldedorf'
+    teaser               = 'When a lone warrior confronts the savage brutality lurking in the woods, he must face not just one monster, but an entir... [142 chars total]'
+    chronicle            = 'The unsettling presence had arrived by nightfall, leaving behind only carnage—a broken hut door and the lifeless body of... [7028 chars total]'
+    query_prompt         = "Tell me more about Karl's fighting style and how his experience with beastmen has prepared him for such brutal, close-qu... [148 chars total]"
+    stitched_text        = 'It had come to the village first by night, breaking down a hut door, killing a man and making off with his body. An hour... [9812 chars total]'
+    scene_type           = 'confrontation'
+    score                = 0.7582470460396631
+    rank                 = 1
+    scene_key            = '02. James Wallis - Mark of Heresy.txt::rank1'
+    woven_at             = '2026-07-01 20:25:46'
+
+  INDEXES:
+    idx_scenes_key  (unique=False)
+    idx_scenes_type  (unique=False)
+    idx_scenes_rank  (unique=False)
+    idx_scenes_book  (unique=False)
+
+  FOREIGN KEYS:
+    scenes.book_id  ->  books.book_id
+
+--------------------------------------------------------------------------------
+  TABLE: scene_chunks
+--------------------------------------------------------------------------------
+  COLUMNS:
+    scene_id                  INTEGER         
+    chunk_id                  INTEGER          NOT NULL
+    chunk_rank                INTEGER          NOT NULL
+
+  ROW COUNT: 130,591
+
+  SAMPLE ROW:
+    scene_id             = 1
+    chunk_id             = 52982
+    chunk_rank           = 0
+
+  INDEXES:
+    idx_chunks_scene  (unique=False)
+
+  FOREIGN KEYS:
+    scene_chunks.scene_id  ->  scenes.scene_id
+
+================================================================================
+  4 table(s) total
+================================================================================

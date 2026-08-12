@@ -1,789 +1,490 @@
 """
-horus_stage2_scene_builder.py — Stage 2: Score, Cluster, Tag
-Memoria (TheForge) / Cogitator (OmnissiahCore) — Horus Heresy corpus
+horus_stage3_weave.py — Stage 3: Light-Edit Weave & DB Write (local LM Studio)
+Memoria (TheForge) / Cogitator (OmnissiahCore)
 
-Reads heresy_faiss.index + heresy_chapter_text.db (chapter-level corpus,
-NOT paragraph-level like the old WH40K pipeline), scores every chapter
-against THREE independent anchor pools (mass-battle, confrontation,
-primarch-speech), clusters adjacent high-scorers per book, tags each
-scene with primarch/legion names found in its text, and writes results
-into battle_scenes.db — using the SAME table names/columns as the
-existing production schema, with only ADDITIVE new columns.
+REWRITTEN around a chunked light-edit approach after discovering the
+single-shot "chronicle" generation was silently summarizing scenes —
+a 1,200-word passage with real dialogue collapsed to 4 sentences.
 
-NEW ADDITIVE COLUMNS on `scenes` (created if missing, never renamed):
-    characters          TEXT   — JSON array of primarch names found, e.g. '["Horus","Erebus"]'
-    legions             TEXT   — JSON array of legion names found, e.g. '["Sons of Horus"]'
-    has_primarch_speech INTEGER DEFAULT 0  — 1 if a primarch speaks in this scene,
-                                              regardless of scene_type
-
-scene_type values: 'battle', 'confrontation', 'speech' — a chapter can
-land in more than one pool's clusters (e.g. a battle scene that ALSO
-clears the speech pool becomes two related scene rows, both flagged
-has_primarch_speech=1). Character/legion search for anyone NOT a
-primarch/legion is intentionally NOT done here — that's handled by
-building an FTS5 virtual table over scene_name/teaser/chronicle
-separately (see setup_fts.py), so minor characters are still findable
-via free-text search without a maintained manifest.
-
-NO LLM calls in this phase — scene_name/teaser/chronicle/query_prompt
-are left NULL here, same as the old pipeline's Phase 1/Phase 2 split.
-Stage 3 (LLM weaving) fills those in afterward.
+APPROACH:
+  1. Strip extraction noise (TOC lines, catalog numbers, headers) from
+     the START of stitched_text only, structurally (not by memorizing
+     exact strings — see clean_extraction_noise), never touching the
+     middle of the text.
+  2. Split the cleaned text into ~1,000-1,200 word chunks on paragraph
+     boundaries (never mid-sentence).
+  3. Light-edit EACH CHUNK SEPARATELY — a narrow, easy task local models
+     handle reliably: fix noise/awkward breaks, preserve every line of
+     dialogue and detail. Never asked to compress.
+  4. Word-retention safeguard PER CHUNK: if an edited chunk comes back
+     under RETENTION_RATIO of the input chunk's word count, retry with a
+     stronger instruction; if it still fails, keep the ORIGINAL chunk
+     text verbatim rather than accept a lossy result. Content is never
+     silently lost.
+  5. Concatenate edited chunks -> final chronicle.
+  6. One short separate call generates scene_name/teaser/query_prompt
+     from a preview of the finished chronicle (kept short by design).
 
 Run:
-    python horus_stage2_scene_builder.py --db-dir . --scenes-db battle_scenes.db
+    python horus_stage3_weave.py --scenes-db battle_scenes.db --model "gemma-2-9b-it" --limit 5
+    python horus_stage3_weave.py --status
 """
 
+import argparse
 import json
 import re
 import sqlite3
-import argparse
+import sys
 import time
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
 
-import numpy as np
-import faiss
-from sentence_transformers import SentenceTransformer
-from rank_bm25 import BM25Okapi
-from tqdm import tqdm
+import requests
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-#  PATHS
-# ─────────────────────────────────────────────────────────────────────────────
-EMBEDDING_MODEL = "mixedbread-ai/mxbai-embed-large-v1"  # MUST match corpus embedding model
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-#  SCORING CONFIG — rescaled for CHAPTER-level granularity
-#  (old pipeline scored paragraph-level chunks; this corpus is chapters,
-#   ~10-60 per book instead of hundreds-thousands, so gap/separation/
-#   scene-count constants are proportionally much smaller here)
-# ─────────────────────────────────────────────────────────────────────────────
-FAISS_WEIGHT = 0.60
-BM25_WEIGHT  = 0.40
-
-SCORE_GATE_MASS          = 0.30
-SCORE_GATE_CONFRONTATION = 0.22
-SCORE_GATE_SPEECH        = 0.20   # looser — the hard name+verb match below carries precision
-
-BOOK_GATE       = 1     # min candidate chapters in book before skipping (chapters are coarse; even 1 strong chapter matters)
-GAP_THRESHOLD   = 1     # chapter-id gap to still merge into one cluster (adjacent chapters only)
-MIN_CLUSTER_LEN = 1     # a single strong chapter can BE a scene at this granularity
-EMBED_BATCH     = 32
-
-FAISS_TOP_K_MASS          = 3000
-FAISS_TOP_K_CONFRONTATION = 3000
-FAISS_TOP_K_SPEECH        = 3000
-
-SCENE_SEPARATION_FRACTION = 0.10
-SCENE_SEPARATION_MIN      = 2     # never require less than 2 chapters between scenes
-SCENE_SEPARATION_MAX      = 15
-SCENE_SEPARATION_BOOK_FRACTION_CAP = 0.20
-
-MIN_CONFRONTATION_SLOTS = 1
-MIN_SPEECH_SLOTS        = 1
-
-# Word-distance window for the speech "hard gate": a primarch name/epithet
-# must appear within this many words of a speaking verb for a chapter to
-# qualify as a speech candidate, regardless of its anchor/BM25 score.
-SPEECH_NAME_VERB_WINDOW = 12
+CHECKPOINT_PATH = Path("stage3_checkpoint.json")
+DEFAULT_URL = "http://localhost:1234"
+TIMEOUT_DEFAULT = 300
+CHUNK_TARGET_WORDS = 1100
+RETENTION_RATIO = 0.85   # "bigger the better" — strict: edited chunk must keep 85%+ of original word count
+MAX_CHUNK_RETRIES = 2
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-#  ANCHOR PHRASES
+#  NOISE STRIPPING — structural, boundary-only, never touches the middle
 # ─────────────────────────────────────────────────────────────────────────────
-MASS_BATTLE_ANCHORS = [
-    "the lines broke and warriors charged into the fray",
-    "bolter fire tore through the advancing ranks without mercy",
-    "they crashed into the enemy formation with brutal unstoppable force",
-    "the charge broke against the line of desperate defenders",
-    "the battle raged across the ruins of the burning city",
-    "the regiment held its ground against the overwhelming tide",
-    "his chainsword screamed as he carved through the foe",
-    "las-fire split the darkness as the assault began in earnest",
-    "blood spilled across the ground as the fighting reached its peak",
-    "void shields collapsed under sustained weapons fire from the fleet",
-    "the fleet engaged and void war consumed the heavens above",
-    "warriors teleported into the heart of the enemy position",
-    "orbital bombardment had scarred the surface before the landing",
-    "the boarding action was savage and close-quarters fighting filled every corridor",
-    "the daemon prince descended and warriors scattered before its power",
-    "the primarch himself led the assault against the enemy line",
-    "the siege walls were failing under the relentless assault",
-    "the gates fell and the defenders fell back fighting",
-    "the ambush was sprung and warriors fell screaming into the kill zone",
-    "the warband descended without warning on their prey",
-    "the swarm surged forward and the firing lines opened up",
-    "bioplasma bolts rained down from the sky above the compound",
-    "the hive mind drove its creatures forward without pause or mercy",
+_JUNK_LINE_PATTERNS = [
+    re.compile(r'^\s*CONTENTS\b', re.IGNORECASE),
+    re.compile(r'^\s*\d+\.\d+\s*\(\d{4}\.\d+\)\s*$'),          # "1.3 (2012.01)"
+    re.compile(r'^\s*[\d\.\-–]+\s*$'),                          # bare numbers/dashes
+    re.compile(r'^\s*[A-Z][A-Z\s&\'\-]{6,}$'),                  # long ALL-CAPS runs (titles/headers)
+    re.compile(r'^\s*(ISBN|Copyright|All rights reserved)\b', re.IGNORECASE),
 ]
 
-CONFRONTATION_ANCHORS = [
-    "he raised his blade and struck with all his strength",
-    "the blow landed and staggered the enemy warrior backwards",
-    "she drew her weapon and faced what stood before her",
-    "they faced each other in silence before the first blow fell",
-    "the confrontation had been inevitable since the moment he entered",
-    "something ancient and terrible barred his path forward",
-    "the guardian of the vault turned slowly to face the intruder",
-    "he fought his way through the chamber toward his prize",
-    "the creature moved faster than thought and struck him hard",
-    "warp energy crackled as the entity manifested in the chamber",
-]
-
-PRIMARCH_SPEECH_ANCHORS = [
-    "the primarch stood before his legion and spoke with absolute authority",
-    "his words carried the weight of destiny as warriors listened in silence",
-    "the declaration echoed through the assembled ranks of soldiers",
-    "he raised his voice and commanded absolute attention from every warrior present",
-    "the warmaster addressed his commanders with cold and measured words",
-    "silence fell across the chamber as he began to speak",
-    "his oration stirred something ancient in every warrior who heard it",
-    "he spoke of betrayal and destiny in the same breath",
-    "the primarch's voice was low but every word carried across the hall",
-    "he turned to face his sons and began to speak",
-]
+_SENTENCE_START_RE = re.compile(r'^["\u201c]?[A-Z][a-z]')
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-#  BM25 VOCABULARY
-# ─────────────────────────────────────────────────────────────────────────────
-_SHARED_VOCAB = [
-    "fought", "fight", "attack", "assault", "charge", "strike", "struck",
-    "charged", "fighting", "screaming", "fell", "slain", "kill", "killed",
-    "retreat", "advance", "clash", "engage", "flanked", "broke",
-    "roared", "bellowed", "sprinted", "leapt", "crashed", "tore", "ripped",
-    "parried", "thrust", "blocked", "confronted", "drew",
-    "blood", "wound", "death", "enemy", "foe",
-]
-
-MASS_BATTLE_VOCAB = _SHARED_VOCAB + [
-    "battle", "combat", "siege", "war", "raid", "assault", "ambush",
-    "volley", "barrage", "breakthrough", "engagement",
-    "blade", "sword", "chainsword", "bolter", "lasgun", "plasma", "melta",
-    "cannon", "artillery", "powerfist", "claws", "fangs", "talons",
-    "warriors", "marines", "legion", "squad", "troops", "warband", "horde",
-    "guardsman", "primarch", "captain", "sergeant", "commander", "champion",
-    "dreadnought", "titan",
-    "slaughter", "carnage", "massacre",
-    "fire", "shot", "blast", "explode", "detonated", "torpedo",
-    "void", "fleet", "broadside", "boarding", "teleport", "orbital",
-    "bombardment", "spore", "swarm", "hive", "bioplasma",
-]
-
-CONFRONTATION_VOCAB = _SHARED_VOCAB + [
-    "confrontation", "faced", "silence", "stood", "alone",
-    "guardian", "ancient", "vault", "descended", "barred", "path",
-    "creature", "entity", "daemon",
-]
-
-SPEECH_VOCAB = [
-    "said", "spoke", "speak", "speaking", "declared", "proclaimed",
-    "announced", "addressed", "command", "commanded", "voice", "words",
-    "oration", "speech", "silence", "listened", "assembled", "gathered",
-    "primarch", "warmaster", "legion", "brothers", "sons",
-]
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-#  PRIMARCH + LEGION NAME MATCHING
-# ─────────────────────────────────────────────────────────────────────────────
-PRIMARCH_NAMES: dict[str, list[str]] = {
-    "Horus":         ["the Warmaster", "Lupercal"],
-    "Lorgar":        ["the Urizen", "Aurelian"],
-    "Guilliman":     ["Roboute Guilliman", "Lord of Ultramar"],
-    "Perturabo":     ["the Lord of Iron"],
-    "Mortarion":     ["the Death Lord", "the Pale King"],
-    "Angron":        ["the Red Angel"],
-    "Magnus":        ["the Crimson King", "the Red Cyclops"],
-    "Fulgrim":       ["the Phoenician"],
-    "Alpharius":     ["the Hydra", "Omegon"],
-    "Curze":         ["Konrad Curze", "the Night Haunter"],
-    "Dorn":          ["Rogal Dorn", "the Praetorian of Terra"],
-    "Leman Russ":    ["the Wolf King", "the Great Wolf"],
-    "Jaghatai Khan": ["the Warhawk", "the Khan"],
-    "Sanguinius":    ["the Great Angel"],
-    "Vulkan":        ["the Fire Lord"],
-    "Ferrus Manus":  ["the Gorgon"],
-    "Corax":         ["Corvus Corax", "the Raven Lord"],
-    "Lion El'Jonson": ["the Lion"],
-}
-
-LEGION_NAMES = [
-    "Luna Wolves", "Sons of Horus", "Emperor's Children", "Death Guard",
-    "World Eaters", "Thousand Sons", "Space Wolves", "Dark Angels",
-    "White Scars", "Imperial Fists", "Blood Angels", "Iron Hands",
-    "Ultramarines", "Salamanders", "Raven Guard", "Alpha Legion",
-    "Word Bearers", "Iron Warriors", "Night Lords",
-]
-
-# Compile all primarch aliases -> canonical name, for fast tagging
-_PRIMARCH_ALIAS_TO_CANON: dict[str, str] = {}
-for canon, aliases in PRIMARCH_NAMES.items():
-    _PRIMARCH_ALIAS_TO_CANON[canon.lower()] = canon
-    for alias in aliases:
-        _PRIMARCH_ALIAS_TO_CANON[alias.lower()] = canon
-
-_PRIMARCH_PATTERN = re.compile(
-    r'\b(' + '|'.join(re.escape(a) for a in _PRIMARCH_ALIAS_TO_CANON.keys()) + r')\b',
-    re.IGNORECASE
-)
-_LEGION_PATTERN = re.compile(
-    r'\b(' + '|'.join(re.escape(l) for l in LEGION_NAMES) + r')\b',
-    re.IGNORECASE
-)
-_SPEECH_VERB_PATTERN = re.compile(
-    r'\b(said|spoke|speaking|declared|proclaimed|announced|addressed|wrote)\b',
-    re.IGNORECASE
-)
-
-
-def tag_characters_and_legions(text: str) -> tuple[list[str], list[str]]:
-    """Returns (primarch_names_found, legion_names_found) as sorted unique lists."""
-    if not text:
-        return [], []
-
-    found_primarchs = set()
-    for match in _PRIMARCH_PATTERN.finditer(text):
-        canon = _PRIMARCH_ALIAS_TO_CANON.get(match.group(1).lower())
-        if canon:
-            found_primarchs.add(canon)
-
-    found_legions = set()
-    for match in _LEGION_PATTERN.finditer(text):
-        found_legions.add(match.group(1))
-
-    return sorted(found_primarchs), sorted(found_legions)
-
-
-def detect_primarch_speech(text: str, window: int = SPEECH_NAME_VERB_WINDOW) -> bool:
-    """
-    Hard gate: True if a primarch name/epithet appears within `window` words
-    of a speaking verb anywhere in the text. This is the precision anchor for
-    the speech pool — semantic/BM25 score alone is not enough to qualify.
-    """
-    if not text:
-        return False
-
-    words = text.split()
-    word_lower = [w.lower().strip('.,!?"\'') for w in words]
-
-    primarch_positions = [
-        i for i, w in enumerate(word_lower)
-        if w in _PRIMARCH_ALIAS_TO_CANON
-        or any(w == a.split()[0].lower() for a in _PRIMARCH_ALIAS_TO_CANON if ' ' in a)
-    ]
-    if not primarch_positions:
-        return False
-
-    verb_positions = [i for i, w in enumerate(word_lower) if _SPEECH_VERB_PATTERN.fullmatch(w)]
-    if not verb_positions:
-        return False
-
-    for p_pos in primarch_positions:
-        for v_pos in verb_positions:
-            if abs(p_pos - v_pos) <= window:
-                return True
+def _looks_like_junk_line(line: str) -> bool:
+    stripped = line.strip()
+    if not stripped:
+        return True
+    if len(stripped) < 60 and any(p.match(stripped) for p in _JUNK_LINE_PATTERNS):
+        return True
     return False
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-#  TITLE / BOOK ID HELPERS
-# ─────────────────────────────────────────────────────────────────────────────
-def make_book_id(book_title: str) -> str:
-    slug = book_title.lower()
-    slug = re.sub(r'[^a-z0-9]+', '_', slug)
-    slug = slug.strip('_')
-    return slug[:80]
+def clean_extraction_noise(text: str, window_chars: int = 800) -> str:
+    """
+    Walks forward from the start of the text, stripping junk-shaped lines,
+    until it hits a line that actually looks like prose (capitalized word
+    followed by lowercase text). Only operates within the first
+    `window_chars` — bounded and conservative, so it can never eat real
+    scene content further in.
+    """
+    head = text[:window_chars]
+    rest = text[window_chars:]
 
-
-# ─────────────────────────────────────────────────────────────────────────────
-#  DB SETUP — additive columns only, reuses EXISTING production table names
-# ─────────────────────────────────────────────────────────────────────────────
-BASE_SCHEMA = """
-    CREATE TABLE IF NOT EXISTS books (
-        book_id     TEXT PRIMARY KEY,
-        title       TEXT NOT NULL,
-        source_raw  TEXT NOT NULL UNIQUE,
-        chunk_count INTEGER DEFAULT 0
-    );
-
-    CREATE TABLE IF NOT EXISTS scenes (
-        scene_id        INTEGER PRIMARY KEY AUTOINCREMENT,
-        book_id         TEXT NOT NULL REFERENCES books(book_id),
-        scene_name      TEXT,
-        teaser          TEXT,
-        chronicle       TEXT,
-        query_prompt    TEXT,
-        stitched_text   TEXT,
-        scene_type      TEXT DEFAULT 'battle',
-        score           REAL NOT NULL,
-        rank            INTEGER NOT NULL,
-        scene_key       TEXT,
-        woven_at        TEXT
-    );
-
-    CREATE TABLE IF NOT EXISTS scene_chunks (
-        scene_id    INTEGER REFERENCES scenes(scene_id),
-        chunk_id    INTEGER NOT NULL,
-        chunk_rank  INTEGER NOT NULL
-    );
-
-    CREATE TABLE IF NOT EXISTS build_progress (
-        source_raw    TEXT PRIMARY KEY,
-        book_id       TEXT,
-        chunk_count   INTEGER,
-        scenes_found  INTEGER DEFAULT 0,
-        top_score     REAL    DEFAULT 0.0,
-        phase1_done   INTEGER DEFAULT 0,
-        phase2_done   INTEGER DEFAULT 0,
-        skipped       INTEGER DEFAULT 0,
-        skip_reason   TEXT,
-        processed_at  TEXT
-    );
-
-    CREATE INDEX IF NOT EXISTS idx_scenes_key  ON scenes(scene_key);
-    CREATE INDEX IF NOT EXISTS idx_scenes_type ON scenes(scene_type);
-    CREATE INDEX IF NOT EXISTS idx_scenes_rank ON scenes(book_id, rank);
-    CREATE INDEX IF NOT EXISTS idx_scenes_book ON scenes(book_id);
-    CREATE INDEX IF NOT EXISTS idx_chunks_scene ON scene_chunks(scene_id);
-"""
-
-ADDITIVE_COLUMNS = [
-    ("characters", "TEXT"),
-    ("legions", "TEXT"),
-    ("has_primarch_speech", "INTEGER DEFAULT 0"),
-]
-
-
-def init_db(conn: sqlite3.Connection):
-    conn.executescript(BASE_SCHEMA)
-    for col_name, col_type in ADDITIVE_COLUMNS:
-        try:
-            conn.execute(f"ALTER TABLE scenes ADD COLUMN {col_name} {col_type}")
-        except sqlite3.OperationalError:
-            pass  # column already exists — safe no-op
-    conn.commit()
-
-
-def mark_skipped(conn, source_raw, book_id, chunk_count, reason, top_score=0.0):
-    conn.execute("""
-        INSERT OR REPLACE INTO build_progress
-        (source_raw, book_id, chunk_count, top_score,
-         phase1_done, skipped, skip_reason, processed_at)
-        VALUES (?, ?, ?, ?, 1, 1, ?, ?)
-    """, (source_raw, book_id, chunk_count, top_score, reason, datetime.utcnow().isoformat()))
-    conn.commit()
-
-
-def mark_phase1_done(conn, source_raw, book_id, chunk_count, scenes_found, top_score):
-    conn.execute("""
-        INSERT OR REPLACE INTO build_progress
-        (source_raw, book_id, chunk_count, scenes_found,
-         top_score, phase1_done, phase2_done, skipped, processed_at)
-        VALUES (?, ?, ?, ?, ?, 1, 0, 0, ?)
-    """, (source_raw, book_id, chunk_count, scenes_found, top_score, datetime.utcnow().isoformat()))
-    conn.commit()
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-#  SCENE COUNT SCALING — rescaled for chapter-level books (10-60 chapters)
-# ─────────────────────────────────────────────────────────────────────────────
-def max_scenes_for_book(chapter_count: int) -> int:
-    if chapter_count < 10:  return 2
-    if chapter_count < 20:  return 3
-    if chapter_count < 40:  return 4
-    if chapter_count < 80:  return 5
-    return 6
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-#  CLUSTERING (same algorithm as old pipeline, chunk_id == embedding_index here)
-# ─────────────────────────────────────────────────────────────────────────────
-def cluster_candidates(candidates: list[dict], gap: int, min_len: int) -> list[list[dict]]:
-    if not candidates:
-        return []
-    sorted_c = sorted(candidates, key=lambda x: x['chunk_id'])
-    clusters, current = [], [sorted_c[0]]
-    for chunk in sorted_c[1:]:
-        if chunk['chunk_id'] - current[-1]['chunk_id'] <= gap:
-            current.append(chunk)
-        else:
-            if len(current) >= min_len:
-                clusters.append(current)
-            current = [chunk]
-    if len(current) >= min_len:
-        clusters.append(current)
-    return clusters
-
-
-def _score_clusters(clusters: list[list[dict]]) -> list[dict]:
-    scored = []
-    for cluster in clusters:
-        scores = [c['combined_score'] for c in cluster]
-        avg_score = sum(scores) / len(scores)
-        peak_score = max(scores)
-        cluster_score = 0.4 * avg_score + 0.6 * peak_score
-        scored.append({
-            'chunks': cluster,
-            'cluster_score': cluster_score,
-            'chunk_count': len(cluster),
-            'chunk_id_start': cluster[0]['chunk_id'],
-            'chunk_id_end': cluster[-1]['chunk_id'],
-            'scene_type': cluster[0].get('scene_type', 'battle'),
-        })
-    scored.sort(key=lambda x: x['cluster_score'], reverse=True)
-    return scored
-
-
-def compute_adaptive_separation(clusters: list[dict], book_chunk_count: int | None = None) -> int:
-    if not clusters:
-        return SCENE_SEPARATION_MIN
-    span_start = min(c['chunk_id_start'] for c in clusters)
-    span_end = max(c['chunk_id_end'] for c in clusters)
-    total_span = max(1, span_end - span_start)
-    separation = int(total_span * SCENE_SEPARATION_FRACTION)
-    separation = max(SCENE_SEPARATION_MIN, min(SCENE_SEPARATION_MAX, separation))
-    if book_chunk_count:
-        book_cap = max(1, int(book_chunk_count * SCENE_SEPARATION_BOOK_FRACTION_CAP))
-        separation = min(separation, book_cap)
-    return separation
-
-
-def select_diverse_clusters(clusters: list[list[dict]], max_count: int,
-                             min_separation: int | None = None,
-                             min_confrontation_slots: int = MIN_CONFRONTATION_SLOTS,
-                             min_speech_slots: int = MIN_SPEECH_SLOTS,
-                             book_chunk_count: int | None = None) -> list[dict]:
-    if not clusters or max_count <= 0:
-        return []
-
-    scored = _score_clusters(clusters)
-    if min_separation is None:
-        min_separation = compute_adaptive_separation(scored, book_chunk_count)
-
-    def overlaps_or_too_close(candidate, picked):
-        for p in picked:
-            if candidate['chunk_id_start'] <= p['chunk_id_end'] and candidate['chunk_id_end'] >= p['chunk_id_start']:
-                return True
-            gap = max(candidate['chunk_id_start'] - p['chunk_id_end'], p['chunk_id_start'] - candidate['chunk_id_end'])
-            if gap < min_separation:
-                return True
-        return False
-
-    selected: list[dict] = []
-
-    # Reserved slots: confrontation, then speech
-    for scene_type, min_slots in (('confrontation', min_confrontation_slots), ('speech', min_speech_slots)):
-        if min_slots <= 0:
+    lines = head.split('\n')
+    kept_from = 0
+    for i, line in enumerate(lines):
+        if _looks_like_junk_line(line):
             continue
-        ranked = [c for c in scored if c['scene_type'] == scene_type]
-        for cand in ranked:
-            if len([s for s in selected if s['scene_type'] == scene_type]) >= min_slots:
-                break
-            if len(selected) >= max_count:
-                break
-            if not overlaps_or_too_close(cand, selected):
-                selected.append(cand)
-
-    for cand in scored:
-        if len(selected) >= max_count:
+        if _SENTENCE_START_RE.match(line.strip()) or len(line.strip()) > 80:
+            kept_from = i
             break
-        if cand in selected:
+        kept_from = i + 1
+    else:
+        kept_from = len(lines)
+
+    cleaned_head = '\n'.join(lines[kept_from:])
+    return (cleaned_head + rest).strip()
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  CHUNKING — split on paragraph boundaries, never mid-sentence
+# ─────────────────────────────────────────────────────────────────────────────
+def split_into_chunks(text: str, target_words: int = CHUNK_TARGET_WORDS) -> list[str]:
+    paragraphs = [p for p in re.split(r'\n\s*\n', text) if p.strip()]
+    if not paragraphs:
+        paragraphs = [text]
+
+    chunks, current, current_words = [], [], 0
+    for para in paragraphs:
+        para_words = len(para.split())
+        if current and current_words + para_words > target_words:
+            chunks.append('\n\n'.join(current))
+            current, current_words = [], 0
+        current.append(para)
+        current_words += para_words
+
+    if current:
+        chunks.append('\n\n'.join(current))
+
+    return chunks
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  AUTHOR EXTRACTION
+# ─────────────────────────────────────────────────────────────────────────────
+def split_author_title(book_title: str) -> tuple[str | None, str]:
+    if '  ' in book_title:
+        parts = book_title.split('  ', 1)
+        author = parts[0].strip()
+        title = parts[1].strip(' -–_')
+        if 0 < len(author) < 40 and title:
+            return author, title
+    return None, book_title
+
+
+def strip_reasoning(raw: str) -> str:
+    return re.sub(r'<think>.*?</think>', '', raw, flags=re.DOTALL).strip()
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  LIGHT-EDIT PROMPT (per chunk — narrow task, easy to get right)
+# ─────────────────────────────────────────────────────────────────────────────
+LIGHT_EDIT_SYSTEM_PROMPT = """You are a light copy-editor for Horus Heresy novel excerpts. \
+You will receive a passage of narrative text, extracted from a physical book, which may contain \
+minor extraction artefacts (broken line breaks, stray characters, odd spacing).
+
+Your task is NARROW: lightly clean the passage. You are NOT summarizing, condensing, or \
+retelling. Preserve EVERY sentence, EVERY line of dialogue, EVERY detail. Only:
+  - Fix broken line breaks and spacing artefacts
+  - Smooth an awkward sentence break caused by extraction, if one exists
+  - Correct an obviously mangled word from bad text extraction
+
+Do NOT cut any dialogue. Do NOT shorten descriptions. Do NOT remove any character's lines. \
+Preserve the author's exact wording and voice wherever possible — this is light editing, not \
+rewriting. The output should be close to the same length as the input.
+
+Output ONLY the cleaned passage text. No commentary, no labels, no preamble."""
+
+
+def light_edit_chunk(chat_endpoint: str, model: str, timeout: int, chunk: str,
+                      author: str | None) -> str:
+    author_note = f"\n\nAuthor: {author} — preserve their exact voice." if author else ""
+    user_message = f"Lightly clean this passage. Preserve everything.{author_note}\n\n{chunk}"
+
+    payload = {
+        "model": model,
+        "messages": [
+            {"role": "system", "content": LIGHT_EDIT_SYSTEM_PROMPT},
+            {"role": "user", "content": user_message},
+        ],
+        "temperature": 0.3,
+        "max_tokens": -1,
+        "stream": False,
+    }
+    r = requests.post(chat_endpoint, json=payload, timeout=timeout)
+    if r.status_code != 200:
+        raise requests.HTTPError(f"{r.status_code}: {r.text[:300]}", response=r)
+    content = r.json()['choices'][0]['message']['content']
+    return strip_reasoning(content).strip()
+
+
+def light_edit_with_safeguard(chat_endpoint: str, model: str, timeout: int, chunk: str,
+                               author: str | None) -> tuple[str, bool]:
+    """Returns (final_text, was_fallback). Falls back to the original chunk
+    verbatim if the model can't produce an edit that retains enough content."""
+    original_words = len(chunk.split())
+
+    for attempt in range(MAX_CHUNK_RETRIES + 1):
+        try:
+            edited = light_edit_chunk(chat_endpoint, model, timeout, chunk, author)
+        except Exception:
             continue
-        if not overlaps_or_too_close(cand, selected):
-            selected.append(cand)
 
-    selected.sort(key=lambda x: x['chunk_id_start'])
-    return selected
+        edited_words = len(edited.split())
+        if original_words == 0 or edited_words >= RETENTION_RATIO * original_words:
+            return edited, False
+
+    return chunk, True
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-#  STITCHING — simplified for chapter granularity (chapters are already
-#  clean prose units, so gap-fill/dedup-overlap matter far less than at
-#  paragraph granularity, but kept for correctness when clusters span
-#  multiple chapters with a skipped one in between).
+#  SHORT-FIELD GENERATION (scene_name/teaser/query_prompt) — labeled text
 # ─────────────────────────────────────────────────────────────────────────────
-def gap_fill_cluster(cluster_chunks: list[dict], chunk_lookup: dict[int, dict]) -> list[dict]:
-    if not cluster_chunks:
-        return cluster_chunks
-    start_id = cluster_chunks[0]['chunk_id']
-    end_id = cluster_chunks[-1]['chunk_id']
-    existing_ids = {c['chunk_id'] for c in cluster_chunks}
-    filled = []
-    for cid in range(start_id, end_id + 1):
-        if cid in existing_ids:
-            match = next(c for c in cluster_chunks if c['chunk_id'] == cid)
-            filled.append(match)
-        elif cid in chunk_lookup:
-            src = chunk_lookup[cid]
-            filled.append({
-                'chunk_id': cid, 'text': src['text'],
-                'combined_score': 0.0, 'gap_filled': True,
-            })
-    return filled
+SHORT_FIELDS_SYSTEM_PROMPT = """You are the Remembrancer of the Imperium, naming and framing \
+Horus Heresy scenes for a database. Given a scene's chronicle text, produce exactly this \
+structure with these EXACT labels on their own lines:
+
+SCENE_NAME: [A specific, evocative name, as a historian would write it. Never generic.]
+
+TEASER: [One sentence, PRESENT TENSE, following this pattern: name the specific named
+         character(s) actually present in the text, state the threat or stakes they face,
+         and end on tension WITHOUT revealing the outcome. This is a hook, not a summary.
+
+         GOOD: "Cornered by a monstrous alien horror in the collapsing tunnels, Greel must
+         fight for survival as betrayal closes in from his own company."
+         GOOD: "Against a tide of desperate cultists, the Imperial Fists fight for the breach
+         that will save thousands — if it can be held."
+         BAD (flat statement, no tension, no named character): "A battle happens between two
+         forces and one side wins after heavy fighting."
+         BAD (reveals the ending): "The Luna Wolves win the battle without losses."]
+
+QUERY_PROMPT: [One sentence a reader could send to a Warhammer lore AI to learn more about
+               this specific scene or its participants.]
+
+CRITICAL — GROUNDING RULE: Every named character, place, or faction you mention MUST appear
+literally in the chronicle text below. Do NOT invent names, relationships, motivations, or
+plot details not explicitly present. If you are unsure a detail is accurate, leave it out
+rather than guess or infer it.
+
+Output ONLY these three labeled sections. No commentary."""
 
 
-def stitch_cluster(cluster_chunks: list[dict], chunk_lookup: dict[int, dict]) -> dict:
-    filled = gap_fill_cluster(cluster_chunks, chunk_lookup)
-    if not filled:
-        return {'stitched_text': '', 'chunks': []}
-    stitched_text = '\n\n'.join(c['text'].strip() for c in filled if c['text'].strip())
-    return {'stitched_text': stitched_text, 'chunks': filled}
+# ─────────────────────────────────────────────────────────────────────────────
+#  GROUNDING CHECK — catches fabricated names the model wasn't given
+# ─────────────────────────────────────────────────────────────────────────────
+_PROPER_NOUN_RE = re.compile(r'\b[A-Z][a-z]{2,}\b')
+
+_COMMON_SENTENCE_STARTERS = {
+    'The', 'A', 'An', 'His', 'Her', 'Their', 'They', 'This', 'That', 'When',
+    'As', 'For', 'In', 'On', 'With', 'Against', 'Beneath', 'Cornered',
+    'Amidst', 'Beyond', 'After', 'Before', 'Now', 'Only', 'One', 'It',
+}
+
+
+def find_ungrounded_names(generated_text: str, source_text: str) -> list[str]:
+    """
+    Extracts capitalized-word candidates (likely proper nouns) from generated
+    text and returns any that don't appear anywhere in the source chronicle —
+    i.e. names the model invented rather than pulled from the actual scene.
+    Heuristic, not perfect, but catches the common fabrication pattern.
+    """
+    candidates = set(_PROPER_NOUN_RE.findall(generated_text)) - _COMMON_SENTENCE_STARTERS
+    source_lower = source_text.lower()
+    return [c for c in candidates if c.lower() not in source_lower]
+
+
+def _call_short_fields(chat_endpoint: str, model: str, timeout: int, user_message: str) -> dict:
+    payload = {
+        "model": model,
+        "messages": [
+            {"role": "system", "content": SHORT_FIELDS_SYSTEM_PROMPT},
+            {"role": "user", "content": user_message},
+        ],
+        "temperature": 0.6,
+        "max_tokens": -1,
+        "stream": False,
+    }
+    r = requests.post(chat_endpoint, json=payload, timeout=timeout)
+    if r.status_code != 200:
+        raise requests.HTTPError(f"{r.status_code}: {r.text[:300]}", response=r)
+    content = strip_reasoning(r.json()['choices'][0]['message']['content'])
+
+    result = {'scene_name': '', 'teaser': '', 'query_prompt': ''}
+    current, buffer = None, []
+
+    def flush(field, buf):
+        result[field] = '\n'.join(buf).strip()
+
+    for line in content.splitlines():
+        s = line.strip()
+        matched = False
+        for label, field in [('SCENE_NAME:', 'scene_name'), ('TEASER:', 'teaser'),
+                              ('QUERY_PROMPT:', 'query_prompt')]:
+            if s.startswith(label):
+                if current and buffer:
+                    flush(current, buffer)
+                current, buffer, matched = field, [s[len(label):].strip()], True
+                break
+        if not matched and current:
+            buffer.append(line)
+    if current and buffer:
+        flush(current, buffer)
+
+    return result
+
+
+def generate_short_fields(chat_endpoint: str, model: str, timeout: int, book_title: str,
+                           scene_type: str, chronicle: str, max_retries: int = 2) -> tuple[dict, list[str]]:
+    """
+    Returns (result, ungrounded_names_on_final_attempt). Retries if the model
+    invents a name not present anywhere in the actual chronicle text — this
+    is what catches hallucination regardless of model size, since it checks
+    the OUTPUT against the SOURCE rather than trusting the model to behave.
+    """
+    _, clean_title = split_author_title(book_title)
+    base_message = f"Book: {clean_title}\nScene type: {scene_type}\n\nChronicle:\n{chronicle[:6000]}"
+
+    warning = ""
+    for attempt in range(max_retries + 1):
+        result = _call_short_fields(chat_endpoint, model, timeout, base_message + warning)
+        check_text = f"{result['teaser']} {result['query_prompt']}"  # scene_name excluded: title language ≠ factual claim
+        ungrounded = find_ungrounded_names(check_text, chronicle)
+
+        if not ungrounded:
+            return result, []
+
+        warning = (f"\n\nWARNING: your previous attempt invented these names, which do NOT "
+                   f"appear in the chronicle: {', '.join(ungrounded)}. Do not use any name "
+                   f"that isn't literally present in the chronicle text above.")
+
+    return result, ungrounded  # exhausted retries — caller decides whether to accept or flag
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  LM STUDIO HELPERS + CHECKPOINT
+# ─────────────────────────────────────────────────────────────────────────────
+def get_active_model(models_endpoint: str, requested_model: str) -> str | None:
+    try:
+        r = requests.get(models_endpoint, timeout=10)
+        ids = [m['id'] for m in r.json().get('data', []) if 'embed' not in m['id'].lower()]
+        return requested_model if requested_model in ids else (ids[0] if ids else None)
+    except Exception as e:
+        print(f"  [warn] Could not query models: {e}")
+        return None
+
+
+def load_checkpoint() -> dict:
+    if CHECKPOINT_PATH.exists():
+        return json.loads(CHECKPOINT_PATH.read_text(encoding='utf-8'))
+    return {"last_scene_id": None, "woven": 0, "failed": 0, "fallback_chunks": 0, "last_updated": None}
+
+
+def save_checkpoint(cp: dict):
+    cp["last_updated"] = datetime.utcnow().isoformat()
+    CHECKPOINT_PATH.write_text(json.dumps(cp, indent=2), encoding='utf-8')
+
+
+def print_status(scenes_db: Path):
+    conn = sqlite3.connect(str(scenes_db))
+    total = conn.execute("SELECT COUNT(*) FROM scenes").fetchone()[0]
+    woven = conn.execute("SELECT COUNT(*) FROM scenes WHERE chronicle IS NOT NULL AND chronicle != ''").fetchone()[0]
+    conn.close()
+    cp = load_checkpoint()
+    print("=" * 70)
+    print("  Stage 3 Status")
+    print("=" * 70)
+    print(f"  Total scenes : {total:,}   Woven: {woven:,}   Remaining: {total - woven:,}")
+    print(f"  Last checkpoint scene_id : {cp['last_scene_id']}")
+    print(f"  Checkpoint woven/failed  : {cp['woven']}/{cp['failed']}")
+    print(f"  Chunks that fell back to original text: {cp.get('fallback_chunks', 0)}")
+    print(f"  Last updated             : {cp['last_updated']}")
+    print("=" * 70)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
 #  MAIN
 # ─────────────────────────────────────────────────────────────────────────────
 def main():
-    parser = argparse.ArgumentParser(description="Stage 2: Score, cluster, and tag Horus Heresy scenes")
-    parser.add_argument('--db-dir', type=Path, default=Path('.'))
+    parser = argparse.ArgumentParser(description="Stage 3: chunked light-edit weaving (local LM Studio)")
     parser.add_argument('--scenes-db', type=Path, default=Path('battle_scenes.db'))
+    parser.add_argument('--url', type=str, default=DEFAULT_URL)
+    parser.add_argument('--model', type=str, default='local-model')
+    parser.add_argument('--timeout', type=int, default=TIMEOUT_DEFAULT)
+    parser.add_argument('--retries', type=int, default=3)
+    parser.add_argument('--limit', type=int, default=None)
+    parser.add_argument('--status', action='store_true')
     args = parser.parse_args()
 
-    faiss_path = args.db_dir / "heresy_faiss.index"
-    text_db_path = args.db_dir / "heresy_chapter_text.db"
-    output_json = args.db_dir / "horus_clusters_raw.json"
+    if args.status:
+        print_status(args.scenes_db)
+        return
+
+    lm_url = args.url.rstrip('/')
+    chat_endpoint = f"{lm_url}/v1/chat/completions"
+    models_endpoint = f"{lm_url}/v1/models"
 
     print("=" * 70)
-    print("  Stage 2 — Score, Cluster, Tag  (Horus Heresy / Memoria)")
+    print("  Stage 3 — Chunked Light-Edit Weave  (local LM Studio)")
     print("=" * 70)
 
-    # ── 1. Load FAISS index ─────────────────────────────────────────────────
-    print(f"\n[1/6]  Loading FAISS index ...")
-    index = faiss.read_index(str(faiss_path))
-    print(f"       {index.ntotal:,} vectors, dim={index.d}")
+    print(f"\n[1/3]  Connecting to LM Studio at {lm_url} ...")
+    model = get_active_model(models_endpoint, args.model)
+    if not model:
+        print("ERROR: No model found. Make sure LM Studio's local server is running.")
+        sys.exit(1)
+    print(f"       Model: {model}")
+    if model != args.model:
+        print(f"       [WARN] Requested '{args.model}' not loaded — using '{model}' instead")
 
-    # ── 2. Load chapter text from SQLite ────────────────────────────────────
-    print(f"\n[2/6]  Loading chapter text ...")
-    text_conn = sqlite3.connect(str(text_db_path))
-    text_conn.row_factory = sqlite3.Row
-    rows = text_conn.execute("SELECT * FROM chapter_text").fetchall()
-    metadata = [dict(r) for r in rows]
-    text_conn.close()
-    print(f"       {len(metadata):,} chapters loaded")
-
-    # ── 3. Group by book (source_file) ──────────────────────────────────────
-    print(f"\n[3/6]  Grouping by book ...")
-    books: dict[str, list[dict]] = {}
-    for chapter in metadata:
-        src = chapter.get('source_file', 'unknown')
-        books.setdefault(src, []).append(chapter)
-    for src in books:
-        books[src].sort(key=lambda c: c['chapter_number'])
-    print(f"       {len(books):,} unique books found")
-
-    # ── 4. Init DB ───────────────────────────────────────────────────────────
     conn = sqlite3.connect(str(args.scenes_db))
-    init_db(conn)
+    conn.row_factory = sqlite3.Row
     cur = conn.cursor()
-    cur.execute("SELECT source_raw FROM build_progress WHERE phase1_done = 1")
-    already_done = {row[0] for row in cur.fetchall()}
-    books_todo = {src: chs for src, chs in books.items() if src not in already_done}
-    print(f"       {len(already_done):,} already complete — skipping")
-    print(f"       {len(books_todo):,} books to process this run")
 
-    if not books_todo:
+    query = """
+        SELECT s.scene_id, s.stitched_text, s.scene_type, s.score, b.title AS book_title
+        FROM scenes s JOIN books b ON s.book_id = b.book_id
+        WHERE (s.chronicle IS NULL OR s.chronicle = '')
+          AND s.stitched_text IS NOT NULL AND s.stitched_text != ''
+        ORDER BY s.score DESC
+    """
+    if args.limit:
+        query += f" LIMIT {args.limit}"
+    rows = cur.execute(query).fetchall()
+
+    print(f"\n[2/3]  {len(rows):,} scenes to weave this run")
+    if not rows:
         print("\n  Nothing to do.")
         conn.close()
         return
 
-    # ── 5. Embed anchors (SAME model as corpus!) ────────────────────────────
-    print(f"\n[4/6]  Loading {EMBEDDING_MODEL} ...")
-    embedder = SentenceTransformer(EMBEDDING_MODEL)
+    print(f"\n[3/3]  Weaving (chunked light-edit, retention safeguard={RETENTION_RATIO:.0%}) ...\n")
 
-    def embed_anchors(phrases):
-        return embedder.encode(phrases, batch_size=EMBED_BATCH,
-                                normalize_embeddings=True, show_progress_bar=False).astype(np.float32)
+    cp = load_checkpoint()
+    woven, failed, fallback_chunks = cp["woven"], cp["failed"], cp.get("fallback_chunks", 0)
 
-    print(f"       Embedding anchor pools ...")
-    mass_vecs = embed_anchors(MASS_BATTLE_ANCHORS)
-    conf_vecs = embed_anchors(CONFRONTATION_ANCHORS)
-    speech_vecs = embed_anchors(PRIMARCH_SPEECH_ANCHORS)
+    for i, row in enumerate(rows, start=1):
+        scene = dict(row)
+        author, _ = split_author_title(scene["book_title"])
 
-    def faiss_score_pool(anchor_vecs, label, top_k):
-        scores: dict[int, float] = {}
-        for anchor_vec in tqdm(anchor_vecs, desc=f"  {label} search", unit="anchor"):
-            vec = np.expand_dims(anchor_vec, axis=0)
-            distances, indices = index.search(vec, top_k)
-            for dist, idx in zip(distances[0], indices[0]):
-                if idx < 0:
-                    continue
-                similarity = float(dist)  # IndexFlatIP -> inner product == cosine (normalized)
-                if idx not in scores or scores[idx] < similarity:
-                    scores[idx] = similarity
-        if scores:
-            vals = list(scores.values())
-            v_min, v_max = min(vals), max(vals)
-            v_range = v_max - v_min if v_max > v_min else 1.0
-            scores = {k: (v - v_min) / v_range for k, v in scores.items()}
-        return scores
+        print(f"  [{i:>4}/{len(rows)}]  {scene['book_title'][:50]}  (scene_id={scene['scene_id']})")
 
-    print(f"\n[5/6]  Searching FAISS across corpus ...")
-    faiss_mass = faiss_score_pool(mass_vecs, "mass-battle", FAISS_TOP_K_MASS)
-    faiss_conf = faiss_score_pool(conf_vecs, "confrontation", FAISS_TOP_K_CONFRONTATION)
-    faiss_speech = faiss_score_pool(speech_vecs, "primarch-speech", FAISS_TOP_K_SPEECH)
+        cleaned = clean_extraction_noise(scene["stitched_text"])
+        chunks = split_into_chunks(cleaned)
+        print(f"          {len(chunks)} chunk(s), {len(cleaned.split()):,} words total")
 
-    # ── 6. Score + cluster + tag each book ──────────────────────────────────
-    print(f"\n[6/6]  Scoring, clustering, and tagging {len(books_todo):,} books ...")
-    all_clusters: dict[str, dict] = {}
-    stats = {'processed': 0, 'skip_gate': 0, 'total_scenes': 0}
+        edited_chunks = []
+        for c_idx, chunk in enumerate(chunks):
+            try:
+                edited, was_fallback = light_edit_with_safeguard(chat_endpoint, model, args.timeout, chunk, author)
+                edited_chunks.append(edited)
+                if was_fallback:
+                    fallback_chunks += 1
+                    print(f"          chunk {c_idx+1}/{len(chunks)}: retention safeguard triggered — kept original text")
+            except requests.exceptions.ConnectionError:
+                print(f"\n  [CONNECTION LOST] LM Studio unreachable. Progress saved at scene_id={scene['scene_id']}.")
+                save_checkpoint({"last_scene_id": scene['scene_id'], "woven": woven, "failed": failed,
+                                  "fallback_chunks": fallback_chunks, "last_updated": None})
+                conn.close()
+                return
+            except Exception as e:
+                print(f"          chunk {c_idx+1}/{len(chunks)}: ERROR ({e}) — keeping original text")
+                edited_chunks.append(chunk)
+                fallback_chunks += 1
 
-    for source_raw, chapters in tqdm(books_todo.items(), desc="  Books", unit="book"):
-        book_title = chapters[0]['book_title']
-        book_id = make_book_id(book_title)
-        chapter_count = len(chapters)
+        chronicle = '\n\n'.join(edited_chunks)
 
-        chunk_lookup = {c['embedding_index']: {'chunk_id': c['embedding_index'], 'text': c['text']} for c in chapters}
+        try:
+            short_fields, ungrounded = generate_short_fields(chat_endpoint, model, args.timeout,
+                                                               scene["book_title"], scene["scene_type"], chronicle)
+            if ungrounded:
+                print(f"          [WARN] possible fabricated names after retries: {', '.join(ungrounded)}")
+        except Exception as e:
+            print(f"          [WARN] short-field generation failed ({e}) — using placeholder title")
+            short_fields = {'scene_name': scene['book_title'][:60], 'teaser': '', 'query_prompt': ''}
 
-        tokenized = [c['text'].lower().split() for c in chapters]
-        bm25 = BM25Okapi(tokenized)
-
-        bm25_mass = bm25.get_scores(MASS_BATTLE_VOCAB)
-        bm25_conf = bm25.get_scores(CONFRONTATION_VOCAB)
-        bm25_speech = bm25.get_scores(SPEECH_VOCAB)
-
-        def norm(arr):
-            m = float(arr.max())
-            return (arr / m) if m > 0 else arr
-
-        bm25_mass_n = norm(bm25_mass)
-        bm25_conf_n = norm(bm25_conf)
-        bm25_speech_n = norm(bm25_speech)
-
-        candidates_mass, candidates_conf, candidates_speech = [], [], []
-
-        for i, chapter in enumerate(chapters):
-            cid = chapter['embedding_index']
-            text = chapter['text']
-
-            mass_score = BM25_WEIGHT * float(bm25_mass_n[i]) + FAISS_WEIGHT * faiss_mass.get(cid, 0.0)
-            conf_score = BM25_WEIGHT * float(bm25_conf_n[i]) + FAISS_WEIGHT * faiss_conf.get(cid, 0.0)
-            speech_score = BM25_WEIGHT * float(bm25_speech_n[i]) + FAISS_WEIGHT * faiss_speech.get(cid, 0.0)
-
-            has_speech_hard_match = detect_primarch_speech(text)
-
-            if mass_score >= SCORE_GATE_MASS:
-                candidates_mass.append({'chunk_id': cid, 'text': text, 'combined_score': mass_score, 'scene_type': 'battle'})
-            if conf_score >= SCORE_GATE_CONFRONTATION:
-                candidates_conf.append({'chunk_id': cid, 'text': text, 'combined_score': conf_score, 'scene_type': 'confrontation'})
-            if speech_score >= SCORE_GATE_SPEECH and has_speech_hard_match:
-                candidates_speech.append({'chunk_id': cid, 'text': text, 'combined_score': speech_score, 'scene_type': 'speech'})
-
-        all_candidates = candidates_mass + candidates_conf + candidates_speech
-        if len(all_candidates) < BOOK_GATE:
-            mark_skipped(conn, source_raw, book_id, chapter_count, 'score_gate')
-            stats['skip_gate'] += 1
-            continue
-
-        max_s = max_scenes_for_book(chapter_count)
-
-        raw_mass = cluster_candidates(candidates_mass, GAP_THRESHOLD, MIN_CLUSTER_LEN)
-        raw_conf = cluster_candidates(candidates_conf, GAP_THRESHOLD, MIN_CLUSTER_LEN)
-        raw_speech = cluster_candidates(candidates_speech, GAP_THRESHOLD, MIN_CLUSTER_LEN)
-
-        all_raw_clusters = raw_mass + raw_conf + raw_speech
-        top_clusters = select_diverse_clusters(
-            all_raw_clusters, max_count=max_s,
-            min_separation=None,
-            min_confrontation_slots=MIN_CONFRONTATION_SLOTS,
-            min_speech_slots=MIN_SPEECH_SLOTS,
-            book_chunk_count=chapter_count,
-        )
-
-        if not top_clusters and all_candidates:
-            top_candidates = sorted(all_candidates, key=lambda x: x['combined_score'], reverse=True)[:max_s]
-            top_clusters = [{
-                'chunks': [c], 'cluster_score': c['combined_score'], 'chunk_count': 1,
-                'chunk_id_start': c['chunk_id'], 'chunk_id_end': c['chunk_id'],
-                'scene_type': c.get('scene_type', 'battle'),
-            } for c in top_candidates]
-
-        if not top_clusters:
-            mark_skipped(conn, source_raw, book_id, chapter_count, 'no_clusters_formed')
-            stats['skip_gate'] += 1
-            continue
-
-        # Stitch + tag each cluster
-        for cl in top_clusters:
-            stitched = stitch_cluster(cl['chunks'], chunk_lookup)
-            cl['chunks'] = stitched['chunks']
-            cl['stitched_text'] = stitched['stitched_text']
-            if cl['chunks']:
-                cl['chunk_count'] = len(cl['chunks'])
-                cl['chunk_id_start'] = cl['chunks'][0]['chunk_id']
-                cl['chunk_id_end'] = cl['chunks'][-1]['chunk_id']
-
-            characters, legions = tag_characters_and_legions(cl['stitched_text'])
-            cl['characters'] = characters
-            cl['legions'] = legions
-            cl['has_primarch_speech'] = 1 if detect_primarch_speech(cl['stitched_text']) else 0
-
-        # Upsert book
-        conn.execute("""
-            INSERT OR IGNORE INTO books (book_id, title, source_raw, chunk_count)
-            VALUES (?, ?, ?, ?)
-        """, (book_id, book_title, source_raw, chapter_count))
-
-        scenes_found = len(top_clusters)
-        top_score = max(cl['cluster_score'] for cl in top_clusters)
-        mark_phase1_done(conn, source_raw, book_id, chapter_count, scenes_found, top_score)
-
-        # Write scenes (scene_name/teaser/chronicle/query_prompt left NULL for Stage 3)
-        for rank, cl in enumerate(top_clusters, start=1):
-            scene_key = f"{source_raw}::rank{rank}::{cl['scene_type']}"
-            cur.execute("""
-                INSERT INTO scenes
-                (book_id, scene_type, score, rank, scene_key, stitched_text,
-                 characters, legions, has_primarch_speech, woven_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (
-                book_id, cl['scene_type'], cl['cluster_score'], rank, scene_key,
-                cl['stitched_text'], json.dumps(cl['characters']), json.dumps(cl['legions']),
-                cl['has_primarch_speech'], datetime.utcnow().isoformat()
-            ))
-            scene_id = cur.lastrowid
-            for chunk_rank, chunk in enumerate(cl['chunks']):
-                cur.execute("""
-                    INSERT INTO scene_chunks (scene_id, chunk_id, chunk_rank)
-                    VALUES (?, ?, ?)
-                """, (scene_id, chunk['chunk_id'], chunk_rank))
+        cur.execute("""
+            UPDATE scenes SET scene_name = ?, teaser = ?, chronicle = ?, query_prompt = ?, woven_at = ?
+            WHERE scene_id = ?
+        """, (short_fields['scene_name'], short_fields['teaser'], chronicle,
+              short_fields['query_prompt'], datetime.utcnow().isoformat(), scene['scene_id']))
         conn.commit()
+        woven += 1
 
-        all_clusters[source_raw] = {
-            'book_id': book_id, 'title': book_title, 'source_raw': source_raw,
-            'chunk_count': chapter_count,
-            'scenes': [
-                {
-                    'rank': rank, 'cluster_score': cl['cluster_score'], 'scene_type': cl['scene_type'],
-                    'chunk_id_start': cl['chunk_id_start'], 'chunk_id_end': cl['chunk_id_end'],
-                    'chunk_count': cl['chunk_count'], 'stitched_text': cl['stitched_text'],
-                    'characters': cl['characters'], 'legions': cl['legions'],
-                    'has_primarch_speech': cl['has_primarch_speech'],
-                    'chunk_ids': [c['chunk_id'] for c in cl['chunks']],
-                }
-                for rank, cl in enumerate(top_clusters, start=1)
-            ],
-        }
-        stats['processed'] += 1
-        stats['total_scenes'] += scenes_found
+        print(f"          → \"{short_fields['scene_name']}\"  ({len(chronicle.split()):,} words)")
 
-    print(f"\n  Writing {output_json.name} ...")
-    with open(output_json, 'w', encoding='utf-8') as f:
-        json.dump(all_clusters, f, ensure_ascii=False, indent=2)
+        save_checkpoint({"last_scene_id": scene["scene_id"], "woven": woven, "failed": failed,
+                          "fallback_chunks": fallback_chunks, "last_updated": None})
 
     print("\n" + "=" * 70)
-    print("  Stage 2 Complete")
+    print("  Stage 3 — Run Complete")
     print("=" * 70)
-    print(f"  Books processed        : {stats['processed']:,}")
-    print(f"  Books skipped          : {stats['skip_gate']:,}")
-    print(f"  Total scenes clustered : {stats['total_scenes']:,}")
-    print(f"\n  horus_clusters_raw.json  →  {output_json}")
-    print(f"  scenes written to        →  {args.scenes_db}")
+    print(f"  Scenes woven          : {woven:,}")
+    print(f"  Chunks using fallback  : {fallback_chunks:,}  (original text kept — model couldn't retain content)")
     print("=" * 70)
-    print("\n  Next: Stage 3 — LLM weaving (scene_name/teaser/chronicle generation)")
-
     conn.close()
 
 
