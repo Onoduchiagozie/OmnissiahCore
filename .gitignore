@@ -1,50 +1,23 @@
-# OmnissiahCoreOld — .gitignore
-# Do NOT commit the FAISS index or metadata — they are huge binary files.
-# Transfer them manually from Lenovo to Dell via USB or network share.
+# Databases
+*.db
+*.db-journal
 
-# ── Large binary index files (transfer manually) ──────────────────────────
-Db/faiss.index
-Db/metadata.json
-Db/
+# Vector indexes and embeddings
 *.index
-# ── Processed/tracking files (machine-local) ─────────────────────────────
-Db/processed_files.json
+*.onnx
+*.onnx_data
+bge_m3_onnx/
 
-# ── Raw data directories ──────────────────────────────────────────────────
-Data/raw_pdfs/
-Data/failed_pdfs/
+# Source books
+Mobi/
+Pdfs/
+PDFs/
 
-# ── Python cache ──────────────────────────────────────────────────────────
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-.Python
-*.egg-info/
-dist/
-build/
-
-# ── Virtual environments ──────────────────────────────────────────────────
-venv/
-.venv/
-env/
-
-# ── IDE ───────────────────────────────────────────────────────────────────
-.idea/
-.vscode/
-*.iml
-
-# ── OS ────────────────────────────────────────────────────────────────────
-.DS_Store
-Thumbs.db
-
-# ── Logs ─────────────────────────────────────────────────────────────────
-*.log
-
-Db/faiss.index
-Db/metadata.json
-Db/processed_files.json
-*.venv
-.venv/
-__pycache__/
-*.pyc
+# Build outputs
+clusters_raw.json
+horus_clusters_raw.json
+raw_scenes.json
+heresy_embeddings_meta.json
+heresy_chapter_text.db
+stage3_checkpoint.json
+heresy_embed_checkpoint.json
