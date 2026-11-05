@@ -230,3 +230,12 @@ WHAT TO DO FIRST IN THE NEXT CHAT
 4. Use all seven scene requests as acceptance cases. Distinguish refusal, transport completion, generated text and source-verified accuracy.
 5. Keep generation free; do not activate the staged OpenAI path based on the Plus trial.
 6. Commit authorized work to oracle; reconcile actual Lenovo source into lenovo only with user approval and preservation of its current work.
+
+LATER LIVE CONSOLE RECOVERY UPDATE (5 NOV 2026)
+The original http://127.0.0.1:18001/ page showed ECONNREFUSED to 127.0.0.1:18000 because its separate SSH tunnel had stopped. This was a real failure in the test setup. The tunnel was restored and browser Playwright verified the live page:
+- Health: Oracle online, dell_query, 498,850 chunks.
+- Inspect: user-style Loken/Jubal query, HTTP 200, six passage groups, raw inspection response present; this made no LLM call.
+- Narrate: Ferrus Manus/Fulgrim query, HTTP 200, 7,530 displayed characters, six sources, [DONE] marker, 66.5 seconds. This proves transport and display completion, not lore accuracy.
+A revised local console now starts its own SSH tunnel when ORACLE_SSH_AUTOSTART=1 and retries connection status in the page. On fresh ports 18002/18003, one-window startup and browser Inspect were verified. Automatic recovery after deliberately killing SSH was not tested. Current chat-run servers may stop when the chat ends; for independent use follow tools/live_oracle_console/README.md on the oracle branch and launch it in an ordinary Dell PowerShell window.
+
+

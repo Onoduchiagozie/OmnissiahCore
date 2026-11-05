@@ -79,10 +79,20 @@ details{margin-top:14px}summary{cursor:pointer;font-weight:600}details pre{margi
     const button=document.createElement('button');button.type='button';button.className='small';button.textContent=label;
     button.addEventListener('click',()=>{question.value=text;question.focus()});byId('samples').append(button);
   }
-  fetch('/api/health',{cache:'no-store'}).then(async response=>{
-    const data=await response.json();if(!response.ok||data.status!=='online')throw Error(data.proxy_error||'Service is not ready');
-    byId('health').textContent='Oracle online · '+data.llm_model+' · '+data.metadata_loaded.toLocaleString()+' text chunks · profile '+data.active_profile;
-  }).catch(error=>{byId('health').textContent='Connection error: '+error.message;byId('health').className='error'});
+  let checkingHealth=false;
+  async function checkHealth(){
+    if(checkingHealth)return;
+    checkingHealth=true;
+    try{
+      const response=await fetch('/api/health',{cache:'no-store'});
+      const data=await response.json();if(!response.ok||data.status!=='online')throw Error(data.proxy_error||'Service is not ready');
+      byId('health').textContent='Oracle online · '+data.llm_model+' · '+data.metadata_loaded.toLocaleString()+' text chunks · profile '+data.active_profile;
+      byId('health').className='';
+    }catch(error){byId('health').textContent='Oracle connection unavailable. Retrying automatically. Detail: '+error.message;byId('health').className='error'}
+    finally{checkingHealth=false}
+  }
+  checkHealth();
+  setInterval(checkHealth,10000);
   const refusal=text=>/^(the archives do not|the chronicles do not)/i.test(text.trim());
   function renderSources(items,inspect=false){
     sources.replaceChildren();
@@ -162,3 +172,5 @@ details{margin-top:14px}summary{cursor:pointer;font-weight:600}details pre{margi
 </script>
 </body>
 </html>
+
+

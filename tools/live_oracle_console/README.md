@@ -4,19 +4,12 @@ This is a real HTTP client, not a test-results dashboard. It forwards requests t
 
 ## Start without a Codex chat
 
-Use two ordinary Windows PowerShell windows. Node.js is required for the small console server; Oracle itself does not depend on Node or Codex.
-
-Window 1 — keep the SSH tunnel running. Ports 18002/18003 avoid the temporary 18000/18001 ports used in the original chat:
-
-```powershell
-ssh -i "$env:USERPROFILE\.ssh\oracle_dell" -N -L 127.0.0.1:18002:127.0.0.1:8000 -o ExitOnForwardFailure=yes -o ServerAliveInterval=30 ubuntu@129.151.163.64
-```
-
-Window 2 — from this directory:
+Use one ordinary Windows PowerShell window. Node.js and OpenSSH are required on Dell. The server starts and restarts its own SSH tunnel. Oracle itself does not depend on Node or Codex. From this directory:
 
 ```powershell
 $env:ORACLE_TUNNEL_PORT = "18002"
 $env:ORACLE_TEST_PORT = "18003"
+$env:ORACLE_SSH_AUTOSTART = "1"
 node .\server.cjs
 ```
 
@@ -26,7 +19,7 @@ On the original Dell, if node is not in PATH, the installed executable can also 
 & "$env:USERPROFILE\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe" .\server.cjs
 ```
 
-Open http://127.0.0.1:18003/ in your normal browser. Keep both PowerShell commands running; Ctrl+C stops each. Do not paste an API key into the page. It uses the provider already configured on Oracle.
+Open http://127.0.0.1:18003/ in your normal browser. Keep that PowerShell window running; Ctrl+C stops the console and its SSH tunnel. If the Oracle connection drops, the server retries the tunnel and the page refreshes connection status every ten seconds. Do not paste an API key into the page. It uses the provider already configured on Oracle.
 
 ## Use
 
@@ -36,6 +29,8 @@ A refusal or provider error is shown as such. HTTP success does not mean a scene
 
 ## Verified scope
 
-Playwright reached the actual server, submitted the Loken/Jubal question to Inspect, received HTTP 200 and six Horus Rising passage groups, and confirmed displayed passage text matched the raw response. No generation call was made for this console check. Generated narration through this new console has not been verified.
+Playwright reached the actual server, submitted the Loken/Jubal question to Inspect, received HTTP 200 and six passage groups, and confirmed the raw response included the inspection. It then submitted a Ferrus Manus/Fulgrim narration: HTTP 200, 7,530 answer characters, six sources, and the stream completion marker after 66.5 seconds. These checks verify the browser route and display, not the factual accuracy of the answer.
 
-The console binds only to loopback and requires the SSH tunnel. It is not a production public frontend or a completed TheForge integration. No standalone PowerShell launcher has been implemented.
+The console binds only to loopback and manages the SSH tunnel. It is not a production public frontend or a completed TheForge integration.
+
+
