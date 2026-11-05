@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>OmnissiahCore · Live Oracle test</title>
+<style>
+:root{color-scheme:light dark;--bg:light-dark(#f4f5f7,#10141b);--panel:light-dark(#fff,#19212c);--text:light-dark(#17202c,#edf2f7);--muted:light-dark(#536174,#a5b4c8);--line:light-dark(#d8dee7,#354155);--accent:light-dark(#175bbb,#85b5ff);--error:light-dark(#a22121,#ffa8a8);--warn:light-dark(#875000,#ffd28b)}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 system-ui,sans-serif}
+main{max-width:1100px;margin:auto;padding:24px;display:grid;gap:20px}
+header{display:flex;justify-content:space-between;align-items:start;gap:20px;flex-wrap:wrap}
+h1{font-size:24px;margin:0}h2{font-size:19px;margin:0 0 12px}p{margin:4px 0}
+.muted{color:var(--muted)}a{color:var(--accent)}section{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:20px;min-width:0}
+label{display:block;font-weight:600;margin-bottom:6px}textarea,input,select,button{font:inherit}
+textarea,input,select{width:100%;padding:11px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--text)}
+textarea{resize:vertical;min-height:110px}button{border:1px solid var(--line);padding:10px 16px;border-radius:6px;background:var(--panel);color:var(--text);cursor:pointer}
+button:disabled{cursor:wait;opacity:.6}button.primary{background:var(--accent);color:light-dark(#fff,#10213c);border-color:var(--accent);font-weight:600}
+button.small{padding:6px 10px;font-size:14px}.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.fields{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:16px 0}
+.status{font-weight:600}.error{color:var(--error)}.warn{color:var(--warn)}pre{white-space:pre-wrap;overflow-wrap:anywhere;margin:0;font:14px/1.55 ui-monospace,monospace}
+#answer{font:17px/1.75 system-ui,sans-serif;white-space:pre-wrap;overflow-wrap:anywhere}
+.sources{display:grid;gap:10px;margin-top:12px}.source{border-top:1px solid var(--line);padding-top:10px;overflow-wrap:anywhere}
+details{margin-top:14px}summary{cursor:pointer;font-weight:600}details pre{margin-top:10px}#health{font-size:14px}#stage{font-size:14px}.samples{margin-top:12px}
+@media(max-width:600px){main{padding:12px}.fields{grid-template-columns:1fr}section{padding:14px}h1{font-size:21px}}
+</style>
+</head>
+<body>
+<main>
+<header>
+  <div><h1>OmnissiahCore · Live Oracle test</h1><p class="muted">Type your own question. Read Oracle’s actual answer and evidence.</p></div>
+  <a href="/api/health" target="_blank" rel="noopener">View raw service health</a>
+</header>
+<div id="health" role="status">Checking the live Oracle connection…</div>
+<section>
+<form id="ask-form">
+  <label for="question">Your question</label>
+  <textarea id="question" placeholder="For example: loken saving the girl from jubal when possessed" required></textarea>
+  <details class="samples"><summary>Use one of your scene requests</summary><div class="row" id="samples" style="margin-top:10px"></div></details>
+  <div class="fields">
+    <div><label for="endpoint">Answer mode</label><select id="endpoint">
+      <option value="/query/narrate">Scene narration · streamed</option>
+      <option value="/query/focus">Focused answer · normal JSON</option>
+      <option value="/query/explore">Lore / object answer · normal JSON</option>
+      <option value="/query/inspect">Inspect retrieved passages · no LLM call</option>
+      <option value="/query/focus/stream">Focused answer · streamed</option>
+      <option value="/query/ghost">Scene library only · no LLM call</option>
+    </select></div>
+    <div><label for="book-filter">Book filter <span class="muted">(optional)</span></label><input id="book-filter" placeholder="Leave blank to search all books"></div>
+  </div>
+  <div class="row"><button id="send" class="primary" type="submit">Ask Oracle</button><span id="request-status" class="muted" role="status">No question submitted.</span></div>
+</form>
+</section>
+<section aria-live="polite">
+  <div class="row" style="justify-content:space-between"><h2>Actual result</h2><span id="http-status" class="muted"></span></div>
+  <div id="stage" class="muted"></div>
+  <div id="answer">Your answer or Oracle’s error will appear here.</div>
+  <div id="sources" class="sources"></div>
+</section>
+<section>
+  <details><summary>Exact request sent to Oracle</summary><pre id="raw-request">No request yet.</pre></details>
+  <details><summary>Raw response from Oracle</summary><pre id="raw-response">No response yet.</pre></details>
+</section>
+</main>
+<script>
+(() => {
+  const byId=id=>document.getElementById(id);
+  const form=byId('ask-form'),question=byId('question'),endpoint=byId('endpoint'),book=byId('book-filter');
+  const send=byId('send'),status=byId('request-status'),answer=byId('answer'),sources=byId('sources');
+  const rawRequest=byId('raw-request'),rawResponse=byId('raw-response'),httpStatus=byId('http-status'),stage=byId('stage');
+  const examples=[
+    ['Loken / Jubal','loken saving the girl from jubal when possessed'],
+    ['Horus / Invisibles','horus kills the invisibles'],
+    ['Kakophoni / White Scars','kakaponi of the 3rd legion attacked the 5th legion using sonic weapons'],
+    ['Lorgar / Magnus','discussion of lorgar and magnus'],
+    ['Sea of Souls','lorgar speaking about the sea of souls like an ocean'],
+    ['White Scars / daemon','slaneshi demon facing the white scars as they race to terra entire fight'],
+    ['Sharrowkyn / Lucius','sharokin and lucius battle angel exterminatus']
+  ];
+  for(const [label,text] of examples){
+    const button=document.createElement('button');button.type='button';button.className='small';button.textContent=label;
+    button.addEventListener('click',()=>{question.value=text;question.focus()});byId('samples').append(button);
+  }
+  fetch('/api/health',{cache:'no-store'}).then(async response=>{
+    const data=await response.json();if(!response.ok||data.status!=='online')throw Error(data.proxy_error||'Service is not ready');
+    byId('health').textContent='Oracle online · '+data.llm_model+' · '+data.metadata_loaded.toLocaleString()+' text chunks · profile '+data.active_profile;
+  }).catch(error=>{byId('health').textContent='Connection error: '+error.message;byId('health').className='error'});
+  const refusal=text=>/^(the archives do not|the chronicles do not)/i.test(text.trim());
+  function renderSources(items,inspect=false){
+    sources.replaceChildren();
+    for(const item of items){
+      const row=document.createElement('div');row.className='source';
+      const name=document.createElement('strong');name.textContent=item.source||'Unknown source';row.append(name);
+      const meta=document.createElement('div');meta.className='muted';
+      meta.textContent=[item.stitch_range,item.chapter&&item.chapter!=='unknown'?'Chapter: '+item.chapter:'',item.score!==undefined?'Rank score: '+item.score:''].filter(Boolean).join(' · ');row.append(meta);
+      if(inspect&&item.text){
+        const detail=document.createElement('details'),summary=document.createElement('summary'),text=document.createElement('pre');
+        summary.textContent='Read retrieved passage';text.textContent=item.text;detail.append(summary,text);row.append(detail);
+      }
+      sources.append(row);
+    }
+  }
+  form.addEventListener('submit',async event=>{
+    event.preventDefault();if(send.disabled)return;
+    const query=question.value.trim();if(!query)return;
+    const route=endpoint.value,payload={query,session_id:'dell-live-'+crypto.randomUUID()};
+    if(book.value.trim())payload.book_filter=book.value.trim();
+    rawRequest.textContent='POST '+route+'\n'+JSON.stringify(payload,null,2);rawResponse.textContent='';
+    answer.textContent='';sources.replaceChildren();stage.textContent='';httpStatus.textContent='';
+    answer.className='';status.className='muted';status.textContent='Waiting for Oracle…';send.disabled=true;
+    let completeText='',streamError=false,done=false,raw='';
+    const started=performance.now();
+    try{
+      const response=await fetch('/api'+route,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+      httpStatus.textContent='HTTP '+response.status;
+      if(!response.ok){raw=await response.text();rawResponse.textContent=raw;throw Error('HTTP '+response.status+': '+raw)}
+      if((response.headers.get('content-type')||'').includes('text/event-stream')){
+        const reader=response.body.getReader(),decoder=new TextDecoder();let pending='';
+        const consume=block=>{
+          const data=block.split('\n').filter(line=>line.startsWith('data:')).map(line=>line.slice(5).replace(/^ /,'')).join('\n');
+          if(!data)return;
+          if(data==='[DONE]'){done=true;return}
+          if(data.startsWith('__STAGE__:')){stage.textContent='Oracle stage: '+data.slice(10);return}
+          if(data.startsWith('__SOURCES__:')){renderSources(JSON.parse(data.slice(12)));return}
+          if(data.startsWith('[ERROR]')){streamError=true;completeText+='\n'+data;answer.className='error'}
+          else{completeText+=data}
+          answer.textContent=completeText;status.textContent='Receiving Oracle’s response…';
+        };
+        while(true){
+          const part=await reader.read();
+          if(part.done){const tail=decoder.decode();raw+=tail;pending+=tail;break}
+          const text=decoder.decode(part.value,{stream:true});raw+=text;pending+=text;
+          let boundary;
+          while((boundary=pending.indexOf('\n\n'))!==-1){consume(pending.slice(0,boundary));pending=pending.slice(boundary+2)}
+          rawResponse.textContent=raw;
+        }
+        if(pending.trim())consume(pending);
+        rawResponse.textContent=raw;
+        if(!done&&!streamError)throw Error('Oracle stream ended without its completion marker');
+      }else{
+        raw=await response.text();rawResponse.textContent=raw;
+        const data=JSON.parse(raw);
+        if(route==='/query/inspect'){
+          const hits=data.inspection?.selected_hits||data.inspection?.stitched_hits||[];
+          answer.textContent='Oracle returned '+hits.length+' passage groups. This inspection does not generate an answer.';
+          renderSources(hits,true);completeText=answer.textContent;
+        }else{
+          completeText=data.response|| (data.matched===false?'No matching scene in the scene library.':'No answer text returned.');
+          answer.textContent=completeText;renderSources(data.sources||[]);
+          streamError=completeText.includes('[ERROR]');
+        }
+      }
+      const elapsed=((performance.now()-started)/1000).toFixed(1);
+      if(streamError){status.textContent='Oracle returned a generation error · '+elapsed+'s';status.className='error'}
+      else if(refusal(completeText)){status.textContent='Oracle reported insufficient evidence · '+elapsed+'s';status.className='warn'}
+      else{status.textContent='Oracle response received · '+elapsed+'s'}
+      if(!answer.textContent)answer.textContent='Oracle returned no answer text. Check the raw response.';
+    }catch(error){
+      status.textContent='Request failed';status.className='error';answer.className='error';
+      answer.textContent=(completeText?completeText+'\n\n':'')+error.message;
+    }finally{send.disabled=false}
+  });
+})();
+</script>
+</body>
+</html>
