@@ -1,0 +1,205 @@
+[
+  {
+    "case": "loken-jubal",
+    "query": "loken saving the girl from jubal when possessed",
+    "ok": true,
+    "answered": false,
+    "sources": [
+      {
+        "source": "WH40K - The Horus Heresy 01 - Dan Abnett - Horus Rising.epub",
+        "chapter": "unknown",
+        "stitch_range": "chunk_id 410717-410721",
+        "score": 2.1393
+      },
+      {
+        "source": "01. Dan Abnett - Horus Rising (Horus Heresy, Book 1).pdf",
+        "chapter": "unknown",
+        "stitch_range": "chunk_id 13167-13171",
+        "score": 0.8721
+      }
+    ],
+    "stages": [
+      "embedding",
+      "retrieving",
+      "reranking",
+      "generating",
+      "complete"
+    ],
+    "done_events": 1,
+    "first_text_seconds": 27.63,
+    "seconds": 27.73,
+    "requires_source_review": false
+  },
+  {
+    "case": "horus-invisibles",
+    "query": "horus kills the invisibles",
+    "ok": true,
+    "answered": false,
+    "sources": [
+      {
+        "source": "WH40K - The Horus Heresy 15 - Dan Abnett - Prospero Burns.epub",
+        "chapter": "unknown",
+        "stitch_range": "chunk_id 418035-418039",
+        "score": 0.314
+      }
+    ],
+    "stages": [
+      "embedding",
+      "retrieving",
+      "reranking",
+      "generating",
+      "complete"
+    ],
+    "done_events": 1,
+    "first_text_seconds": 20.03,
+    "seconds": 20.12,
+    "requires_source_review": false
+  },
+  {
+    "case": "kakophoni-white-scars",
+    "query": "kakaponi of the 3rd legion attacked the 5th legion using sonic weapons",
+    "ok": true,
+    "answered": false,
+    "sources": [
+      {
+        "source": "Chris Wraight - The Soul Severed (Audio Drama).txt",
+        "chapter": "unknown",
+        "stitch_range": "chunk_id 225522-225525",
+        "score": 0.9991
+      }
+    ],
+    "stages": [
+      "embedding",
+      "retrieving",
+      "reranking",
+      "generating",
+      "complete"
+    ],
+    "done_events": 1,
+    "first_text_seconds": 11.78,
+    "seconds": 11.92,
+    "requires_source_review": false
+  },
+  {
+    "case": "lorgar-magnus",
+    "query": "discussion of lorgar and magnus",
+    "ok": true,
+    "answered": true,
+    "sources": [
+      {
+        "source": "24. Aaron Dembski Bowden - Betrayer (The Horus Heresy, Book 24).pdf",
+        "chapter": "unknown",
+        "stitch_range": "chunk_id 175296-175296",
+        "score": 4.527
+      },
+      {
+        "source": "24. Aaron Dembski Bowden - Betrayer (The Horus Heresy, Book 24).pdf",
+        "chapter": "unknown",
+        "stitch_range": "chunk_id 175291-175295",
+        "score": 4.0476
+      },
+      {
+        "source": "14. Aaron Dembski-Bowden - The First Heretic (The Horus Heresy, Book 14).pdf",
+        "chapter": "unknown",
+        "stitch_range": "chunk_id 156860-156861",
+        "score": 3.9123
+      },
+      {
+        "source": "14. Aaron Dembski-Bowden - The First Heretic (The Horus Heresy, Book 14).pdf",
+        "chapter": "unknown",
+        "stitch_range": "chunk_id 156862-156866",
+        "score": 3.8548
+      },
+      {
+        "source": "WH40K - The Horus Heresy 17b - Aaron Dembski-Bowden - Aurelian.epub",
+        "chapter": "unknown",
+        "stitch_range": "chunk_id 418706-418706",
+        "score": 3.6181
+      },
+      {
+        "source": "WH40K - The Horus Heresy 14 - Aaron Dembski-Bowden - The First Heretic.epub",
+        "chapter": "unknown",
+        "stitch_range": "chunk_id 417178-417182",
+        "score": 2.7405
+      }
+    ],
+    "stages": [
+      "embedding",
+      "retrieving",
+      "reranking",
+      "generating",
+      "complete"
+    ],
+    "done_events": 1,
+    "first_text_seconds": 23.32,
+    "seconds": 32.54,
+    "requires_source_review": true
+  },
+  {
+    "case": "sea-of-souls",
+    "query": "lorgar speaking about the sea of souls like an ocean",
+    "ok": true,
+    "answered": true,
+    "sources": [
+      {
+        "source": "WH40K - The Horus Heresy 14 - Aaron Dembski-Bowden - The First Heretic.epub",
+        "chapter": "unknown",
+        "stitch_range": "chunk_id 417176-417180",
+        "score": 0.238
+      }
+    ],
+    "stages": [
+      "embedding",
+      "retrieving",
+      "reranking",
+      "generating",
+      "complete"
+    ],
+    "done_events": 1,
+    "first_text_seconds": 31.83,
+    "seconds": 38.88,
+    "requires_source_review": true
+  },
+  {
+    "case": "white-scars-daemon",
+    "query": "slaneshi demon facing the white scars as they race to terra entire fight",
+    "ok": true,
+    "answered": false,
+    "sources": [],
+    "stages": [
+      "embedding",
+      "retrieving",
+      "reranking",
+      "complete"
+    ],
+    "done_events": 1,
+    "first_text_seconds": 5.0,
+    "seconds": 5.0,
+    "requires_source_review": false
+  },
+  {
+    "case": "sharrowkyn-lucius",
+    "query": "sharokin and lucius battle angel exterminatus",
+    "ok": true,
+    "answered": false,
+    "sources": [
+      {
+        "source": "23. Graham McNeill - Angel Exterminatus (The Horus Heresy, Book 23).pdf",
+        "chapter": "unknown",
+        "stitch_range": "chunk_id 174719-174719",
+        "score": 0.0074
+      }
+    ],
+    "stages": [
+      "embedding",
+      "retrieving",
+      "reranking",
+      "generating",
+      "complete"
+    ],
+    "done_events": 1,
+    "first_text_seconds": 9.37,
+    "seconds": 9.39,
+    "requires_source_review": false
+  }
+]

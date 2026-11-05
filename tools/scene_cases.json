@@ -1,0 +1,9 @@
+[
+  {"id":"loken-jubal","raw_query":"loken saving the girl from jubal when possessed","query":"Loken saves a girl from the possessed Jubal. Describe the confrontation and rescue using the source evidence."},
+  {"id":"horus-invisibles","raw_query":"horus kills the invisibles","query":"Horus kills the Invisibles. Find and recount the confrontation. Do not substitute another encounter if the passages do not identify this one."},
+  {"id":"kakophoni-white-scars","raw_query":"kakaponi of the 3rd legion attacked the 5th legion using sonic weapons","query":"The Kakophoni of the Emperor's Children attack the White Scars using sonic weapons. Recount the attack and the White Scars' response from the supplied passages."},
+  {"id":"lorgar-magnus","raw_query":"discussion of lorgar and magnus","query":"Lorgar and Magnus speak together. Recount their discussion and disagreements using the retrieved passages."},
+  {"id":"sea-of-souls","raw_query":"lorgar speaking about the sea of souls like an ocean","query":"Lorgar describes the Sea of Souls as an ocean. Find the conversation and explain the ocean analogy using the passages."},
+  {"id":"white-scars-daemon","raw_query":"slaneshi demon facing the white scars as they race to terra entire fight","query":"A Slaaneshi daemon confronts the White Scars during their journey to Terra. Reconstruct the fight in chronological order, including its outcome only where the retrieved passages establish it."},
+  {"id":"sharrowkyn-lucius","raw_query":"sharokin and lucius battle angel exterminatus","query":"Nykona Sharrowkyn fights Lucius in Angel Exterminatus. Recount their fight using only the source passages.","suggested_book_filter":"Angel Exterminatus"}
+]
