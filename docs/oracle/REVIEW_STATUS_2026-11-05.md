@@ -1,14 +1,10 @@
-# Oracle review branch — 5 November 2026
+# Oracle branch status — 5 November 2026
 
-This branch records Oracle work without reconciling or modifying Lenovo. The repository root remains the existing main code.
+The root of the `oracle` branch matches the allowlisted deployed Oracle source. `lenovo` preserves the previous GitHub main baseline; it has not been reconciled with the current Lenovo machine. See `/BRANCHES.md` for the separation and commit workflow.
 
-- `deployments/oracle/2026-11-05/app/`: allowlisted deployed Oracle source snapshot and manifest. It includes the actual provider/retrieval/output-completion changes.
-- `staging/natural-queries/`: proposed zero-API-cost QueryRewriter, retrieval and prompt integrations. Twenty-one tests passed on Oracle. Not deployed. Generic reranker cutoff and scene retrieval remain unresolved.
-- `staging/openai-migration/`: tested Responses adapter and proposed agent integration. Nine mocked tests passed. No key/credit or live model access established; not deployed.
-- `tools/verify_scenes.py` and `tools/scene_cases.json`: repeatable seven-scene checks. Default is raw human wording and retrieval-only inspection. Generation requires choosing one case explicitly.
-- `docs/oracle/SCENE_VERIFICATION_2026-11-05.md`: endpoints, commands, observed failures and next acceptance criteria.
-- `docs/oracle/scene-narrative-results.json`: result metadata only; generated scenes and source text remain on Oracle.
+- Deployed: Gemini provider retries/fallback, 8192-token output budget, explicit completion checks, corrected multiline SSE framing, existing hybrid retrieval and reranking safeguard. Backups and observed limits are documented in the dated Oracle snapshot.
+- Staged only: free automatic QueryRewriter and prompt/retriever integration; 21 tests passed. OpenAI adapter; 9 simulated provider tests passed, no real API key/credit verified.
+- Delivered: seven-scene test CLI and fixture list; saved original-wording retrieval/narrative results. Five scene requests refused for insufficient evidence; two generated narratives still require source review. Corrected-name/book-filter diagnostics also failed for Loken/Jubal and Sharrowkyn/Lucius.
+- Diagnosed: useful raw fight passages exist in Horus Rising and Angel Exterminatus. Ranking stitched passages can truncate context beyond the reranker's 512-token input window. The Laer blade example also shows the generic zero cutoff is too strict for some relevant passages. These are unresolved retrieval defects, not evidence the books are missing.
 
-The broad natural-language narrative trial produced two unverified substantive responses and five insufficient-evidence responses. HTTP/SSE success is not evidence of a correct answer. Do not mark the application production-complete or deploy repository-root code over Oracle or Lenovo.
-
-Future provider-class refactoring and GitHub deployment automation are not implemented. Further production edits require user approval and backups. Commits on this branch are review records, not automatic deployments.
+The next proposed repair is to rank raw candidate passages before stitching and validate against all seven requested scenes. That repair has not been implemented or deployed. Provider-class refactoring and automatic GitHub deployment are also pending.

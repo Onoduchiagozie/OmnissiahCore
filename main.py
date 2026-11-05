@@ -12,10 +12,17 @@ Usage:
 
 import sys
 import os
+import time
+import json
+import subprocess
+import urllib.request
+
 os.environ['TRANSFORMERS_OFFLINE'] = '1'
 os.environ['HF_DATASETS_OFFLINE'] = '1'
 os.environ['HF_HUB_OFFLINE'] = '1'
 
+NGROK_DOMAIN = "emerald-nativity-guacamole.ngrok-free.dev"
+NGROK_PORT = 8000
 
 COMMANDS = {
     "cli":    ("Scripts/CLI.py",  "Interactive lore query CLI"),
@@ -32,6 +39,49 @@ def usage():
     print()
 
 
+def ngrok_already_running():
+    """True if ngrok's local API shows a live tunnel on our domain."""
+    try:
+        with urllib.request.urlopen("http://127.0.0.1:4040/api/tunnels", timeout=2) as resp:
+            tunnels = json.loads(resp.read()).get("tunnels", [])
+            return any(NGROK_DOMAIN in t.get("public_url", "") for t in tunnels)
+    except Exception:
+        return False
+
+
+def start_ngrok():
+    if ngrok_already_running():
+        print(f"[ngrok] already running on {NGROK_DOMAIN}, skipping launch")
+        return
+
+    log_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "ngrok.log")
+    log_file = open(log_path, "w", encoding="utf-8")
+
+    popen_kwargs = {"stdout": log_file, "stderr": subprocess.STDOUT}
+    if os.name == "nt":
+        # New process group so Ctrl+C on the server doesn't also kill ngrok
+        popen_kwargs["creationflags"] = subprocess.CREATE_NEW_PROCESS_GROUP
+
+    try:
+        subprocess.Popen(
+            ["ngrok", "http", f"--domain={NGROK_DOMAIN}", str(NGROK_PORT)],
+            **popen_kwargs,
+        )
+    except FileNotFoundError:
+        print("[ngrok] executable not found on PATH — skipping auto-start")
+        log_file.close()
+        return
+
+    log_file.close()
+
+    for _ in range(10):
+        time.sleep(1)
+        if ngrok_already_running():
+            print(f"[ngrok] tunnel live: https://{NGROK_DOMAIN}")
+            return
+    print("[ngrok] did not confirm within 10s — check ngrok.log")
+
+
 if len(sys.argv) < 2 or sys.argv[1] not in COMMANDS:
     usage()
     sys.exit(0)
@@ -42,6 +92,7 @@ script, desc = COMMANDS[mode]
 print(f"\n[OmnissiahCore] Starting: {desc}\n")
 
 if mode == "api":
+    start_ngrok()
     os.execv(
         sys.executable,
         [

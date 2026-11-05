@@ -1,31 +1,152 @@
-# OmnissiahCoreOld — requirements.txt
-# Install on BOTH machines unless noted.
-
-# ── Core RAG ──────────────────────────────────────────────────────────────
-faiss-cpu>=1.7.4          # FAISS vector store (CPU version for both machines)
-sentence-transformers>=2.7.0  # BGE-M3 embedding + CrossEncoder reranker
-numpy>=1.26.0
-torch>=2.1.0              # CPU-only on Dell is fine; GPU optional on Lenovo
-
-# ── BM25 sparse search ────────────────────────────────────────────────────
-rank-bm25>=0.2.2
-
-# ── File ingestion (Lenovo build machine only) ────────────────────────────
-pypdf>=4.0.0              # PDF extraction
-python-docx>=1.1.0        # DOCX extraction (optional)
-beautifulsoup4>=4.12.0    # HTML extraction (optional)
-lxml>=5.1.0               # HTML parser backend (optional)
-
-# ── FastAPI backend ───────────────────────────────────────────────────────
-fastapi>=0.111.0
-uvicorn[standard]>=0.29.0
-pydantic>=2.7.0
-
-# ── HTTP (Ollama calls) ───────────────────────────────────────────────────
-requests>=2.31.0
-httpx>=0.27.0             # async alternative, used by FastAPI test client
-
-# ── Utilities ─────────────────────────────────────────────────────────────
-tqdm>=4.66.0
-
-pytest
+aider-install==0.2.0
+aiofile==3.9.0
+aiohappyeyeballs==2.7.1
+aiohttp==3.14.3
+aiosignal==1.4.0
+annotated-doc==0.0.4
+annotated-types==0.7.0
+anyio==4.13.0
+async-timeout==5.0.1
+attrs==26.1.0
+Authlib==1.7.2
+backports.tarfile==1.2.0
+beartype==0.22.9
+beautifulsoup4==4.14.3
+bm25s==0.3.9
+cachetools==7.1.7
+caio==0.9.25
+certifi==2026.4.22
+cffi==2.1.0
+charset-normalizer==3.4.7
+circuitbreaker==2.1.3
+click==8.3.3
+colorama==0.4.6
+configparser==7.2.0
+crc32c==2.8
+cryptography==49.0.0
+cyclopts==4.22.4
+distro==1.9.0
+dnspython==2.8.0
+docstring_parser==0.18.0
+duckduckgo_search==8.1.1
+email-validator==2.3.0
+exceptiongroup==1.3.1
+faiss-cpu==1.13.2
+fastapi==0.136.1
+fastmcp==3.4.5
+fastmcp-slim==3.4.5
+filelock==3.29.0
+frozenlist==1.8.0
+fsspec==2026.3.0
+git-filter-repo==2.47.0
+griffelib==2.1.0
+h11==0.16.0
+hf-xet==1.4.3
+httpcore==1.0.9
+httpcore2==2.9.1
+httptools==0.7.1
+httpx==0.28.1
+httpx-sse==0.4.3
+httpx2==2.9.1
+huggingface_hub==1.12.0
+idna==3.18
+importlib_metadata==9.0.0
+iniconfig==2.3.0
+jaraco.classes==3.4.0
+jaraco.context==6.1.2
+jaraco.functools==4.6.0
+Jinja2==3.1.6
+jiter==0.16.0
+joblib==1.5.3
+joserfc==1.7.4
+jsonref==1.1.0
+jsonschema==4.26.0
+jsonschema-path==0.5.0
+jsonschema-specifications==2025.9.1
+keyring==25.7.0
+loguru==0.7.3
+lxml==6.1.0
+markdown-it-py==4.0.0
+MarkupSafe==3.0.3
+mcp==1.29.0
+mcp-types==2.0.0
+mdurl==0.1.2
+mobi==0.4.1
+more-itertools==11.1.0
+mpmath==1.3.0
+multidict==6.7.1
+networkx==3.4.2
+numpy==2.2.6
+oci==2.183.0
+-e git+https://github.com/mosesman831/OCI-OcC-Fix.git@ccb01eaabe5eaaf9e956e39646fad332bd85e988#egg=oci_occ_fix
+openai==2.45.0
+openapi-pydantic==0.5.1
+opentelemetry-api==1.44.0
+packaging==26.2
+pathable==0.6.0
+pillow==12.1.1
+platformdirs==4.11.0
+pluggy==1.6.0
+primp==1.3.1
+propcache==0.5.2
+psutil==7.2.2
+py-key-value-aio==0.4.5
+pycparser==3.0
+pydantic==2.13.3
+pydantic-settings==2.14.2
+pydantic_core==2.46.3
+Pygments==2.20.0
+PyJWT==2.13.0
+pyOpenSSL==26.3.0
+pypdf==6.10.2
+PyPDF2==3.0.1
+pyperclip==1.11.0
+pyTelegramBotAPI==4.36.0
+pytest==9.0.3
+python-dateutil==2.9.0.post0
+python-docx==1.2.0
+python-dotenv==1.2.2
+python-multipart==0.0.32
+pytz==2026.3.post1
+pywin32==312
+pywin32-ctypes==0.2.3
+PyYAML==6.0.3
+rank-bm25==0.2.2
+referencing==0.37.0
+regex==2026.4.4
+requests==2.33.1
+rich==15.0.0
+rich-rst==2.1.0
+rpds-py==0.30.0
+safetensors==0.7.0
+scikit-learn==1.7.2
+scipy==1.15.3
+sentence-transformers==5.4.1
+shellingham==1.5.4
+six==1.17.0
+sniffio==1.3.1
+soupsieve==2.8.3
+sse-starlette==3.4.6
+standard-imghdr==3.13.0
+starlette==1.3.1
+sympy==1.14.0
+threadpoolctl==3.6.0
+tokenizers==0.22.2
+tomli==2.4.1
+torch==2.12.1+cu130
+torchvision==0.27.1+cu130
+tqdm==4.67.3
+transformers==5.6.2
+truststore==0.10.4
+typer==0.25.0
+typing-inspection==0.4.2
+typing_extensions==4.15.0
+uncalled-for==0.3.2
+urllib3==2.6.3
+uv==0.11.26
+uvicorn==0.46.0
+watchfiles==1.1.1
+websockets==16.0
+win32_setctime==1.2.0
+yarl==1.24.5
+zipp==4.1.0

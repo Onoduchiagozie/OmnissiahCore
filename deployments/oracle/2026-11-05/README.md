@@ -1,9 +1,7 @@
-# Oracle production snapshot — 5 November 2026
+# Oracle source snapshot — 5 November 2026
 
-This folder records the code actually deployed on Oracle. The repository root remains the existing main-branch code. It is not a merged Lenovo/Oracle application.
+This directory records the deployed Oracle source and its original hashes and encodings. On the named `oracle` branch, these allowlisted files also appear at repository root. On the historical `codex/oracle-stabilization-20261105` review branch, the root was preserved from main.
 
-`app/` contains an allowlisted source snapshot; `manifest.json` records hashes and source encodings. Runtime data, models, databases, credentials, and environment files are excluded.
+`app/` excludes runtime data, models, databases, corpus material and secrets. `manifest.json` records source file hashes; the GitHub copy uses UTF-8 and notes the original UTF-16 requirements encoding. `CHANGELOG.md` records the earlier verification and its limits.
 
-The deployed changes include Gemini retries and fallback, synchronous/streamed routing, explicit generation-completion checks, multiline SSE framing, an 8192-token Oracle generation allowance, and earlier retrieval reranking safeguards. See `CHANGELOG.md` for observed tests and unresolved defects. Generic reranker cutoff calibration and retrieval recall remain unresolved; previous HTTP success checks did not establish complete or accurate answers.
-
-Future staged changes are recorded separately. No code was written to the Lenovo or deployed to Oracle by this GitHub archival commit. Do not copy the repository root to Oracle as a deployment.
+Staged query and OpenAI changes are separate from this deployed snapshot. Refer to `/BRANCHES.md` and `/docs/oracle/REVIEW_STATUS_2026-11-05.md` for current status. The `lenovo` branch is only the pre-existing GitHub baseline until the actual Lenovo working tree is compared.
