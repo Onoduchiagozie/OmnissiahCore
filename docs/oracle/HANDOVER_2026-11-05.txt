@@ -237,5 +237,6 @@ The original http://127.0.0.1:18001/ page showed ECONNREFUSED to 127.0.0.1:18000
 - Inspect: user-style Loken/Jubal query, HTTP 200, six passage groups, raw inspection response present; this made no LLM call.
 - Narrate: Ferrus Manus/Fulgrim query, HTTP 200, 7,530 displayed characters, six sources, [DONE] marker, 66.5 seconds. This proves transport and display completion, not lore accuracy.
 A revised local console now starts its own SSH tunnel when ORACLE_SSH_AUTOSTART=1 and retries connection status in the page. On fresh ports 18002/18003, one-window startup and browser Inspect were verified. Automatic recovery after deliberately killing SSH was not tested. Current chat-run servers may stop when the chat ends; for independent use follow tools/live_oracle_console/README.md on the oracle branch and launch it in an ordinary Dell PowerShell window.
+The independent Dell launcher is tools/live_oracle_console/start-oracle-console.cmd; double-click it or run it from PowerShell, then open http://127.0.0.1:18003/. The launcher itself was run and Playwright verified the resulting page and Inspect request.
 
 

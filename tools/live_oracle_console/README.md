@@ -4,7 +4,9 @@ This is a real HTTP client, not a test-results dashboard. It forwards requests t
 
 ## Start without a Codex chat
 
-Use one ordinary Windows PowerShell window. Node.js and OpenSSH are required on Dell. The server starts and restarts its own SSH tunnel. Oracle itself does not depend on Node or Codex. From this directory:
+On Dell, double-click `start-oracle-console.cmd` in this directory, then open http://127.0.0.1:18003/ in your normal browser. Keep the command window open while testing. The server starts and restarts its own SSH tunnel. Node.js and OpenSSH are required; the launcher uses the bundled Node runtime if present and otherwise `node` from PATH. Oracle itself does not depend on Node or Codex.
+
+To launch it from PowerShell instead, run `./start-oracle-console.cmd` from this directory. The equivalent manual commands are:
 
 ```powershell
 $env:ORACLE_TUNNEL_PORT = "18002"
