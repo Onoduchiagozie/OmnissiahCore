@@ -1,0 +1,93 @@
+{
+    "active_profile": "lenovo_build",
+    "profiles": {
+        "lenovo_build": {
+            "_comment": "High-memory build machine. Embedding + inference. 48GB RAM.",
+            "machine_role": "build",
+            "embedding": {
+                "enabled": true,
+                "model": "BAAI/bge-m3",
+                "max_seq_length": 512,
+                "normalize": true,
+                "batch_size_gpu": 32,
+                "batch_size_cpu": 16,
+                "device": "auto"
+            },
+            "retrieval": {
+                "use_faiss": true,
+                "use_bm25": true,
+                "use_reranker": true,
+                "rerank_model": "cross-encoder/ms-marco-MiniLM-L-6-v2",
+                "candidate_pool": 40,
+                "top_k": 10,
+                "stitching_window": 5,
+                "rrf_k": 60
+            },
+            "llm": {
+                "url": "http://127.0.0.1:1234/v1/chat/completions",
+                "model": "gemma-4-e4b-it-qat",
+                "num_ctx": 8096,
+                "temperature": 0.4,
+                "top_p": 0.9,
+                "max_tokens": 4096,
+                "stream": true,
+                "timeout": 900
+            },
+            "chunking": {
+                "target_tokens": 350,
+                "overlap_sentences": 2
+            },
+            "paths": {
+                "pdf_dir": "Data/raw_pdfs",
+                "failed_dir": "Data/failed_pdfs",
+                "db_dir": "Db"
+            }
+        },
+        "dell_query": {
+            "_comment": "Low-memory query-only machine. 8GB RAM. Inference only.",
+            "machine_role": "query",
+            "embedding": {
+                "enabled": true,
+                "model": "BAAI/bge-m3",
+                "max_seq_length": 512,
+                "normalize": true,
+                "batch_size_gpu": 4,
+                "batch_size_cpu": 2,
+                "device": "cpu"
+            },
+            "retrieval": {
+                "use_faiss": true,
+                "use_bm25": true,
+                "use_reranker": true,
+                "rerank_model": "cross-encoder/ms-marco-MiniLM-L-6-v2",
+                "candidate_pool": 20,
+                "top_k": 6,
+                "stitching_window": 2,
+                "rrf_k": 60
+            },
+            "llm": {
+                "url": "http://localhost:1234/v1/chat/completions",
+                "model": "gemini-3.6-flash",
+                "fallback_models": ["gemini-3.5-flash"],
+                "retries_per_model": 1,
+                "num_ctx": 6144,
+                "temperature": 0.4,
+                "top_p": 0.9,
+                "max_tokens": 8192,
+                "stream": true,
+                "timeout": 240,
+                "provider": "gemini",
+                "api_base": "https://generativelanguage.googleapis.com/v1beta"
+            },
+            "chunking": {
+                "target_tokens": 400,
+                "overlap_sentences": 2
+            },
+            "paths": {
+                "pdf_dir": "Data/raw_pdfs",
+                "failed_dir": "Data/failed_pdfs",
+                "db_dir": "Db"
+            }
+        }
+    }
+}
