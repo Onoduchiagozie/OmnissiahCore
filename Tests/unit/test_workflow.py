@@ -19,7 +19,7 @@ class PrivateSettingsTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
-        self.root = Path(self.temp.name)
+        self.root = Path(self.temp.name).resolve()
         self.defaults = self.root / "defaults.json"
         self.defaults.write_text(json.dumps({"active_profile": "local", "profiles": {
             "local": {"paths": {"db_dir": "Db"}, "llm": {"model": "default", "timeout": 10}}}}))
@@ -111,7 +111,7 @@ class DeploymentTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
-        self.root = Path(self.temp.name)
+        self.root = Path(self.temp.name).resolve()
         self.app = self.root / "app"
         self.stage = self.root / "stage"
         for directory in (self.app / "Core", self.stage / "Core"):

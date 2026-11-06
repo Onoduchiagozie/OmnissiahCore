@@ -31,6 +31,7 @@ def digest(path):
 
 
 def target(root, name):
+    root = root.resolve()
     if name != "release.json" and not permitted(name):
         raise ValueError("Invalid release path.")
     p = root / name
