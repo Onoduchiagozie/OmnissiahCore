@@ -392,7 +392,7 @@ class OmnissiahRetriever:
             if self._scene_has_query_grounding(query, s)
         ]
         return self._scenes_to_chunks(grounded[:max_sources])
-    
+
     def _scene_has_query_grounding(self, query: str, scene_meta: dict) -> bool:
         """
         Semantic similarity alone isn't proof of topical relevance — two
@@ -789,7 +789,8 @@ class OmnissiahRetriever:
     def _enrich_query(self, query: str) -> str:
         return f"Represent this sentence for searching relevant passages: {query}"
 
-    def _resolve_device(self) -> str:
+    @staticmethod
+    def _resolve_device() -> str:
         setting = embedding_cfg.get("device", "auto")
         if setting == "auto":
             return "cuda" if torch.cuda.is_available() else "cpu"

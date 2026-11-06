@@ -12,6 +12,17 @@ from Core.config_loader import paths
 router = APIRouter(tags=["System"])
 
 
+@router.get("/version")
+async def version():
+    """Identify deployed code without exposing providers or private settings."""
+    from pathlib import Path
+    manifest = Path(__file__).resolve().parents[2] / "release.json"
+    if manifest.is_file():
+        data = json.loads(manifest.read_text(encoding="utf-8"))
+        return {"commit": data["commit"], "deployed_at": data.get("deployed_at")}
+    return {"commit": "development", "deployed_at": None}
+
+
 @router.get("/health")
 async def health():
     return runtime_service.health_payload()

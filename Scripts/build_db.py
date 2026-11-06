@@ -21,20 +21,19 @@ from tqdm import tqdm
 from pathlib import Path
 from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from Core.config_loader import cfg, active_profile, paths, machine_role
 
 # --- SYSTEM PATH CONFIGURATION ---
-POPPLER_PATH = r"C:\poppler\Library\bin"
-TESSERACT_EXE = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
-SEVEN_ZIP_EXE = r"C:\Program Files\7-Zip\7z.exe"
-CALIBRE_CONVERT = r"C:\Program Files\Calibre2\ebook-convert.exe"
-
-os.environ["TRANSFORMERS_OFFLINE"] = "0"
-os.environ["HF_DATASETS_OFFLINE"] = "0"
+POPPLER_PATH = os.getenv("OMNISSIAH_POPPLER_PATH") or None
+TESSERACT_EXE = os.getenv("OMNISSIAH_TESSERACT", "tesseract")
+SEVEN_ZIP_EXE = os.getenv("OMNISSIAH_7ZIP", "7z")
+CALIBRE_CONVERT = os.getenv("OMNISSIAH_CALIBRE", "ebook-convert")
 
 # Inject paths
 for p in [POPPLER_PATH, os.path.dirname(TESSERACT_EXE), os.path.dirname(SEVEN_ZIP_EXE)]:
-    if os.path.exists(p) and p not in os.environ["PATH"]:
-        os.environ["PATH"] += f";{p}"
+    if p and os.path.exists(p) and p not in os.environ["PATH"]:
+        os.environ["PATH"] += os.pathsep + p
 
 try:
     import torch
@@ -48,20 +47,27 @@ try:
     from ebooklib import epub
     from bs4 import BeautifulSoup
     from PIL import Image
-    from optimum.onnxruntime import ORTModelForFeatureExtraction
-    from transformers import AutoTokenizer
-    import onnxruntime as ort
 except ImportError as e:
     print(f"[!] Missing library: {e}")
     sys.exit(1)
+
+try:
+    from optimum.onnxruntime import ORTModelForFeatureExtraction
+    from transformers import AutoTokenizer
+    import onnxruntime as ort
+except ImportError:
+    ort = None  # Optional optimization; normal PyTorch builds need no ONNX export.
 
 if os.path.exists(TESSERACT_EXE):
     pytesseract.pytesseract.tesseract_cmd = TESSERACT_EXE
 
 
 class OmnissiahBuilder:
-    def __init__(self, config_path="config.json"):
-        self.load_config(config_path)
+    def __init__(self):
+        if machine_role != "build":
+            raise RuntimeError("Index building requires the local build profile.")
+        self.config = json.loads(json.dumps(cfg))
+        self.config["paths"].update({key: paths[key] for key in ("pdf_dir", "failed_dir", "db_dir")})
         self.db_dir = Path(self.config["paths"]["db_dir"])
         self.db_dir.mkdir(parents=True, exist_ok=True)
 
@@ -81,12 +87,6 @@ class OmnissiahBuilder:
         self.load_state()
         self.init_models()
 
-    def load_config(self, path):
-        with open(path, 'r', encoding='utf-8') as f:
-            full_config = json.load(f)
-            self.config = full_config["profiles"][full_config["active_profile"]]
-            print(f"[Config] Profile: '{full_config['active_profile']}'")
-
     def load_state(self):
         self.processed_files = set()
         if self.processed_files_path.exists():
@@ -105,10 +105,10 @@ class OmnissiahBuilder:
 
     def init_models(self):
         model_name = self.config["embedding"]["model"]
-        onnx_dir = "bge_m3_onnx"
+        onnx_dir = os.getenv("OMNISSIAH_ONNX_DIR", "")
         self.use_onnx = False
 
-        if os.path.exists(onnx_dir) and "CUDAExecutionProvider" in ort.get_available_providers():
+        if ort is not None and onnx_dir and os.path.exists(onnx_dir) and "CUDAExecutionProvider" in ort.get_available_providers():
             try:
                 # Test DLL load silently
                 ort.InferenceSession(os.path.join(onnx_dir, "model.onnx"), providers=['CUDAExecutionProvider'])
@@ -121,8 +121,11 @@ class OmnissiahBuilder:
                 print("[!] GPU Init Fail (DLL Issue). Stability Fallback: CPU Mode.")
 
         if not self.use_onnx:
-            print("[*] Mode: CPU (SentenceTransformers)")
-            self.model = SentenceTransformer(model_name, device="cpu", local_files_only=True)
+            from Core.retriever import OmnissiahRetriever
+            device = OmnissiahRetriever._resolve_device()
+            print(f"[*] Mode: {device} (SentenceTransformers)")
+            self.model = SentenceTransformer(model_name, device=device)
+            self.model.max_seq_length = self.config["embedding"]["max_seq_length"]
 
     def get_embeddings(self, texts):
         if self.use_onnx:
@@ -130,7 +133,8 @@ class OmnissiahBuilder:
             with torch.no_grad():
                 outputs = self.onnx_model(**inputs)
                 return outputs.last_hidden_state[:, 0, :].cpu().numpy()
-        return self.model.encode(texts, batch_size=self.config["embedding"]["batch_size_cpu"], show_progress_bar=False)
+        gpu = str(self.model.device) != "cpu"
+        return self.model.encode(texts, batch_size=self.config["embedding"]["batch_size_gpu" if gpu else "batch_size_cpu"], show_progress_bar=False)
 
     def extract_text(self, f):
         ext = f.suffix.lower()
@@ -178,7 +182,7 @@ class OmnissiahBuilder:
                 return "\n".join(list(exe.map(lambda i: pytesseract.image_to_string(Image.open(i)), imgs[:50])))
 
     def chunk_text(self, text, source):
-        nltk.download('punkt', quiet=True)
+        nltk.download('punkt_tab', quiet=True)
         sents = sent_tokenize(text)
         chunks, cur, l = [], [], 0
         target, overlap = self.config["chunking"]["target_tokens"], self.config["chunking"]["overlap_sentences"]
@@ -231,6 +235,8 @@ class OmnissiahBuilder:
                 self.save(fails)
 
     def save(self, fails):
+        if self.faiss_index is None:
+            raise RuntimeError("No index was built. Add readable documents to the configured corpus directory.")
         faiss.write_index(self.faiss_index, str(self.index_path))
         manifest = {
             "build_date": datetime.now().isoformat(),

@@ -8,6 +8,7 @@ Never hardcode paths, model names, or parameters anywhere else.
 import json
 import os
 import sys
+from Core.private_config import load_settings
 
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -77,10 +78,9 @@ def _load_config() -> tuple[str, dict]:
         _fatal(f"config.json not found at: {CONFIG_PATH}")
 
     try:
-        with open(CONFIG_PATH, "r", encoding="utf-8") as f:
-            raw = json.load(f)
-    except json.JSONDecodeError as e:
-        _fatal(f"config.json is malformed: {e}")
+        raw = load_settings(CONFIG_PATH)
+    except (ValueError, OSError):
+        _fatal("Could not load configuration; check the defaults and private settings file.")
 
     active = os.getenv("OMNISSIAH_ACTIVE_PROFILE", raw.get("active_profile", "lenovo_build"))
     profiles = raw.get("profiles", {})
@@ -88,6 +88,12 @@ def _load_config() -> tuple[str, dict]:
         _fatal(f"Active profile '{active}' not found in config.json")
 
     profile = profiles[active]
+    if raw.get("data_root"):
+        profile = json.loads(json.dumps(profile))
+        profile["paths"] = {
+            key: os.path.join(raw["data_root"], value)
+            for key, value in profile["paths"].items()
+        }
     _require_keys(
         "profile",
         profile,

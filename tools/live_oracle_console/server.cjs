@@ -4,11 +4,17 @@ const fs = require('node:fs');
 const path = require('node:path');
 const net = require('node:net');
 const { spawn } = require('node:child_process');
+const os = require('node:os');
+const connectionPath = process.env.OMNISSIAH_PUBLISH_CONFIG || path.join(os.homedir(), '.config', 'omnissiahcore', 'publish.json');
+const connection = fs.existsSync(connectionPath) ? JSON.parse(fs.readFileSync(connectionPath, 'utf8').replace(/^\uFEFF/, '')) : {};
 const port = Number(process.env.ORACLE_TEST_PORT || 18001);
 const upstreamPort = Number(process.env.ORACLE_TUNNEL_PORT || 18000);
 const autoTunnel = process.env.ORACLE_SSH_AUTOSTART === '1';
-const sshHost = process.env.ORACLE_SSH_HOST || 'ubuntu@129.151.163.64';
-const sshKey = process.env.ORACLE_SSH_KEY || path.join(process.env.USERPROFILE || '', '.ssh', 'oracle_dell');
+const sshHost = process.env.ORACLE_SSH_HOST || connection.ssh_host;
+const sshKey = process.env.ORACLE_SSH_KEY || connection.identity_file;
+if (autoTunnel && (!sshHost || !sshKey)) {
+  throw new Error('Configure the private publish.json file before starting an Oracle tunnel. See README.md.');
+}
 let tunnel = null;
 let stopping = false;
 let checkingTunnel = false;
@@ -84,5 +90,3 @@ function shutdown() {
 }
 process.on('SIGINT', shutdown);
 process.on('SIGTERM', shutdown);
-
-
