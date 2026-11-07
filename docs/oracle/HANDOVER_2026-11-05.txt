@@ -1,0 +1,242 @@
+OMNISSIAHCORE / ORACLE / THEFORGE — HANDOVER
+5 November 2026. The user is leaving this chat because progress and test evidence have been confusing. Do not ask them to explain the project again.
+
+CURRENT OUTCOME — DO NOT OVERSTATE IT
+There is a running Oracle API and deployed generation safeguards. The application is NOT verified ready for users: five of seven requested scene queries refused for insufficient evidence; two produced substantial text but remain source-unverified. Staged unit/mock test passes do not prove real scene accuracy or frontend integration.
+
+USER REQUIREMENTS
+- User is on Dell. Lenovo is the GPU/local-LLM development/build machine. Lenovo has never been accessed or modified in this work.
+- Production runtime is Oracle. Complete and verify Oracle before reconciling source with Lenovo.
+- Ask permission before new production changes; prepare a concrete tested patch, create exact timestamped backups, then obtain approval. Do not casually restart an active service.
+- Generation must remain free. Do not enable paid API usage or billing without explicit approval.
+- Users should type ordinary questions, spelling mistakes and short comparisons. Do not require users to write expanded prompts or know book names.
+- User wants clear OOP separation of retrieval, query interpretation, prompts, providers and fallback. A full provider-class refactor is NOT implemented.
+- GitHub branches are exactly oracle and lenovo. Commit and push authorized changes to the appropriate branch. Do not force-push or overwrite Lenovo/main.
+- Challenge incorrect assumptions with evidence. Clearly separate deployed code, staging, mocked tests and actual live outcomes.
+- Do not print/request API keys, private SSH keys, .env contents or secrets.
+- Do not repeatedly ask the user to run variations of broken commands. Give a usable interface and verify it yourself.
+
+MACHINES AND CONNECTION
+Oracle SSH: ubuntu@129.151.163.64
+Hostname: omnissiah-vm; Ubuntu 22.04 ARM64; CPU-only; about 11 GB RAM, 4 GB swap.
+App: /opt/omnissiah/app
+Python: /opt/omnissiah/app/.venv/bin/python
+Service: omnissiah-api.service
+API bound to: 127.0.0.1:8000 ON ORACLE.
+Secrets file: /opt/omnissiah/config/.env — never print it.
+Model cache: /opt/omnissiah/models/huggingface
+Backups: /opt/omnissiah/app/backups
+Dell SSH key path: C:/Users/daval/.ssh/oracle_dell — use it through ssh, never read/display its contents.
+Use BatchMode=yes and IdentitiesOnly=yes for noninteractive SSH.
+Oracle app directory is NOT a Git checkout. GitHub pushes do not deploy anything automatically.
+
+WHAT localhost MEANS
+localhost is the computer running the browser.
+An SSH tunnel on Dell forwards a Dell loopback port to Oracle's API.
+Current temporary test setup:
+- Dell http://127.0.0.1:18000 -> SSH -> Oracle 127.0.0.1:8000.
+- Dell http://127.0.0.1:18001 -> a local Node test console -> the tunnel above.
+The API and retrieval run on Oracle. LLM generation currently calls Gemini from Oracle.
+Codex is not needed for Oracle's systemd service to keep running.
+The temporary Dell tunnel/server were started through this chat; do not assume they survive closing Codex or moving to another execution host.
+
+IMPORTANT UI FAILURE AND LATEST TEST CONSOLE
+The user could not use http://127.0.0.1:18000/docs.
+HTML returned 200, but Swagger's external JavaScript did not load. Actual browser error: SwaggerUIBundle is not defined. HTTP 200 was NOT sufficient to establish a usable test page.
+A dependency-free local test console was then written:
+C:/Users/daval/.codex/visualizations/2026/11/05/01a1a93d-954d-7853-abb8-872783ab46b1/oracle-live-console/
+Files: server.cjs and index.html.
+URL while the temporary processes remain alive: http://127.0.0.1:18001/
+It accepts human questions and mode selection, optional book filter, shows response text, sources, HTTP status, exact request and raw response. Streams are parsed into readable text. It makes no generation request on page load.
+REAL PLAYWRIGHT CHECK COMPLETED:
+- Opened the actual local console.
+- Submitted the original Loken/Jubal query to /query/inspect.
+- Received HTTP 200 and six real passage groups from Horus Rising.
+- Confirmed the displayed passage exactly equalled the raw Oracle response.
+- No LLM call was made.
+Generated narration THROUGH THIS NEW CONSOLE has NOT been tested. The backend narration tests described below are separate.
+A promised standalone PowerShell launcher was NOT completed. Manual startup is documented with the console source.
+
+GITHUB
+Repository: https://github.com/Onoduchiagozie/OmnissiahCore
+oracle branch: deployed Oracle source at repository root, plus dated snapshot, staged work, tools and evidence.
+lenovo branch: created from the pre-existing main commit c59aee2973cfb1642b4b209d5380c25d63bcf63c. This is NOT a verified copy of the current Lenovo working tree.
+Historical review branch: codex/oracle-stabilization-20261105.
+Known commits:
+- 654f60e: code-only Oracle source snapshot and repair history.
+- bec1f11: staged natural-query handling, inactive OpenAI adapter and scene test tools.
+- 9d5f72c: align oracle branch root with deployed source; document branch separation.
+- f8ae4af: verbose test output, fingerprints and independent audit.
+The local live-test console and this handover are being saved to oracle as a follow-up documentation/tooling commit.
+See BRANCHES.md and docs/oracle/ on oracle.
+Snapshot: deployments/oracle/2026-11-05/app/ plus manifest.json.
+No secrets, corpus PDFs, FAISS/BM25 data, models or databases were added by these commits.
+Source snapshots contain both profile definitions; do not copy Oracle's files over Lenovo blindly.
+
+RETRIEVAL
+498,850 FAISS vectors and metadata chunks; dimension 1024.
+Embedding: BAAI/bge-m3, CPU on Oracle.
+Pipeline: FAISS + BM25 -> RRF -> lexical overlap -> stitching -> optional cross-encoder.
+Cross-encoder enabled on Oracle: cross-encoder/ms-marco-MiniLM-L-6-v2, cached and verified offline.
+Oracle profile: dell_query, role query; selected by systemd OMNISSIAH_ACTIVE_PROFILE=dell_query.
+Lenovo profile: lenovo_build.
+Do not rebuild the corpus/index as an initial fix.
+
+DEPLOYED CHANGES
+1. Retrieval safeguards:
+- Cross-encoder enabled.
+- Wider candidate pool is stitched/reranked before final top_k selection.
+- Candidates with negative reranker scores are withheld.
+- Explorer evidence instructions were strengthened.
+LIMIT: the zero cutoff is not calibrated truth confidence. It rejects some relevant material. A single stitched candidate still bypasses the floor in deployed code.
+2. Gemini provider:
+- Core/gemini_provider.py; native Gemini REST/SSE.
+- Primary gemini-3.6-flash; fallback gemini-3.5-flash; one retry per model.
+- Bounded retries for transient statuses, no model switching after emitted text, no saving failed responses into conversation memory.
+- Agent respects synchronous requests instead of forcing streaming.
+3. Output completion:
+- config.json profiles.dell_query.llm.max_tokens changed from 1500 to 8192.
+- This is the GENERATION limit, not retrieval.
+- Core/agent.py passes it to generationConfig.maxOutputTokens.
+- Provider requires finishReason STOP and reports MAX_TOKENS / blocked / missing terminal completion.
+- Correct multiline SSE data prefixes.
+- Failed streams do not emit successful source metadata or complete stage.
+- Long quota cooldowns skip immediate retries on an exhausted model.
+
+BACKUPS / RECORDS
+/opt/omnissiah/app/backups/retriever_pre_quality_20261105_030353.py
+/opt/omnissiah/app/backups/prompt_pre_quality_20261105_030353.py
+/opt/omnissiah/app/backups/config_pre_quality_20261105_030353.json
+/opt/omnissiah/app/backups/retrieval_quality_20261105_030353.md
+/opt/omnissiah/app/backups/query_repair_20261105_033414/
+/opt/omnissiah/app/backups/output_completion_20261105_071527/
+The latter directories contain deployment records, source backups and/or test reports.
+
+WHY THE EARLIER ANSWERS WERE TINY
+User showed answers ending mid-word.
+A raw 4096-token Gemini probe completed normally: STOP; 2163 visible characters; 1542 thinking tokens and 409 answer tokens. The old 1500 budget was too small for that usage.
+A separate 1500-token comparison request hit 429, so its exact finish reason was not observed during that diagnostic.
+Later actual 8192-budget narratives reached 6270 and 5507 characters. Their source accuracy remains unverified.
+
+GEMINI QUOTA / OPENAI STATUS
+Google reported this project's free-tier daily quota exhausted: 20 requests/day for the primary model, with a roughly 46-minute cooldown at that time. Both configured Gemini models returned 429 in that run. Later requests succeeded after the cooldown.
+503 is provider availability; 429 can be quota exhaustion. Changing models is not a cure when the fallback is also limited.
+A listed Gemini 2.5 model returned 404 on real generation; do not rely solely on model listings.
+OpenAI adapter is staged, NOT active. Oracle had no OPENAI_API_KEY when checked.
+User has a one-month ChatGPT Plus trial, which does not establish usable API credit.
+Do not enable paid generation. Verify actual API credit/access or ask for an explicit budget decision first.
+
+STAGED QUERY HANDLING — NOT DEPLOYED
+/opt/omnissiah/staging/natural-queries/
+GitHub: staging/natural-queries/
+QueryRewriter + immutable QueryPlan; no network/LLM calls.
+- Preserves original input.
+- Normalizes supported names/spellings: Ferrus -> Ferrus Manus, Istvan five -> Isstvan V, Sharokin -> Sharrowkyn, Kakaponi -> Kakophoni, Slaneshi -> Slaaneshi, 3rd/5th Legion -> relevant names.
+- Derives comparison/why guidance internally; does not assume vs means only a duel.
+- Produces dense query, sparse keywords, intent and hidden response guidance.
+- Whole-word matching prevents v matching inside Vulkan and fire inside firedrake.
+- Counts numeral variants once; preserves zero stitching windows; applies floor to one candidate.
+- Adds automatic Explorer prompt guidance.
+21 unit/mock retrieval tests passed. They do NOT prove real retrieval or answer quality.
+
+STAGED OPENAI — NOT DEPLOYED
+/opt/omnissiah/staging/openai-migration/
+GitHub: staging/openai-migration/
+Files: openai_provider.py, proposed agent.py, test_openai.py.
+Uses Responses API, store:false, sync/stream, configured fallback models and completion checks.
+Nine tests passed with HTTP entirely MOCKED. No usable key, live model access or real OpenAI request was verified.
+Independent audit found all nine tests set retries_per_model=0, so nonzero retries/backoff/deadlines still lack tests.
+
+REAL SEVEN-SCENE RESULTS — ORIGINAL HUMAN WORDING
+1. Loken saves a girl from possessed Jubal: insufficient evidence.
+2. Horus kills the Invisibles: insufficient evidence; final selection even included Prospero Burns despite raw Horus Rising hits.
+3. Kakophoni/III Legion attack V Legion with sonic weapons: insufficient evidence; raw results included unrelated codices.
+4. Lorgar/Magnus discussion: 6270 characters generated; source review pending.
+5. Lorgar Sea of Souls/ocean analogy: 5507 characters generated; source review pending.
+6. Slaaneshi daemon versus White Scars en route to Terra: zero final sources; no narrative.
+7. Sharrowkyn/Lucius in Angel Exterminatus: insufficient evidence.
+Corrected wording + known book filters were also tried for Loken/Jubal and Sharrowkyn/Lucius; both still refused.
+Do NOT call these seven cases passed because HTTP 200 or DONE was returned.
+
+KEY RETRIEVAL DIAGNOSIS — NEXT REPAIR IS NOT YET IMPLEMENTED
+The reranker has a 512-token input window, but current stitching can produce passages exceeding 1900 tokens. Relevant center text can fall beyond what the reranker reads.
+Raw fight passages DO exist:
+- Angel Exterminatus, chunk 175222: Sharrowkyn/Lucius raw score 7.113, 346 pair tokens.
+- Chunk 175223: raw score 5.639.
+- Horus Rising, chunk 13159: Loken/Jubal raw score 5.23.
+- Relevant Laer-blade passages can still get negative scores; score floor needs broader calibration.
+Proposed next fix:
+- Rerank raw candidates BEFORE stitching.
+- Stitch neighbors from the SAME source only.
+- Revisit truncation/threshold behavior using varied scenes.
+- Re-run exact user queries and inspect passages supporting each generated claim.
+Do not merely rewrite user prompts, disable refusal, or lower a threshold blindly.
+
+ENDPOINT CONTRACT — ALL POST
+/query/inspect : retrieval diagnostics, JSON, no LLM. Current inspection shows RAW stages, not the final rerank/floor result.
+/query/explore : JSON analytical/object answer.
+/query/focus : JSON narrow answer, max_sources 1–3.
+/query/narrate : SSE broad scene reconstruction.
+/query/focus/stream : SSE narrow answer.
+/query/ghost : scene-library lookup only, no LLM and no main-corpus fallback.
+There is NO bare /query or /query/stream on this Oracle deployment.
+Oracle's scene index is absent. Ghost unmatched is expected; Focus uses live retrieval fallback.
+Public ngrok API last verified at:
+https://emerald-nativity-guacamole.ngrok-free.dev
+GET calls can return the ngrok free-tunnel interstitial unless an API client supplies ngrok-skip-browser-warning: 1.
+This public API is not a completed hosted frontend.
+
+THEFORGE FRONTEND — NOT VERIFIED PLUG-AND-PLAY
+Dell working directory: C:/Users/daval/RiderProjects/TheForge/TheForge
+Repository: Onoduchiagozie/TheForge, main; many pre-existing user edits. Preserve them.
+Program.cs reads FastApi:BaseUrl.
+Services/FastApiClient.cs:
+- QueryExplorerAsync -> query/explore, exists.
+- QueryFocusAsync -> query/focus, exists.
+- QueryNarrateStreamAsync -> query/narrate, exists and is streamed.
+- QueryAsync -> query, DOES NOT EXIST on Oracle.
+- QueryStreamAsync -> query/stream, DOES NOT EXIST on Oracle.
+- QueryNarrateAsync attempts JSON parsing of query/narrate even though it returns SSE.
+Controllers/QueryController.cs exposes /api/query/explore, /focus and /narrate through the backend client.
+The C# SSE parser handles data lines individually; complete multiline event preservation needs checking end to end.
+No TheForge browser-to-Oracle end-to-end test has passed in this chat. Merely changing BaseUrl is not enough to certify integration.
+
+EVIDENCE
+Verbose reruns recorded at 5 Nov 2026 10:52 WAT:
+- query suite: 21 passed, real unit/mock tests.
+- OpenAI suite: 9 passed, all provider responses mocked.
+GitHub: docs/oracle/evidence/test-proof.md, test-evidence.json, query-tests.txt, openai-tests.txt.
+Independent read-only agent audit confirmed counts and highlighted gaps:
+- Retrieval tests bypass actual FAISS/BM25, embedder and real reranker.
+- Book-filter test uses stitching_window=0 and does not test neighboring-book boundaries.
+- Phrase-preservation tests do not establish answer accuracy.
+- OpenAI retry timing/backoff above zero is untested.
+Five Playwright checks validated the EVIDENCE REPORT'S UI only. They were not TheForge or Oracle-generation UI tests.
+The later LIVE TEST CONSOLE inspection test is separate and did reach the real API.
+
+REPEATABLE SCENE TEST FILES ON ORACLE
+/opt/omnissiah/staging/scene-verification/verify_scenes.py
+/opt/omnissiah/staging/scene-verification/scene_cases.json
+/opt/omnissiah/staging/scene-verification/narrative-summary.json
+/opt/omnissiah/staging/scene-verification/raw-retrieval.json
+/opt/omnissiah/staging/scene-verification/rerank-window-diagnostic.json
+GitHub tools/verify_scenes.py and tools/scene_cases.json.
+Default CLI mode is retrieval-only with original human wording. Generating requires one explicit case.
+
+WHAT TO DO FIRST IN THE NEXT CHAT
+1. Give the user a working visible test interface immediately; verify the actual page, not just HTTP 200. Re-establish the local tunnel/test console if needed.
+2. Fix the frontend route/SSE mismatches and verify a typed question reaches Oracle and displays the real answer, sources and errors. Do not modify existing user UI edits without review.
+3. Prepare and meaningfully test raw-candidate reranking + same-source stitching. Obtain approval before production activation.
+4. Use all seven scene requests as acceptance cases. Distinguish refusal, transport completion, generated text and source-verified accuracy.
+5. Keep generation free; do not activate the staged OpenAI path based on the Plus trial.
+6. Commit authorized work to oracle; reconcile actual Lenovo source into lenovo only with user approval and preservation of its current work.
+
+LATER LIVE CONSOLE RECOVERY UPDATE (5 NOV 2026)
+The original http://127.0.0.1:18001/ page showed ECONNREFUSED to 127.0.0.1:18000 because its separate SSH tunnel had stopped. This was a real failure in the test setup. The tunnel was restored and browser Playwright verified the live page:
+- Health: Oracle online, dell_query, 498,850 chunks.
+- Inspect: user-style Loken/Jubal query, HTTP 200, six passage groups, raw inspection response present; this made no LLM call.
+- Narrate: Ferrus Manus/Fulgrim query, HTTP 200, 7,530 displayed characters, six sources, [DONE] marker, 66.5 seconds. This proves transport and display completion, not lore accuracy.
+A revised local console now starts its own SSH tunnel when ORACLE_SSH_AUTOSTART=1 and retries connection status in the page. On fresh ports 18002/18003, one-window startup and browser Inspect were verified. Automatic recovery after deliberately killing SSH was not tested. Current chat-run servers may stop when the chat ends; for independent use follow tools/live_oracle_console/README.md on the oracle branch and launch it in an ordinary Dell PowerShell window.
+The independent Dell launcher is tools/live_oracle_console/start-oracle-console.cmd; double-click it or run it from PowerShell, then open http://127.0.0.1:18003/. The launcher itself was run and Playwright verified the resulting page and Inspect request.
+
+

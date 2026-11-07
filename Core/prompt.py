@@ -26,6 +26,51 @@ CLEAN_TEXT_MANDATE = (
     "5. Do not output raw control characters, escape slashes, backslashes, or internal scaffolding marks. Simple. Clean. Direct."
 )
 
+# --- FOCUS MODE (fallback path only) — accuracy over flourish ---
+# Used ONLY when focus mode falls back to raw corpus chunks (no confident
+# scene-library match). Deliberately stricter than build_narrate_prompt:
+# focus mode is explicitly about narrowing to 1-2 authoritative sources, so
+# fabricated plot beats are more damaging here than in general narration —
+# there's no breadth of other sources to dilute an invented detail.
+#
+# CHANGED: added an explicit VOICE section. The original template only
+# constrained WHAT content was allowed, never HOW to render it — with no
+# instruction on register, the model defaulted to a safe, hedge-y reporting
+# style ("X stated that...", "X noted..."), which reads exactly like
+# Explorer mode's analytical distance instead of Narrator mode's immersive
+# scene prose. The accuracy rules (1-4) are unchanged in substance — voice
+# and content-grounding are orthogonal, so this doesn't loosen the anti-
+# hallucination guarantees at all, it only fixes how compliant output reads.
+FOCUS_SYSTEM_TEMPLATE = (
+    "You are the Remembrancer of the Imperium, chronicling a specific, narrow "
+    "moment in the Warhammer 40,000 / Horus Heresy setting.\n\n"
+    "You have been given a small number of source passages, deliberately narrowed "
+    "to the most relevant material for this exact question rather than a broad "
+    "survey of many books.\n\n"
+    "VOICE — read this before anything else:\n"
+    "You were there. Narrate the moment directly, as flowing scene prose — not as "
+    "a report of what happened. Never write 'X stated that', 'X noted', 'X declared "
+    "that', 'X announced', 'X countered by questioning', or any other reported-speech "
+    "construction that stands outside the moment looking in. If a character speaks, "
+    "render it as dialogue or direct address inside the scene, not as a paraphrase of "
+    "what they said. You are not summarising a transcript or a meeting — you are "
+    "recounting what you personally witnessed, in the moment, as it happened.\n\n"
+    "STRICT ACCURACY RULES — these govern content, not voice, and still apply in full:\n"
+    "1. Only state events, characters, injuries, deaths, and outcomes that are "
+    "explicitly present in the passages below. Do not invent a confrontation, duel, "
+    "injury, or death that is not stated in the source text.\n"
+    "2. You may compress, reorder for clarity, and describe atmosphere or sensory "
+    "detail that the passages directly imply, but never introduce a new plot beat.\n"
+    "3. If the passages do not fully resolve the question, say so plainly rather than "
+    "inventing an ending or resolution.\n"
+    "4. Do not blend in named characters, factions, or events from general setting "
+    "knowledge unless they actually appear in the passages themselves.\n\n"
+    "Direct narration and strict accuracy are not in tension: narrate exactly what "
+    "the passages describe, in the moment, as a witness — without adding a single "
+    "beat beyond what they contain.\n\n"
+    "SOURCE PASSAGES:\n{context}"
+)
+
 
 def _format_context_block(chunks: list[dict], include_viewpoint: bool = False) -> str:
     """
@@ -138,6 +183,21 @@ def build_narrate_prompt(query: str, chunks: list[dict]) -> tuple[str, str]:
     return system_prompt, user_message
 
 
+def build_focus_prompt(query: str, chunks: list[dict]) -> tuple[str, str]:
+    """
+    Focus mode prompt — used ONLY for the live-fallback path (raw corpus
+    chunks, not pre-woven scenes). When focus mode hits the scene library
+    instead, the chronicle is returned directly and the LLM is skipped
+    entirely — see agent.py's _is_pure_scene_response check. This prompt
+    exists for the case where no scene matched confidently and a real
+    corpus search had to run, so there's no pre-woven prose to fall back on.
+    """
+    context_block = _format_context_block(chunks, include_viewpoint=False)
+    system_prompt = FOCUS_SYSTEM_TEMPLATE.format(context=context_block) + CLEAN_TEXT_MANDATE
+    user_message = f"Based strictly on the passages provided, answer: {query}"
+    return system_prompt, user_message
+
+
 def build_object_explorer_prompt(query: str, chunks: list[dict]) -> tuple[str, str]:
     """Alternate prompt for object-oriented analysis."""
     system = app_text["prompts"]["object_explorer_system"]
@@ -150,7 +210,16 @@ def build_object_explorer_prompt(query: str, chunks: list[dict]) -> tuple[str, s
         ]
         context_block = "\n\n---\n\n".join(parts)
 
-    system_prompt = system.format(context=context_block) + CLEAN_TEXT_MANDATE
+    evidence_mandate = (
+        "\n\nEVIDENCE RULES:\n"
+        "For event, historical, causal, or identity questions, assert a fact only when "
+        "a supplied passage explicitly supports that fact or relationship. Related names "
+        "or matching words are not evidence by themselves. Do not infer that something "
+        "was unrecorded unless a passage explicitly says so. If the passages mention the "
+        "subject but do not establish the requested fact, say exactly: "
+        "'The Archives do not clearly record enough here.' Then stop."
+    )
+    system_prompt = system.format(context=context_block) + evidence_mandate + CLEAN_TEXT_MANDATE
     return system_prompt, app_text["prompts"]["object_query_template"].format(query=query)
 
 

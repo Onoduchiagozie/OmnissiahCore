@@ -1,5 +1,5 @@
 """
-OmnissiahCoreOld - Core/config_loader.py
+OmnissiahCore - Core/config_loader.py
 
 Central configuration loader. Every module imports from here.
 Never hardcode paths, model names, or parameters anywhere else.
@@ -8,6 +8,7 @@ Never hardcode paths, model names, or parameters anywhere else.
 import json
 import os
 import sys
+from Core.private_config import load_settings
 
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -59,8 +60,8 @@ def _apply_env_overrides(profile: dict) -> dict:
     embedding["device"] = os.getenv("OMNISSIAH_EMBED_DEVICE", embedding["device"])
     llm["url"] = os.getenv("OMNISSIAH_LLM_URL", llm.get("url", "http://localhost:11434/api/chat"))  # Default URL for LM Studio
     llm["model"] = os.getenv("OMNISSIAH_LLM_MODEL", llm.get("model", "gemma4:latest"))
-    llm["num_ctx"] = _env_int("OMNISSIAH_LLM_NUM_CTX", llm.get("num_ctx", 16192))
-    llm["timeout"] = _env_int("OMNISSIAH_LLM_TIMEOUT", llm.get("timeout", 900))
+    llm["num_ctx"] = _env_int("OMNISSIAH_LLM_NUM_CTX", llm.get("num_ctx", 8096))
+    llm["timeout"] = _env_int("OMNISSIAH_LLM_TIMEOUT", llm.get("timeout", 1200))
     llm["temperature"] = _env_float("OMNISSIAH_LLM_TEMPERATURE", llm.get("temperature", 0.4))
     llm["top_p"] = _env_float("OMNISSIAH_LLM_TOP_P", llm.get("top_p", 0.9))
     retrieval["top_k"] = _env_int("OMNISSIAH_TOP_K", retrieval["top_k"])
@@ -77,10 +78,9 @@ def _load_config() -> tuple[str, dict]:
         _fatal(f"config.json not found at: {CONFIG_PATH}")
 
     try:
-        with open(CONFIG_PATH, "r", encoding="utf-8") as f:
-            raw = json.load(f)
-    except json.JSONDecodeError as e:
-        _fatal(f"config.json is malformed: {e}")
+        raw = load_settings(CONFIG_PATH)
+    except (ValueError, OSError):
+        _fatal("Could not load configuration; check the defaults and private settings file.")
 
     active = os.getenv("OMNISSIAH_ACTIVE_PROFILE", raw.get("active_profile", "lenovo_build"))
     profiles = raw.get("profiles", {})
@@ -88,6 +88,12 @@ def _load_config() -> tuple[str, dict]:
         _fatal(f"Active profile '{active}' not found in config.json")
 
     profile = profiles[active]
+    if raw.get("data_root"):
+        profile = json.loads(json.dumps(profile))
+        profile["paths"] = {
+            key: os.path.join(raw["data_root"], value)
+            for key, value in profile["paths"].items()
+        }
     _require_keys(
         "profile",
         profile,
@@ -127,15 +133,26 @@ machine_role = _profile["machine_role"]
 _raw_paths = _profile["paths"]
 paths = {
     "pdf_dir": os.path.join(BASE_DIR, _raw_paths["pdf_dir"]),
-    "failed_dir": os.path.join(BASE_DIR, _raw_paths["failed_dir"]),
+     "failed_dir": os.path.join(BASE_DIR, _raw_paths["failed_dir"]),
     "db_dir": os.path.join(BASE_DIR, _raw_paths["db_dir"]),
     "faiss": os.path.join(BASE_DIR, _raw_paths["db_dir"], "faiss.index"),
     "metadata": os.path.join(BASE_DIR, _raw_paths["db_dir"], "metadata.json"),
     "manifest": os.path.join(BASE_DIR, _raw_paths["db_dir"], "manifest.json"),
     "processed": os.path.join(BASE_DIR, _raw_paths["db_dir"], "processed_files.json"),
     "failed_log": os.path.join(BASE_DIR, _raw_paths["db_dir"], "failed_files.json"),
+    "book_manifest": os.path.join(BASE_DIR, _raw_paths["db_dir"], "book_manifest.json"),
     "bm25_cache": os.path.join(BASE_DIR, _raw_paths["db_dir"], "bm25_cache"),
     "base": BASE_DIR,
+
+    # --- Scene Archive / Focus mode ---
+    # battle_scenes.db lives inside Db/, alongside faiss.index/metadata.json.
+    # The derived scene_faiss.index and scene_metadata.json (built by
+    # build_scene_index.py) live right next to it — same folder, same
+    # category of regenerable artifact as faiss.index/bm25_cache.
+    "battle_scenes_db": os.path.join(BASE_DIR, _raw_paths["db_dir"], "battle_scenes.db"),
+    "scene_faiss": os.path.join(BASE_DIR, _raw_paths["db_dir"], "scene_faiss.index"),
+    "scene_metadata": os.path.join(BASE_DIR, _raw_paths["db_dir"], "scene_metadata.json"),
+    "scene_bm25_cache": os.path.join(BASE_DIR, _raw_paths["db_dir"], "scene_bm25_cache"),
 }
 
 cfg = _profile

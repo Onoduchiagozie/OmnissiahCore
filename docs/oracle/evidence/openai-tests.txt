@@ -1,0 +1,14 @@
+test_account_quota_not_retried (__main__.Tests) ... ok
+test_bounded_exhaustion (__main__.Tests) ... ok
+test_fatal_auth (__main__.Tests) ... ok
+test_partial_stream_never_switches (__main__.Tests) ... ok
+test_stream_incomplete_and_missing_end (__main__.Tests) ... ok
+test_stream_success_with_fallback (__main__.Tests) ... ok
+test_sync_fallback (__main__.Tests) ... ok
+test_sync_incomplete (__main__.Tests) ... ok
+test_timeout_fallback (__main__.Tests) ... ok
+
+----------------------------------------------------------------------
+Ran 9 tests in 0.007s
+
+OK

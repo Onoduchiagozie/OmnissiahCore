@@ -1,0 +1,12 @@
+{
+  "passed": 5,
+  "checks": [
+    "Example selector shows the actual Sharrowkyn rewrite",
+    "Query pane exposes the complete 21-test runner output",
+    "OpenAI tab switches panes and exposes all nine named mock tests",
+    "Live-state pane distinguishes unit success from unverified scenes",
+    "Report fits a 360-pixel viewport without horizontal overflow"
+  ],
+  "browser": "Microsoft Edge via Playwright",
+  "scope": "Evidence report interactions only; backend test counts come from the real Python reruns."
+}

@@ -1,0 +1,9 @@
+# Optional document ingestion dependencies. System OCR tools are installed separately.
+pypdf>=5,<7
+nltk>=3.9,<4
+pdf2image>=1.17,<2
+pytesseract>=0.3.13,<1
+ebooklib>=0.19,<1
+beautifulsoup4>=4.13,<5
+Pillow>=11,<13
+tqdm>=4.67,<5

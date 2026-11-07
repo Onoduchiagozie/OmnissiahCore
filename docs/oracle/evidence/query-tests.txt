@@ -1,0 +1,27 @@
+test_comparison_instructions_automatic (__main__.QueryTests) ... ok
+test_existing_full_name_not_duplicated (__main__.QueryTests) ... ok
+test_first_shot_remains (__main__.QueryTests) ... ok
+test_injected_aliases (__main__.QueryTests) ... ok
+test_no_global_numeral_rewrite (__main__.QueryTests) ... ok
+test_question_intent_preserved (__main__.QueryTests) ... ok
+test_short_comparison (__main__.QueryTests) ... ok
+test_soul_and_daemon_spelling (__main__.QueryTests) ... ok
+test_spelling_and_numerals (__main__.QueryTests) ... ok
+test_unknown_name_preserved (__main__.QueryTests) ... ok
+test_user_text_not_promoted_to_system_instruction (__main__.QueryTests) ... ok
+test_users_scene_name_typos (__main__.QueryTests) ... ok
+test_versus_period (__main__.QueryTests) ... ok
+test_why_guidance_preserves_user_question (__main__.QueryTests) ... ok
+test_book_filter_not_overridden (__main__.RetrievalTests) ... ok
+test_search_uses_plan_and_zero_stitching (__main__.RetrievalTests) ... ok
+test_single_candidate_cannot_bypass_floor (__main__.RetrievalTests) ... ok
+test_single_letter_does_not_match_inside_word (__main__.RetrievalTests) ... ok
+test_spelling_variants (__main__.RetrievalTests) ... ok
+test_terms_are_whole_words (__main__.RetrievalTests) ... ok
+test_variants_count_once (__main__.RetrievalTests) ... ok
+
+----------------------------------------------------------------------
+Ran 21 tests in 0.004s
+
+OK
+[Config] Loaded profile: 'dell_query' | role: query

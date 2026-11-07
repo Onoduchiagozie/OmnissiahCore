@@ -1,0 +1,337 @@
+{
+  "observed_at_utc": "2026-11-05 09:52:18 UTC",
+  "observed_at_lagos": "5 November 2026, 10:52 WAT",
+  "query_suite": {
+    "command": "cd /opt/omnissiah/app && .venv/bin/python /opt/omnissiah/staging/natural-queries/test_queries.py -v",
+    "exit_code": 0,
+    "scope": "Staged unit tests plus mocked retrieval wiring; no real book search or generation",
+    "tests": [
+      {
+        "name": "test_comparison_instructions_automatic",
+        "class": "__main__.QueryTests",
+        "status": "ok"
+      },
+      {
+        "name": "test_existing_full_name_not_duplicated",
+        "class": "__main__.QueryTests",
+        "status": "ok"
+      },
+      {
+        "name": "test_first_shot_remains",
+        "class": "__main__.QueryTests",
+        "status": "ok"
+      },
+      {
+        "name": "test_injected_aliases",
+        "class": "__main__.QueryTests",
+        "status": "ok"
+      },
+      {
+        "name": "test_no_global_numeral_rewrite",
+        "class": "__main__.QueryTests",
+        "status": "ok"
+      },
+      {
+        "name": "test_question_intent_preserved",
+        "class": "__main__.QueryTests",
+        "status": "ok"
+      },
+      {
+        "name": "test_short_comparison",
+        "class": "__main__.QueryTests",
+        "status": "ok"
+      },
+      {
+        "name": "test_soul_and_daemon_spelling",
+        "class": "__main__.QueryTests",
+        "status": "ok"
+      },
+      {
+        "name": "test_spelling_and_numerals",
+        "class": "__main__.QueryTests",
+        "status": "ok"
+      },
+      {
+        "name": "test_unknown_name_preserved",
+        "class": "__main__.QueryTests",
+        "status": "ok"
+      },
+      {
+        "name": "test_user_text_not_promoted_to_system_instruction",
+        "class": "__main__.QueryTests",
+        "status": "ok"
+      },
+      {
+        "name": "test_users_scene_name_typos",
+        "class": "__main__.QueryTests",
+        "status": "ok"
+      },
+      {
+        "name": "test_versus_period",
+        "class": "__main__.QueryTests",
+        "status": "ok"
+      },
+      {
+        "name": "test_why_guidance_preserves_user_question",
+        "class": "__main__.QueryTests",
+        "status": "ok"
+      },
+      {
+        "name": "test_book_filter_not_overridden",
+        "class": "__main__.RetrievalTests",
+        "status": "ok"
+      },
+      {
+        "name": "test_search_uses_plan_and_zero_stitching",
+        "class": "__main__.RetrievalTests",
+        "status": "ok"
+      },
+      {
+        "name": "test_single_candidate_cannot_bypass_floor",
+        "class": "__main__.RetrievalTests",
+        "status": "ok"
+      },
+      {
+        "name": "test_single_letter_does_not_match_inside_word",
+        "class": "__main__.RetrievalTests",
+        "status": "ok"
+      },
+      {
+        "name": "test_spelling_variants",
+        "class": "__main__.RetrievalTests",
+        "status": "ok"
+      },
+      {
+        "name": "test_terms_are_whole_words",
+        "class": "__main__.RetrievalTests",
+        "status": "ok"
+      },
+      {
+        "name": "test_variants_count_once",
+        "class": "__main__.RetrievalTests",
+        "status": "ok"
+      }
+    ],
+    "raw_output": "test_comparison_instructions_automatic (__main__.QueryTests) ... ok\ntest_existing_full_name_not_duplicated (__main__.QueryTests) ... ok\ntest_first_shot_remains (__main__.QueryTests) ... ok\ntest_injected_aliases (__main__.QueryTests) ... ok\ntest_no_global_numeral_rewrite (__main__.QueryTests) ... ok\ntest_question_intent_preserved (__main__.QueryTests) ... ok\ntest_short_comparison (__main__.QueryTests) ... ok\ntest_soul_and_daemon_spelling (__main__.QueryTests) ... ok\ntest_spelling_and_numerals (__main__.QueryTests) ... ok\ntest_unknown_name_preserved (__main__.QueryTests) ... ok\ntest_user_text_not_promoted_to_system_instruction (__main__.QueryTests) ... ok\ntest_users_scene_name_typos (__main__.QueryTests) ... ok\ntest_versus_period (__main__.QueryTests) ... ok\ntest_why_guidance_preserves_user_question (__main__.QueryTests) ... ok\ntest_book_filter_not_overridden (__main__.RetrievalTests) ... ok\ntest_search_uses_plan_and_zero_stitching (__main__.RetrievalTests) ... ok\ntest_single_candidate_cannot_bypass_floor (__main__.RetrievalTests) ... ok\ntest_single_letter_does_not_match_inside_word (__main__.RetrievalTests) ... ok\ntest_spelling_variants (__main__.RetrievalTests) ... ok\ntest_terms_are_whole_words (__main__.RetrievalTests) ... ok\ntest_variants_count_once (__main__.RetrievalTests) ... ok\n\n----------------------------------------------------------------------\nRan 21 tests in 0.004s\n\nOK\n[Config] Loaded profile: 'dell_query' | role: query\n"
+  },
+  "openai_suite": {
+    "command": "cd /opt/omnissiah/app && .venv/bin/python /opt/omnissiah/staging/openai-migration/test_openai.py -v",
+    "exit_code": 0,
+    "scope": "HTTP responses mocked; no API key or live OpenAI call",
+    "tests": [
+      {
+        "name": "test_account_quota_not_retried",
+        "class": "__main__.Tests",
+        "status": "ok"
+      },
+      {
+        "name": "test_bounded_exhaustion",
+        "class": "__main__.Tests",
+        "status": "ok"
+      },
+      {
+        "name": "test_fatal_auth",
+        "class": "__main__.Tests",
+        "status": "ok"
+      },
+      {
+        "name": "test_partial_stream_never_switches",
+        "class": "__main__.Tests",
+        "status": "ok"
+      },
+      {
+        "name": "test_stream_incomplete_and_missing_end",
+        "class": "__main__.Tests",
+        "status": "ok"
+      },
+      {
+        "name": "test_stream_success_with_fallback",
+        "class": "__main__.Tests",
+        "status": "ok"
+      },
+      {
+        "name": "test_sync_fallback",
+        "class": "__main__.Tests",
+        "status": "ok"
+      },
+      {
+        "name": "test_sync_incomplete",
+        "class": "__main__.Tests",
+        "status": "ok"
+      },
+      {
+        "name": "test_timeout_fallback",
+        "class": "__main__.Tests",
+        "status": "ok"
+      }
+    ],
+    "raw_output": "test_account_quota_not_retried (__main__.Tests) ... ok\ntest_bounded_exhaustion (__main__.Tests) ... ok\ntest_fatal_auth (__main__.Tests) ... ok\ntest_partial_stream_never_switches (__main__.Tests) ... ok\ntest_stream_incomplete_and_missing_end (__main__.Tests) ... ok\ntest_stream_success_with_fallback (__main__.Tests) ... ok\ntest_sync_fallback (__main__.Tests) ... ok\ntest_sync_incomplete (__main__.Tests) ... ok\ntest_timeout_fallback (__main__.Tests) ... ok\n\n----------------------------------------------------------------------\nRan 9 tests in 0.007s\n\nOK\n"
+  },
+  "staged_demo": {
+    "demos": [
+      {
+        "original_query": "ferrus vs fulgrim",
+        "normalized_query": "Ferrus Manus vs fulgrim",
+        "dense_query": "Compare Ferrus Manus and fulgrim.",
+        "sparse_query": "Ferrus Manus fulgrim",
+        "intent": "comparison",
+        "changes": [
+          "ferrus -> Ferrus Manus",
+          "vs -> comparison question"
+        ],
+        "answer_guidance": "Answer as a comparison of the named subjects using the supplied evidence. Explain supported similarities, differences, and relevant relationships. Do not assume the user meant only a duel or invent a hypothetical winner."
+      },
+      {
+        "original_query": "sharokin vs lucius",
+        "normalized_query": "Sharrowkyn vs lucius",
+        "dense_query": "Compare Sharrowkyn and lucius.",
+        "sparse_query": "Sharrowkyn lucius",
+        "intent": "comparison",
+        "changes": [
+          "sharokin -> Sharrowkyn",
+          "vs -> comparison question"
+        ],
+        "answer_guidance": "Answer as a comparison of the named subjects using the supplied evidence. Explain supported similarities, differences, and relevant relationships. Do not assume the user meant only a duel or invent a hypothetical winner."
+      },
+      {
+        "original_query": "what happened on istvan five?",
+        "normalized_query": "what happened on Isstvan V?",
+        "dense_query": "what happened on Isstvan V?",
+        "sparse_query": "happened Isstvan V",
+        "intent": "lookup",
+        "changes": [
+          "istvan -> Isstvan",
+          "Isstvan numeral -> V"
+        ],
+        "answer_guidance": "Answer the original question directly using the supplied evidence. For a broad question give a coherent overview; respect any scope the user supplied."
+      },
+      {
+        "original_query": "kakaponi of the 3rd legion attacked the 5th legion",
+        "normalized_query": "Kakophoni of the Emperor's Children attacked the White Scars",
+        "dense_query": "Kakophoni of the Emperor's Children attacked the White Scars",
+        "sparse_query": "Kakophoni Emperor's Children attacked White Scars",
+        "intent": "lookup",
+        "changes": [
+          "3rd legion -> Emperor's Children",
+          "5th legion -> White Scars",
+          "kakaponi -> Kakophoni"
+        ],
+        "answer_guidance": "Answer the original question directly using the supplied evidence. For a broad question give a coherent overview; respect any scope the user supplied."
+      },
+      {
+        "original_query": "why did horus turn traitor?",
+        "normalized_query": "why did horus turn traitor?",
+        "dense_query": "why did horus turn traitor?",
+        "sparse_query": "horus turn traitor",
+        "intent": "explanation",
+        "changes": [],
+        "answer_guidance": "Answer the why-question using causes supported by the supplied evidence. Distinguish stated motives from inference; do not invent missing causes."
+      }
+    ],
+    "hashes": {
+      "natural-queries/query_rewriter.py": "a5744adc7d0c49c1bf93fac7582c276a875f14ba47eb1a9b07969520b4300850",
+      "natural-queries/retriever.py": "e7149241c70271f575d2c8fba8c78c0f0ef26f8c96402da623ee6efc22f4ddea",
+      "natural-queries/prompt.py": "5e33f5799cd7b26bb9c9ee2644143b8cadaeb18d5753f997c0ec1ea94f3358f8",
+      "natural-queries/test_queries.py": "df02519e57896cbf6af04456cb80acaad9849cee5c0ce7d366cbc0b90a599576",
+      "openai-migration/openai_provider.py": "ae96d800d982e8d01282dd351f3d6b4e6bb9634e5d82b5b3dda7a6d875a905c8",
+      "openai-migration/agent.py": "39a58d14d6bc4b51cf71f9c2a5812705d245ae7020d23f5f817f6ac7115ca0c5",
+      "openai-migration/test_openai.py": "3778df9b511c3889f68fe7a269bfc083a255b327c8213ed426a3bcf8764b449a"
+    },
+    "production": {
+      "provider": "gemini",
+      "model": "gemini-3.6-flash",
+      "max_tokens": 8192
+    },
+    "query_handling_deployed": false,
+    "openai_provider_deployed": false
+  },
+  "prior_scene_results": [
+    {
+      "case": "loken-jubal",
+      "query": "loken saving the girl from jubal when possessed",
+      "transport_ok": true,
+      "generated_answer": false,
+      "requires_source_review": false,
+      "characters": 47,
+      "source_count": 2
+    },
+    {
+      "case": "horus-invisibles",
+      "query": "horus kills the invisibles",
+      "transport_ok": true,
+      "generated_answer": false,
+      "requires_source_review": false,
+      "characters": 47,
+      "source_count": 1
+    },
+    {
+      "case": "kakophoni-white-scars",
+      "query": "kakaponi of the 3rd legion attacked the 5th legion using sonic weapons",
+      "transport_ok": true,
+      "generated_answer": false,
+      "requires_source_review": false,
+      "characters": 47,
+      "source_count": 1
+    },
+    {
+      "case": "lorgar-magnus",
+      "query": "discussion of lorgar and magnus",
+      "transport_ok": true,
+      "generated_answer": true,
+      "requires_source_review": true,
+      "characters": 6270,
+      "source_count": 6
+    },
+    {
+      "case": "sea-of-souls",
+      "query": "lorgar speaking about the sea of souls like an ocean",
+      "transport_ok": true,
+      "generated_answer": true,
+      "requires_source_review": true,
+      "characters": 5507,
+      "source_count": 1
+    },
+    {
+      "case": "white-scars-daemon",
+      "query": "slaneshi demon facing the white scars as they race to terra entire fight",
+      "transport_ok": true,
+      "generated_answer": false,
+      "requires_source_review": false,
+      "characters": 34,
+      "source_count": 0
+    },
+    {
+      "case": "sharrowkyn-lucius",
+      "query": "sharokin and lucius battle angel exterminatus",
+      "transport_ok": true,
+      "generated_answer": false,
+      "requires_source_review": false,
+      "characters": 47,
+      "source_count": 1
+    }
+  ],
+  "independent_review": {
+    "agent": "Independent read-only test audit",
+    "summary": "Counts and assertions reviewed. Passing local/mock tests do not prove corpus accuracy, live OpenAI compatibility, activation, or production behavior.",
+    "gaps": [
+      "Book-filter test uses zero stitching and one fake hit; it does not check source boundaries of neighboring chunks.",
+      "Retrieval tests bypass embeddings, FAISS/BM25, real reranker inference and realistic multi-candidate ranking.",
+      "All nine OpenAI tests set retries_per_model=0; backoff, total deadlines and retry counts above zero need separate tests.",
+      "Phrase-preservation and system-marker-placement assertions are narrow checks, not answer-quality or security validation."
+    ]
+  },
+  "next_task": "Repair raw-passage reranking and source-aware stitching in staging, then evaluate the seven requested scenes before production activation.",
+  "production_changed_this_turn": false,
+  "report_browser_checks": {
+    "passed": 5,
+    "checks": [
+      "Example selector shows the actual Sharrowkyn rewrite",
+      "Query pane exposes the complete 21-test runner output",
+      "OpenAI tab switches panes and exposes all nine named mock tests",
+      "Live-state pane distinguishes unit success from unverified scenes",
+      "Report fits a 360-pixel viewport without horizontal overflow"
+    ],
+    "browser": "Microsoft Edge via Playwright",
+    "scope": "Evidence report interactions only; backend test counts come from the real Python reruns."
+  }
+}

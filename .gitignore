@@ -21,3 +21,45 @@ heresy_embeddings_meta.json
 heresy_chapter_text.db
 stage3_checkpoint.json
 heresy_embed_checkpoint.json
+# Credentials and machine-only settings
+.env
+.env.*
+!.env.example
+*.private.json
+publish.json
+settings.json
+private/
+.secrets/
+*.pem
+*.key
+*.pfx
+*.p12
+
+# Environments and generated files
+.venv/
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+*.log
+release.json
+.runtime/
+backups/
+*.tar.gz
+
+# Corpus and indexes (kept separately)
+Data/
+Db/
+*.pdf
+*.epub
+*.mobi
+*.azw3
+*.faiss
+*.sqlite
+*.sqlite3
+*.npy
+*.safetensors
+*.bin
+metadata.json
+one_book_sample.json
+backfill_unmatched.json

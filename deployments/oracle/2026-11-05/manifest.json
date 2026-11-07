@@ -1,0 +1,163 @@
+{
+  "captured_utc": "2026-11-05",
+  "source": "Oracle /opt/omnissiah/app",
+  "status": "deployed source snapshot, not a Lenovo reconciliation",
+  "exclusions": [
+    ".env",
+    "SSH keys",
+    "corpus documents",
+    "metadata",
+    "FAISS/BM25 assets",
+    "model caches",
+    "databases",
+    "venv",
+    "logs"
+  ],
+  "encoding": "GitHub text entries are UTF-8; original byte encodings and SHA-256 are recorded below.",
+  "files": [
+    {
+      "path": "Api/__init__.py",
+      "original_encoding": "utf-8-sig",
+      "original_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stored_utf8_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "Api/models.py",
+      "original_encoding": "utf-8-sig",
+      "original_sha256": "8373644e77038b2090a95df16a792f9d31a430ef101d7e7993d6aeb57f4e8c0a",
+      "stored_utf8_sha256": "8373644e77038b2090a95df16a792f9d31a430ef101d7e7993d6aeb57f4e8c0a"
+    },
+    {
+      "path": "Api/routes/__init__.py",
+      "original_encoding": "utf-8-sig",
+      "original_sha256": "7eb70257593da06f682a3ddda54a9d260d4fc514f645237f5ca74b08f8da61a6",
+      "stored_utf8_sha256": "7eb70257593da06f682a3ddda54a9d260d4fc514f645237f5ca74b08f8da61a6"
+    },
+    {
+      "path": "Api/routes/query_routes.py",
+      "original_encoding": "utf-8-sig",
+      "original_sha256": "376351748dc1c01da339ff1bd5b8059b5072f2cc9159876e246a486b7dff2cdb",
+      "stored_utf8_sha256": "376351748dc1c01da339ff1bd5b8059b5072f2cc9159876e246a486b7dff2cdb"
+    },
+    {
+      "path": "Api/routes/system_routes.py",
+      "original_encoding": "utf-8-sig",
+      "original_sha256": "051913a549db8cd50411f0c34300b18634850035773e2c58cc201f05cc33268d",
+      "stored_utf8_sha256": "051913a549db8cd50411f0c34300b18634850035773e2c58cc201f05cc33268d"
+    },
+    {
+      "path": "Api/server.py",
+      "original_encoding": "utf-8-sig",
+      "original_sha256": "1deb8c617db51bfdd8ca926edab901a8f1bf0d0901ce54b3a023190a4e680520",
+      "stored_utf8_sha256": "1deb8c617db51bfdd8ca926edab901a8f1bf0d0901ce54b3a023190a4e680520"
+    },
+    {
+      "path": "Api/services/__init__.py",
+      "original_encoding": "utf-8-sig",
+      "original_sha256": "7eb70257593da06f682a3ddda54a9d260d4fc514f645237f5ca74b08f8da61a6",
+      "stored_utf8_sha256": "7eb70257593da06f682a3ddda54a9d260d4fc514f645237f5ca74b08f8da61a6"
+    },
+    {
+      "path": "Api/services/runtime_service.py",
+      "original_encoding": "utf-8-sig",
+      "original_sha256": "a4b9f03b68519bc6e2d45d54dece0e4902c16bd4edfa20f07559a505dcf63473",
+      "stored_utf8_sha256": "a4b9f03b68519bc6e2d45d54dece0e4902c16bd4edfa20f07559a505dcf63473"
+    },
+    {
+      "path": "Core/__init__.py",
+      "original_encoding": "utf-8-sig",
+      "original_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stored_utf8_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "Core/agent.py",
+      "original_encoding": "utf-8-sig",
+      "original_sha256": "009331293a17cc01e641109e0fd5648298f79d5d4b492918dad04d05585d5b47",
+      "stored_utf8_sha256": "009331293a17cc01e641109e0fd5648298f79d5d4b492918dad04d05585d5b47"
+    },
+    {
+      "path": "Core/app_text.py",
+      "original_encoding": "utf-8-sig",
+      "original_sha256": "fceb97383befd2de6544a69fc10fc5320634129174a2549f879f8f7aa68ab95c",
+      "stored_utf8_sha256": "fceb97383befd2de6544a69fc10fc5320634129174a2549f879f8f7aa68ab95c"
+    },
+    {
+      "path": "Core/config_loader.py",
+      "original_encoding": "utf-8-sig",
+      "original_sha256": "99ab4b132f92707f62ef1f2a5ee12c0e1823fb5c0b5ad724a8a6758b0f1fff0d",
+      "stored_utf8_sha256": "99ab4b132f92707f62ef1f2a5ee12c0e1823fb5c0b5ad724a8a6758b0f1fff0d"
+    },
+    {
+      "path": "Core/gemini_provider.py",
+      "original_encoding": "utf-8-sig",
+      "original_sha256": "c8983802ded08d2e9efaf0d2159e7a39b5c38aee50119a4dca715b078e4c9330",
+      "stored_utf8_sha256": "c8983802ded08d2e9efaf0d2159e7a39b5c38aee50119a4dca715b078e4c9330"
+    },
+    {
+      "path": "Core/prompt.py",
+      "original_encoding": "utf-8-sig",
+      "original_sha256": "ea1d9d64406515b9c6351dcd128960990c39e4c37f3bc0b73993c02ce8e15e68",
+      "stored_utf8_sha256": "ea1d9d64406515b9c6351dcd128960990c39e4c37f3bc0b73993c02ce8e15e68"
+    },
+    {
+      "path": "Core/retriever.py",
+      "original_encoding": "utf-8-sig",
+      "original_sha256": "ccb5f2a34ba6b2e77e6647a4e8c31a09c5e841587386206120569567de927f5a",
+      "stored_utf8_sha256": "ccb5f2a34ba6b2e77e6647a4e8c31a09c5e841587386206120569567de927f5a"
+    },
+    {
+      "path": "Scripts/CLI.py",
+      "original_encoding": "utf-8-sig",
+      "original_sha256": "ac4587de42b487eb10f4f02e48b7feb354bee7333940643ec1961fb773f0eedb",
+      "stored_utf8_sha256": "ac4587de42b487eb10f4f02e48b7feb354bee7333940643ec1961fb773f0eedb"
+    },
+    {
+      "path": "Scripts/buildSceneIndex.py",
+      "original_encoding": "utf-8-sig",
+      "original_sha256": "705f88949b8d09af2945b19e886a5cfd727b5621b70bda1454f6818ba0865127",
+      "stored_utf8_sha256": "705f88949b8d09af2945b19e886a5cfd727b5621b70bda1454f6818ba0865127"
+    },
+    {
+      "path": "Scripts/build_db.py",
+      "original_encoding": "utf-8-sig",
+      "original_sha256": "8152997e05eba36983f925ccb6251720f4aa204bc18a8c5391a40fc868e8e8d0",
+      "stored_utf8_sha256": "8152997e05eba36983f925ccb6251720f4aa204bc18a8c5391a40fc868e8e8d0"
+    },
+    {
+      "path": "Scripts/verify_db.py",
+      "original_encoding": "utf-8-sig",
+      "original_sha256": "f9d11d1aacbe923d644e401f714b523572849998003a2e715837e5bc27223589",
+      "stored_utf8_sha256": "f9d11d1aacbe923d644e401f714b523572849998003a2e715837e5bc27223589"
+    },
+    {
+      "path": "app_text.json",
+      "original_encoding": "utf-8-sig",
+      "original_sha256": "ae38118d391b5123433c207bbecd6ca1f186c38b081f119bcef2f0891d13c4da",
+      "stored_utf8_sha256": "ae38118d391b5123433c207bbecd6ca1f186c38b081f119bcef2f0891d13c4da"
+    },
+    {
+      "path": "config.json",
+      "original_encoding": "utf-8-sig",
+      "original_sha256": "de72611ce8f1917d7721a2763d331cf458b5d1843984efb9c6d13982930a8916",
+      "stored_utf8_sha256": "de72611ce8f1917d7721a2763d331cf458b5d1843984efb9c6d13982930a8916"
+    },
+    {
+      "path": "main.py",
+      "original_encoding": "utf-8-sig",
+      "original_sha256": "405ef873d051101dff56eeb4ea9a9c855e56312302efbd7d5a1ad6868059d249",
+      "stored_utf8_sha256": "405ef873d051101dff56eeb4ea9a9c855e56312302efbd7d5a1ad6868059d249"
+    },
+    {
+      "path": "requirements-runtime.txt",
+      "original_encoding": "utf-8-sig",
+      "original_sha256": "430111732deb172c596b90b82e682f43be2ef1554a007f1d98680d645f7d0235",
+      "stored_utf8_sha256": "430111732deb172c596b90b82e682f43be2ef1554a007f1d98680d645f7d0235"
+    },
+    {
+      "path": "requirements.txt",
+      "original_encoding": "utf-16",
+      "original_sha256": "8c8c3a21aff484d23a3dd2fac113b2b19149de68a2bee2656672ca7fb1918a7a",
+      "stored_utf8_sha256": "49fe199c43e85484d168f89909e9b8d9515226ad5ccafaf288ddcd20e35906fa"
+    }
+  ]
+}

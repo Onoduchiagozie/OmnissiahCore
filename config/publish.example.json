@@ -1,0 +1,7 @@
+{
+  "ssh_host": "your-user@your-oracle-host",
+  "identity_file": "~/.ssh/your-oracle-key",
+  "app_root": "/opt/omnissiah/app",
+  "service": "omnissiah-api.service",
+  "health_url": "http://127.0.0.1:8000"
+}
