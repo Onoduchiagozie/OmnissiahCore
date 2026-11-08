@@ -158,7 +158,7 @@ class OmnissiahRetriever:
     ) -> list[dict]:
         top_k = top_k or retrieval_cfg["top_k"]
         candidate_pool = candidate_pool or retrieval_cfg["candidate_pool"]
-        stitching_window = stitching_window or retrieval_cfg["stitching_window"]
+        stitching_window = retrieval_cfg["stitching_window"] if stitching_window is None else stitching_window
 
         if on_stage:
             on_stage("embedding")
@@ -204,7 +204,7 @@ class OmnissiahRetriever:
     ) -> dict:
         top_k = top_k or retrieval_cfg["top_k"]
         candidate_pool = candidate_pool or retrieval_cfg["candidate_pool"]
-        stitching_window = stitching_window or retrieval_cfg["stitching_window"]
+        stitching_window = retrieval_cfg["stitching_window"] if stitching_window is None else stitching_window
 
         enriched_query = self._enrich_query(query)
         faiss_hits = self._faiss_search(enriched_query, k=candidate_pool)
@@ -225,6 +225,13 @@ class OmnissiahRetriever:
             "bm25_hits": bm25_hits[: min(5, len(bm25_hits))],
             "grounded_hits": grounded[: min(top_k, len(grounded))],
             "stitched_hits": stitched,
+            # Full real selection (cross-encoder and score floor included),
+            # unlike stitched_hits, which only shows the raw diagnostic stage.
+            "selected_hits": self.search(
+                query=query, top_k=top_k, candidate_pool=candidate_pool,
+                stitching_window=stitching_window,
+                book_filter=book_filter, source_filter=source_filter,
+            ),
         }
 
     # ------------------------------------------------------------------
@@ -738,6 +745,9 @@ class OmnissiahRetriever:
                     continue
                 if nid in self._id_to_idx:
                     chunk = self.metadata[self._id_to_idx[nid]]
+                    # Chunk IDs are global, so never stitch across sources.
+                    if chunk.get("source") != hit.get("source"):
+                        continue
                     chunk_text = chunk.get("text", "").strip()
 
                     # Normalize white-spaces and look for string matches across overlapping chunks
@@ -787,6 +797,10 @@ class OmnissiahRetriever:
         return any(variant in haystack for variant in variants)
 
     def _enrich_query(self, query: str) -> str:
+        # Controlled A/B experiment: BGE-M3 does not require BGE-v1.5 instructions.
+        if (retrieval_cfg.get("bge_m3_raw_queries", False)
+                and embedding_cfg.get("model", "").lower().endswith("bge-m3")):
+            return query
         return f"Represent this sentence for searching relevant passages: {query}"
 
     def _resolve_device(self) -> str:
