@@ -75,8 +75,10 @@ def main():
     # Runtime's Core package supplies config_loader (production data paths).
     # Extend its module search path with our isolated experimental source.
     import Core
-    Core.__path__.insert(0, str(checkout / "Core"))
+    # Import production config BEFORE adding experimental modules to the package
+    # path; otherwise the development checkout may select its own missing Db.
     from Core.config_loader import paths
+    Core.__path__.insert(0, str(checkout / "Core"))
     cache = Path(paths["bm25_cache"])
     metadata = Path(paths["metadata"])
     if not cache.is_dir() or cache.stat().st_mtime < metadata.stat().st_mtime:
