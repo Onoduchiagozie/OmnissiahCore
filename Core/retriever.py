@@ -143,7 +143,7 @@ class OmnissiahRetriever:
         print("Retriever ready\n")
 
     # ------------------------------------------------------------------
-    # Main corpus search (unchanged from before)
+    # Main corpus search
     # ------------------------------------------------------------------
 
     def search(
@@ -278,12 +278,9 @@ class OmnissiahRetriever:
         }
 
     # ------------------------------------------------------------------
-    # Focus mode — new
+    # Focus mode
     # ------------------------------------------------------------------
 
-    # CHANGED: added book_filter/source_filter params — previously this
-    # method had no filtering ability at all, so agent.py had nothing to
-    # forward them into even though it accepted them.
     def search_focus(
             self,
             query: str,
@@ -324,9 +321,7 @@ class OmnissiahRetriever:
 
         scene_hits = self._search_scene_index(query, k=10) if self.scene_index is not None else []
 
-        # CHANGED: filter scene hits by book_filter/source_filter before the
-        # confidence gate runs, so a confidently-scored wrong-book scene
-        # can't block the live fallback from being tried instead.
+        # Apply explicit filters before the scene confidence check.
         if scene_hits and book_filter:
             scene_hits = [
                 s for s in scene_hits
@@ -372,8 +367,6 @@ class OmnissiahRetriever:
         base_window = retrieval_cfg["stitching_window"]
         widened_window = min(6, max(base_window * 2, base_window + 2))
 
-        # CHANGED: book_filter/source_filter now forwarded here — previously
-        # this call to search() left both out entirely.
         stitched = self.search(
             query=query,
             top_k=max_sources,
@@ -605,7 +598,7 @@ class OmnissiahRetriever:
             return {}
 
     # ------------------------------------------------------------------
-    # Internals shared by both search paths (unchanged from before)
+    # Internals shared by both search paths
     # ------------------------------------------------------------------
 
     def _load_or_build_bm25(self):
