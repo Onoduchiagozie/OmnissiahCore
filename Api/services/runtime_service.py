@@ -194,7 +194,6 @@ class RuntimeService:
 
     def run_query(self, req: QueryRequest, mode: str, stream: bool) -> tuple[str, list[dict]]:
         session_id = self._resolve_session(req.session_id)
-        agent = self._build_agent(session_id, mode)
 
         # Ghost mode never acquires the LLM slot — it never calls the LLM.
         if mode == "ghost":
@@ -209,6 +208,9 @@ class RuntimeService:
         # All other modes acquire the semaphore — only 1 LLM call at a time.
         _acquire_llm_slot()
         try:
+            # Load prior turns only after entering the exclusive LLM slot.
+            # Otherwise a concurrent request can overwrite newer history.
+            agent = self._build_agent(session_id, mode)
             response, chunks = agent.ask(
                 query=req.query,
                 book_filter=req.book_filter,
@@ -219,16 +221,13 @@ class RuntimeService:
                 max_sources=req.max_sources,
                 stream=stream,
             )
+            self._set_session_memory(session_id, agent.memory)
+            return clean_response(response), chunks
         finally:
             _release_llm_slot()
 
-        self._set_session_memory(session_id, agent.memory)
-        response = clean_response(response)
-        return response, chunks
-
     def stream_query_mode(self, req: QueryRequest, mode: str = "remembrancer"):
         session_id = self._resolve_session(req.session_id)
-        agent = self._build_agent(session_id, mode=mode)
         pending_stages: list[str] = []
 
         def _on_stage(stage_name: str):
@@ -238,6 +237,7 @@ class RuntimeService:
         # entire stream duration so a second caller waits, not crashes.
         _acquire_llm_slot()
         try:
+            agent = self._build_agent(session_id, mode=mode)
             stream = agent.ask_stream(
                 query=req.query,
                 book_filter=req.book_filter,
