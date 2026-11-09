@@ -68,7 +68,7 @@ class RetrievalInvariants(unittest.TestCase):
         method = next(item for item in RETRIEVER.body if isinstance(item, ast.FunctionDef)
                       and item.name == "inspect")
         body = ast.unparse(method)
-        self.assertIn('"selected_hits"', body)
+        self.assertIn("selected_hits", body)
         self.assertIn("self.search(", body)
 
 
