@@ -36,5 +36,9 @@ jobs:
         run: python -m unittest discover -s Tests -p 'test_retrieval_recovery.py' -v
       - name: Run source-boundary and inspect invariant tests
         run: python -m unittest discover -s Tests -p 'test_retrieval_invariants.py' -v
+      - name: Test persistent conversation session boundaries
+        run: python -m unittest discover -s Tests -p 'test_conversation_store.py' -v
+      - name: Compile session/runtime route integration
+        run: python -m py_compile Core/conversation_store.py Api/services/runtime_service.py Api/routes/system_routes.py
       - name: Compile real-corpus evaluator
         run: python -m py_compile tools/evaluate_langgraph_retrieval.py
