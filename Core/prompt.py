@@ -215,9 +215,9 @@ def build_object_explorer_prompt(query: str, chunks: list[dict]) -> tuple[str, s
         "For event, historical, causal, or identity questions, assert a fact only when "
         "a supplied passage explicitly supports that fact or relationship. Related names "
         "or matching words are not evidence by themselves. Do not infer that something "
-        "was unrecorded unless a passage explicitly says so. If the passages mention the "
-        "subject but do not establish the requested fact, say exactly: "
-        "'The Archives do not clearly record enough here.' Then stop."
+        "was unrecorded unless a passage explicitly says so. Answer the portions that "
+        "the supplied passages support. When important evidence is missing, state the "
+        "specific limitation without claiming the source books do not contain it."
     )
     system_prompt = system.format(context=context_block) + evidence_mandate + CLEAN_TEXT_MANDATE
     return system_prompt, app_text["prompts"]["object_query_template"].format(query=query)
