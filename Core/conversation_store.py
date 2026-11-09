@@ -7,6 +7,7 @@ at the API boundary, not in possession of a predictable session ID.
 from __future__ import annotations
 
 import json
+import os
 import sqlite3
 import threading
 import time
@@ -26,6 +27,12 @@ class ConversationStore:
         if self.path.is_dir():
             raise ValueError("Conversation database path must be a file")
         self.path.parent.mkdir(parents=True, exist_ok=True)
+        # Database files must not be world-readable, even with a loose umask.
+        if not self.path.exists():
+            fd = os.open(str(self.path), os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
+            os.close(fd)
+        if os.name != "nt":
+            os.chmod(self.path, 0o600)
         self.max_turns = max_turns
         self.ttl_seconds = ttl_seconds
         self._lock = threading.RLock()
