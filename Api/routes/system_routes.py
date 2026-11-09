@@ -3,8 +3,9 @@ OmnissiahCore - Api/routes/system_routes.py
 """
 import json
 import os
+import secrets
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Header
 
 from Api.services.runtime_service import runtime_service, get_llm_status
 from Core.config_loader import paths
@@ -43,13 +44,31 @@ async def get_source_chunks(source_name: str, limit: int = Query(20, ge=1, le=10
         raise HTTPException(status_code=500, detail=str(e))
 
 
+def _require_memory_admin(header: str | None):
+    # Diagnostics are disabled unless an administrator provisions a private
+    # token in the server environment. Session IDs do not authorize access.
+    expected = os.getenv("OMNISSIAH_MEMORY_ADMIN_TOKEN", "")
+    if not expected:
+        raise HTTPException(status_code=404, detail="Not found")
+    if not header or not secrets.compare_digest(expected, header):
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+
 @router.delete("/memory", tags=["Session"])
-async def clear_memory(session_id: str = "default"):
+async def clear_memory(
+    session_id: str,
+    x_omnissiah_memory_admin: str | None = Header(default=None),
+):
+    _require_memory_admin(x_omnissiah_memory_admin)
     return runtime_service.clear_memory(session_id)
 
 
 @router.get("/memory", tags=["Session"])
-async def get_memory(session_id: str = "default"):
+async def get_memory(
+    session_id: str,
+    x_omnissiah_memory_admin: str | None = Header(default=None),
+):
+    _require_memory_admin(x_omnissiah_memory_admin)
     return runtime_service.get_memory(session_id)
 
 
