@@ -1,6 +1,6 @@
 """Small, private SQLite store for recently completed conversation turns.
 
-No book passages, provider keys, graph state, or raw prompts are persisted here.
+Stores only recent question/answer text, never indexed passages or provider keys.
 The feature is optional; a configured path enables it. Access control belongs
 at the API boundary, not in possession of a predictable session ID.
 """
