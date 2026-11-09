@@ -1,0 +1,289 @@
+{
+  "schema_version": 1,
+  "purpose": "Real-corpus retrieval evaluation; these are candidate source hints, NOT verified gold evidence",
+  "accuracy_policy": "Never mark PASS from HTTP status, book title, positive reranker score, generated text, or completion marker alone; manually verify supporting chunks and correct event",
+  "cases": [
+    {
+      "id": "horus-why",
+      "query": "why did horus turn traitor",
+      "category": "causal",
+      "candidate_books": [
+        "Horus Rising",
+        "False Gods",
+        "Galaxy in Flames"
+      ],
+      "expected_chunk_ids": [],
+      "evidence_review_status": "NOT_VERIFIED",
+      "notes": "No mandatory book filter; validate against all indexed sources."
+    },
+    {
+      "id": "horus-short",
+      "query": "why did horus betray the emperor",
+      "category": "causal",
+      "candidate_books": [
+        "Horus Rising",
+        "False Gods",
+        "Galaxy in Flames"
+      ],
+      "expected_chunk_ids": [],
+      "evidence_review_status": "NOT_VERIFIED",
+      "notes": "No mandatory book filter; validate against all indexed sources."
+    },
+    {
+      "id": "horus-motives",
+      "query": "what led to horus becoming a traitor",
+      "category": "causal",
+      "candidate_books": [
+        "Horus Rising",
+        "False Gods"
+      ],
+      "expected_chunk_ids": [],
+      "evidence_review_status": "NOT_VERIFIED",
+      "notes": "No mandatory book filter; validate against all indexed sources."
+    },
+    {
+      "id": "interex",
+      "query": "What happened between Horus and the Interex?",
+      "category": "causal",
+      "candidate_books": [
+        "Horus Rising"
+      ],
+      "expected_chunk_ids": [],
+      "evidence_review_status": "NOT_VERIFIED",
+      "notes": "No mandatory book filter; validate against all indexed sources."
+    },
+    {
+      "id": "loken-jubal",
+      "query": "loken saving the girl from jubal when possessed",
+      "category": "scene",
+      "candidate_books": [
+        "Horus Rising"
+      ],
+      "expected_chunk_ids": [],
+      "evidence_review_status": "NOT_VERIFIED",
+      "notes": "No mandatory book filter; validate against all indexed sources."
+    },
+    {
+      "id": "horus-invisibles",
+      "query": "horus kills the invisibles",
+      "category": "scene",
+      "candidate_books": [
+        "Horus Rising"
+      ],
+      "expected_chunk_ids": [],
+      "evidence_review_status": "NOT_VERIFIED",
+      "notes": "No mandatory book filter; validate against all indexed sources."
+    },
+    {
+      "id": "kakophoni-white-scars",
+      "query": "kakaponi of the 3rd legion attacked the 5th legion using sonic weapons",
+      "category": "scene",
+      "candidate_books": [],
+      "expected_chunk_ids": [],
+      "evidence_review_status": "NOT_VERIFIED",
+      "notes": "No mandatory book filter; validate against all indexed sources."
+    },
+    {
+      "id": "lorgar-magnus",
+      "query": "discussion of lorgar and magnus",
+      "category": "scene",
+      "candidate_books": [],
+      "expected_chunk_ids": [],
+      "evidence_review_status": "NOT_VERIFIED",
+      "notes": "No mandatory book filter; validate against all indexed sources."
+    },
+    {
+      "id": "sea-of-souls",
+      "query": "lorgar speaking about the sea of souls like an ocean",
+      "category": "scene",
+      "candidate_books": [],
+      "expected_chunk_ids": [],
+      "evidence_review_status": "NOT_VERIFIED",
+      "notes": "No mandatory book filter; validate against all indexed sources."
+    },
+    {
+      "id": "white-scars-daemon",
+      "query": "slaneshi demon facing the white scars as they race to terra entire fight",
+      "category": "scene",
+      "candidate_books": [],
+      "expected_chunk_ids": [],
+      "evidence_review_status": "NOT_VERIFIED",
+      "notes": "No mandatory book filter; validate against all indexed sources."
+    },
+    {
+      "id": "sharrowkyn-lucius",
+      "query": "sharokin and lucius battle angel exterminatus",
+      "category": "scene",
+      "candidate_books": [
+        "Angel Exterminatus"
+      ],
+      "expected_chunk_ids": [],
+      "evidence_review_status": "NOT_VERIFIED",
+      "notes": "No mandatory book filter; validate against all indexed sources."
+    },
+    {
+      "id": "fulgrim-ferrus-final",
+      "query": "Fulgrim kills Ferrus Manus after the Laer blade's daemon takes control",
+      "category": "scene",
+      "candidate_books": [
+        "Fulgrim"
+      ],
+      "expected_chunk_ids": [],
+      "evidence_review_status": "NOT_VERIFIED",
+      "notes": "No mandatory book filter; validate against all indexed sources."
+    },
+    {
+      "id": "fulgrim-ferrus-ambiguous",
+      "query": "what happened when fulgrim fought ferrus manus",
+      "category": "scene",
+      "candidate_books": [
+        "Fulgrim"
+      ],
+      "expected_chunk_ids": [],
+      "evidence_review_status": "NOT_VERIFIED",
+      "notes": "No mandatory book filter; validate against all indexed sources."
+    },
+    {
+      "id": "magnus-wards",
+      "query": "Magnus breaks the psychic wards protecting the Imperial Palace",
+      "category": "scene",
+      "candidate_books": [
+        "A Thousand Sons",
+        "The Master of Mankind"
+      ],
+      "expected_chunk_ids": [],
+      "evidence_review_status": "NOT_VERIFIED",
+      "notes": "No mandatory book filter; validate against all indexed sources."
+    },
+    {
+      "id": "magnus-warning",
+      "query": "Why did Magnus warn the Emperor about Horus?",
+      "category": "causal",
+      "candidate_books": [
+        "A Thousand Sons"
+      ],
+      "expected_chunk_ids": [],
+      "evidence_review_status": "NOT_VERIFIED",
+      "notes": "No mandatory book filter; validate against all indexed sources."
+    },
+    {
+      "id": "prospero",
+      "query": "what happened to Prospero and the Thousand Sons",
+      "category": "lookup",
+      "candidate_books": [
+        "A Thousand Sons",
+        "Prospero Burns"
+      ],
+      "expected_chunk_ids": [],
+      "evidence_review_status": "NOT_VERIFIED",
+      "notes": "No mandatory book filter; validate against all indexed sources."
+    },
+    {
+      "id": "angron-nuceria",
+      "query": "Angron orders Argel Tal to kill the population of Nuceria",
+      "category": "scene",
+      "candidate_books": [
+        "Betrayer"
+      ],
+      "expected_chunk_ids": [],
+      "evidence_review_status": "NOT_VERIFIED",
+      "notes": "No mandatory book filter; validate against all indexed sources."
+    },
+    {
+      "id": "calth",
+      "query": "What happened when the Word Bearers attacked Calth?",
+      "category": "scene",
+      "candidate_books": [
+        "Know No Fear"
+      ],
+      "expected_chunk_ids": [],
+      "evidence_review_status": "NOT_VERIFIED",
+      "notes": "No mandatory book filter; validate against all indexed sources."
+    },
+    {
+      "id": "lorgar-fall",
+      "query": "Why did Lorgar turn to Chaos?",
+      "category": "causal",
+      "candidate_books": [
+        "The First Heretic"
+      ],
+      "expected_chunk_ids": [],
+      "evidence_review_status": "NOT_VERIFIED",
+      "notes": "No mandatory book filter; validate against all indexed sources."
+    },
+    {
+      "id": "laer-blade",
+      "query": "What is the Laer blade and what happened to Fulgrim?",
+      "category": "lookup",
+      "candidate_books": [
+        "Fulgrim"
+      ],
+      "expected_chunk_ids": [],
+      "evidence_review_status": "NOT_VERIFIED",
+      "notes": "No mandatory book filter; validate against all indexed sources."
+    },
+    {
+      "id": "whitescars-terra",
+      "query": "How did the White Scars reach Terra?",
+      "category": "causal",
+      "candidate_books": [
+        "Scars",
+        "The Path of Heaven"
+      ],
+      "expected_chunk_ids": [],
+      "evidence_review_status": "NOT_VERIFIED",
+      "notes": "No mandatory book filter; validate against all indexed sources."
+    },
+    {
+      "id": "sharrowkyn-who",
+      "query": "Who was Nykona Sharrowkyn?",
+      "category": "lookup",
+      "candidate_books": [
+        "Angel Exterminatus"
+      ],
+      "expected_chunk_ids": [],
+      "evidence_review_status": "NOT_VERIFIED",
+      "notes": "No mandatory book filter; validate against all indexed sources."
+    },
+    {
+      "id": "ferrus-vs-fulgrim",
+      "query": "Ferrus vs Fulgrim: what drove their conflict?",
+      "category": "comparison",
+      "candidate_books": [
+        "Fulgrim"
+      ],
+      "expected_chunk_ids": [],
+      "evidence_review_status": "NOT_VERIFIED",
+      "notes": "No mandatory book filter; validate against all indexed sources."
+    },
+    {
+      "id": "dorn-council",
+      "query": "Dorn Malcador Diocletian and Kaeria discuss the Emperor's war in the Webway",
+      "category": "scene",
+      "candidate_books": [
+        "The Master of Mankind"
+      ],
+      "expected_chunk_ids": [],
+      "evidence_review_status": "NOT_VERIFIED",
+      "notes": "No mandatory book filter; validate against all indexed sources."
+    },
+    {
+      "id": "unknown-name",
+      "query": "Who is Zyxal, Primarch of the Ninety-Fifth Legion?",
+      "category": "negative",
+      "candidate_books": [],
+      "expected_chunk_ids": [],
+      "evidence_review_status": "NOT_VERIFIED",
+      "notes": "No mandatory book filter; validate against all indexed sources."
+    },
+    {
+      "id": "unsupported-detail",
+      "query": "What colour were Horus's socks during the Davin ritual?",
+      "category": "negative",
+      "candidate_books": [],
+      "expected_chunk_ids": [],
+      "evidence_review_status": "NOT_VERIFIED",
+      "notes": "No mandatory book filter; validate against all indexed sources."
+    }
+  ]
+}
