@@ -161,6 +161,18 @@ class OmnissiahRetriever:
         candidate_pool = candidate_pool or retrieval_cfg["candidate_pool"]
         stitching_window = (retrieval_cfg["stitching_window"]
                             if stitching_window is None else stitching_window)
+        if retrieval_cfg.get("langgraph_retrieval", False):
+            # Feature-gated: absent in the deployed Oracle configuration.
+            # Uses the existing loaded FAISS/BM25/embedding/cross-encoder objects.
+            from Core.graphs.retrieval_graph import RetrievalGraph
+            if on_stage:
+                on_stage("retrieving")
+            result = RetrievalGraph(self).run(
+                query, top_k=top_k, candidate_pool=candidate_pool,
+                stitching_window=stitching_window,
+                book_filter=book_filter, source_filter=source_filter,
+            )
+            return result.get("selected_evidence", [])
         baseline = self._search_base(
             query=query, top_k=top_k, candidate_pool=candidate_pool,
             stitching_window=stitching_window, book_filter=book_filter,
