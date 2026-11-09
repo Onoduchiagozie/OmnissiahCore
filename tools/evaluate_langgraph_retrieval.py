@@ -58,7 +58,9 @@ def _hits(items):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--runtime-root", type=Path, required=True)
-    parser.add_argument("--case", choices=[*QUERIES, "all"], default="horus")
+    parser.add_argument("--case", default="horus", help="Query ID or all")
+    parser.add_argument("--catalog", type=Path, help="Optional JSON catalog of user and regression questions")
+    parser.add_argument("--limit", type=int, default=8, help="Maximum cases per run (default 8 for CPU safety)")
     parser.add_argument("--out", type=Path, default=Path("/tmp/omnissiah-langgraph-ab.json"))
     parser.add_argument("--top-k", type=int, default=6)
     parser.add_argument("--pool", type=int, default=20)
@@ -88,7 +90,26 @@ def main():
     experimental = _load("experimental_retriever", checkout / "Core" / "retriever.py")
     retriever = experimental.OmnissiahRetriever()
     graph = RetrievalGraph(retriever)
-    cases = QUERIES if args.case == "all" else {args.case: QUERIES[args.case]}
+    catalog = dict(QUERIES)
+    if args.catalog:
+        data = json.loads(args.catalog.read_text(encoding="utf-8"))
+        records = data.get("cases", [])
+        if not isinstance(records, list):
+            parser.error("Catalog must contain a cases array")
+        catalog = {
+            entry["id"]: entry["query"] for entry in records
+            if isinstance(entry, dict)
+            and isinstance(entry.get("id"), str) and entry["id"].strip()
+            and isinstance(entry.get("query"), str) and entry["query"].strip()
+        }
+        if len(catalog) != len(records):
+            parser.error("Missing/duplicate case IDs or invalid queries in catalog")
+    if args.case != "all" and args.case not in catalog:
+        parser.error(f"Unknown case {args.case!r}; choose one of: {', '.join(catalog)}")
+    if args.limit < 1 or args.limit > 100:
+        parser.error("--limit must be between 1 and 100")
+    cases = (dict(list(catalog.items())[:args.limit]) if args.case == "all"
+             else {args.case: catalog[args.case]})
     output = {}
     for name, question in cases.items():
         legacy = retriever._search_base(
