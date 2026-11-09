@@ -177,7 +177,8 @@ class OmnissiahRetriever:
             source_filter=source_filter, on_stage=on_stage,
         )
 
-    def _search_base(            self,
+    def _search_base(
+            self,
             query: str,
             top_k: int = None,
             candidate_pool: int = None,
