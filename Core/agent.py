@@ -51,9 +51,6 @@ class OmnissiahAgent:
         if self.verbose:
             print(f"   [Agent] Intent: {intent}  Mode: {self.mode}")
 
-        # CHANGED: book_filter/source_filter now forwarded into search_focus()
-        # (previously silently dropped here even though this method accepted
-        # them — focus mode never actually saw them).
         if self.mode == "focus":
             chunks = self.retriever.search_focus(
                 query=query,
@@ -122,8 +119,6 @@ class OmnissiahAgent:
     ) -> Generator[str, None, None]:
         _ = self._classify_intent(query)
 
-        # CHANGED: same fix as ask() above — book_filter/source_filter now
-        # forwarded into search_focus() instead of being dropped.
         if self.mode == "focus":
             chunks = self.retriever.search_focus(
                 query=query,
