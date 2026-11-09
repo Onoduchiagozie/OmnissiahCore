@@ -25,6 +25,11 @@ jobs:
         run: python -m pip install -r requirements-langgraph.txt
       - name: Compile retrieval modules
         run: python -m compileall -q Core/retrieval_nlp.py Core/graphs/retrieval_graph.py Core/retrieval_recovery.py
+      - name: Validate prompt, agent, retriever and benchmark catalog
+        run: |
+          python -m py_compile Core/prompt.py Core/agent.py Core/retriever.py
+          python -m json.tool app_text.json > /dev/null
+          python -m json.tool tools/benchmarks/lore_query_catalog.json > /dev/null
       - name: Run deterministic graph tests
         run: python -m unittest discover -s Tests -p 'test_langgraph_retrieval.py' -v
       - name: Run recovery tests without FAISS
