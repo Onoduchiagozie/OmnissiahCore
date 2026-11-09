@@ -154,6 +154,36 @@ class OmnissiahRetriever:
             stitching_window: int = None,
             book_filter: str = None,
             source_filter: list[str] = None,
+            on_stage=None,
+    ) -> list[dict]:
+        """Opt-in recovery over the legacy retrieval; never silently change production."""
+        top_k = top_k or retrieval_cfg["top_k"]
+        candidate_pool = candidate_pool or retrieval_cfg["candidate_pool"]
+        stitching_window = (retrieval_cfg["stitching_window"]
+                            if stitching_window is None else stitching_window)
+        baseline = self._search_base(
+            query=query, top_k=top_k, candidate_pool=candidate_pool,
+            stitching_window=stitching_window, book_filter=book_filter,
+            source_filter=source_filter, on_stage=on_stage,
+        )
+        if not retrieval_cfg.get("adaptive_retrieval", False):
+            return baseline
+        from Core.retrieval_recovery import is_explanatory, recover_evidence
+        if baseline and not is_explanatory(query):
+            return baseline
+        return recover_evidence(
+            self, query, baseline, top_k=top_k, candidate_pool=candidate_pool,
+            stitching_window=stitching_window, book_filter=book_filter,
+            source_filter=source_filter, on_stage=on_stage,
+        )
+
+    def _search_base(            self,
+            query: str,
+            top_k: int = None,
+            candidate_pool: int = None,
+            stitching_window: int = None,
+            book_filter: str = None,
+            source_filter: list[str] = None,
             on_stage=None,  # optional callable(str) -> None, fired at each real boundary
     ) -> list[dict]:
         top_k = top_k or retrieval_cfg["top_k"]
