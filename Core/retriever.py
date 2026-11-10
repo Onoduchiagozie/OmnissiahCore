@@ -220,7 +220,7 @@ class OmnissiahRetriever:
                 ]
             else:
                 selected = merged[:top_k]
-            stitched = self._stitch_chunks(selected, window=min(stitching_window, 2))
+            stitched = self._stitch_chunks(selected, window=min(stitching_window, 1))
             return cap_causal_context(query, stitched)
 
         # Existing battle/scene/narrator path is intentionally preserved.
@@ -837,7 +837,7 @@ class OmnissiahRetriever:
         variants = TERM_VARIANTS.get(term, {term})
         # A query term such as 'turn' must not match 'returned' in unrelated prose.
         return any(
-            re.search(r"(?<![a-z0-9])" + re.escape(variant) + r"(?![a-z0-9])", haystack)
+            re.search(r"(?<![a-z0-9])" + re.escape(variant) + r"(?:s|ed|ing)?(?![a-z0-9])", haystack)
             for variant in variants
         )
 
