@@ -1,0 +1,22 @@
+name: Oracle causal retrieval checks
+
+on:
+  push:
+    branches:
+      - fix/oracle-causal-retrieval-20261110
+  pull_request:
+    branches:
+      - oracle
+
+jobs:
+  unit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - name: Compile retrieval modules
+        run: python -m compileall -q Core/retriever.py Core/retrieval_quality.py tools/oracle_horus_smoke.py Tests/unit/test_oracle_retrieval_quality.py
+      - name: Run retrieval quality tests
+        run: python -m unittest discover -s Tests/unit -p 'test_oracle_retrieval_quality.py' -v
