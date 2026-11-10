@@ -27,6 +27,13 @@ import torch
 from sentence_transformers import SentenceTransformer
 
 from Core.config_loader import embedding_cfg, machine_role, paths, retrieval_cfg
+from Core.retrieval_quality import (
+    cap_causal_context,
+    explanation_rewrites,
+    interleave_unique,
+    is_causal_question,
+    rank_causal_evidence,
+)
 
 try:
     import bm25s
@@ -48,6 +55,7 @@ STOPWORDS = {
     "from", "by", "about", "what", "who", "when", "where", "how", "why", "is",
     "was", "were", "be", "been", "being", "first", "scene", "description", "made",
     "attack", "battle", "story", "tell", "me", "this", "that", "these", "those",
+    "did", "does", "after", "before", "caused",
 }
 
 TERM_VARIANTS = {
@@ -146,6 +154,31 @@ class OmnissiahRetriever:
     # Main corpus search (unchanged from before)
     # ------------------------------------------------------------------
 
+    def _retrieve_candidate_sets(self, query: str, candidate_pool: int) -> tuple[list[dict], list[dict], list[dict]]:
+        """Retrieve the original query and, for causal questions, two explanation-oriented probes.
+
+        Keeps existing FAISS/BM25 indexes and preserves normal queries unchanged.
+        """
+        faiss_groups = [self._faiss_search(self._enrich_query(query), k=candidate_pool)]
+        bm25_groups = [self._bm25_search(query, k=candidate_pool)] if self.bm25 else []
+
+        probes = explanation_rewrites(query)
+        if probes:
+            # Interleaving avoids saturating the pool with just the first wording.
+            probe_k = max(5, candidate_pool // 2)
+            for probe in probes:
+                faiss_groups.append(self._faiss_search(self._enrich_query(probe), k=probe_k))
+                if self.bm25:
+                    bm25_groups.append(self._bm25_search(probe, k=probe_k))
+            limit = candidate_pool * 2
+            faiss_hits = interleave_unique(*faiss_groups, limit=limit)
+            bm25_hits = interleave_unique(*bm25_groups, limit=limit) if bm25_groups else []
+            merged = self._rrf_merge(faiss_hits, bm25_hits, k=limit)
+        else:
+            faiss_hits, bm25_hits = faiss_groups[0], bm25_groups[0] if bm25_groups else []
+            merged = self._rrf_merge(faiss_hits, bm25_hits, k=candidate_pool)
+        return faiss_hits, bm25_hits, merged
+
     def search(
             self,
             query: str,
@@ -154,43 +187,53 @@ class OmnissiahRetriever:
             stitching_window: int = None,
             book_filter: str = None,
             source_filter: list[str] = None,
-            on_stage=None,  # optional callable(str) -> None, fired at each real boundary
+            on_stage=None,
     ) -> list[dict]:
-        top_k = top_k or retrieval_cfg["top_k"]
-        candidate_pool = candidate_pool or retrieval_cfg["candidate_pool"]
-        stitching_window = stitching_window or retrieval_cfg["stitching_window"]
+        top_k = retrieval_cfg["top_k"] if top_k is None else top_k
+        candidate_pool = retrieval_cfg["candidate_pool"] if candidate_pool is None else candidate_pool
+        stitching_window = retrieval_cfg["stitching_window"] if stitching_window is None else stitching_window
 
         if on_stage:
             on_stage("embedding")
-        enriched_query = self._enrich_query(query)
-        faiss_hits = self._faiss_search(enriched_query, k=candidate_pool)
+        _, _, merged = self._retrieve_candidate_sets(query, candidate_pool)
 
         if on_stage:
             on_stage("retrieving")
-        bm25_hits = self._bm25_search(query, k=candidate_pool) if self.bm25 else []
-        merged = self._rrf_merge(faiss_hits, bm25_hits, k=candidate_pool)
-
         if book_filter:
             merged = [c for c in merged if book_filter.lower() in c["source"].lower()]
         if source_filter:
             merged = [c for c in merged if c["source"] in source_filter]
 
         merged = self._apply_query_grounding(query, merged)
-        # A cross-encoder must see the full retrieval candidate set.
-        # Reranking after truncating to top_k only reshuffles results the
-        # lexical-overlap stage already selected.
+        causal = is_causal_question(query)
+        if causal:
+            merged = rank_causal_evidence(query, merged)
+            # Rank SHORT ORIGINAL chunks, not giant stitched chunks. This is both
+            # more precise for explanation questions and far cheaper on Oracle CPU.
+            if self.reranker and len(merged) > 1:
+                if on_stage:
+                    on_stage("reranking")
+                reranked = self._rerank(query, merged[:candidate_pool], top_k=top_k)
+                selected = [
+                    c for c in reranked
+                    if c.get("rerank_score", float("-inf")) >= RERANK_RELEVANCE_FLOOR
+                ]
+            else:
+                selected = merged[:top_k]
+            stitched = self._stitch_chunks(selected, window=min(stitching_window, 2))
+            return cap_causal_context(query, stitched)
+
+        # Existing battle/scene/narrator path is intentionally preserved.
         stitch_limit = candidate_pool if self.reranker else top_k
         stitched = self._stitch_chunks(merged[:stitch_limit], window=stitching_window)
-
         if self.reranker and len(stitched) > 1:
             if on_stage:
                 on_stage("reranking")
             reranked = self._rerank(query, stitched, top_k=top_k)
             return [
-                chunk for chunk in reranked
-                if chunk.get("rerank_score", float("-inf")) >= RERANK_RELEVANCE_FLOOR
+                c for c in reranked
+                if c.get("rerank_score", float("-inf")) >= RERANK_RELEVANCE_FLOOR
             ]
-
         return stitched[:top_k]
 
     def inspect(
@@ -202,28 +245,33 @@ class OmnissiahRetriever:
             book_filter: str = None,
             source_filter: list[str] = None,
     ) -> dict:
-        top_k = top_k or retrieval_cfg["top_k"]
-        candidate_pool = candidate_pool or retrieval_cfg["candidate_pool"]
-        stitching_window = stitching_window or retrieval_cfg["stitching_window"]
+        top_k = retrieval_cfg["top_k"] if top_k is None else top_k
+        candidate_pool = retrieval_cfg["candidate_pool"] if candidate_pool is None else candidate_pool
+        stitching_window = retrieval_cfg["stitching_window"] if stitching_window is None else stitching_window
 
-        enriched_query = self._enrich_query(query)
-        faiss_hits = self._faiss_search(enriched_query, k=candidate_pool)
-        bm25_hits = self._bm25_search(query, k=candidate_pool) if self.bm25 else []
-        merged = self._rrf_merge(faiss_hits, bm25_hits, k=candidate_pool)
-
+        faiss_hits, bm25_hits, merged = self._retrieve_candidate_sets(query, candidate_pool)
         if book_filter:
             merged = [c for c in merged if book_filter.lower() in c["source"].lower()]
         if source_filter:
             merged = [c for c in merged if c["source"] in source_filter]
 
         grounded = self._apply_query_grounding(query, merged)
-        stitched = self._stitch_chunks(grounded[:top_k], window=stitching_window)
+        causal = is_causal_question(query)
+        if causal:
+            grounded = rank_causal_evidence(query, grounded)
+        stitched = self._stitch_chunks(
+            grounded[:top_k], window=min(stitching_window, 2) if causal else stitching_window
+        )
+        if causal:
+            stitched = cap_causal_context(query, stitched)
         return {
             "query": query,
-            "query_terms": self._query_terms(query),
-            "faiss_hits": faiss_hits[: min(5, len(faiss_hits))],
-            "bm25_hits": bm25_hits[: min(5, len(bm25_hits))],
-            "grounded_hits": grounded[: min(top_k, len(grounded))],
+            "causal_mode": causal,
+            "inspect_note": "Pre-cross-encoder diagnostic; search() performs final reranking.",
+            "query_terms": sorted(self._query_terms(query)),
+            "faiss_hits": faiss_hits[:min(5, len(faiss_hits))],
+            "bm25_hits": bm25_hits[:min(5, len(bm25_hits))],
+            "grounded_hits": grounded[:min(top_k, len(grounded))],
             "stitched_hits": stitched,
         }
 
@@ -738,6 +786,9 @@ class OmnissiahRetriever:
                     continue
                 if nid in self._id_to_idx:
                     chunk = self.metadata[self._id_to_idx[nid]]
+                    # Adjacent IDs are not necessarily from the same book.
+                    if chunk.get("source") != hit.get("source"):
+                        continue
                     chunk_text = chunk.get("text", "").strip()
 
                     # Normalize white-spaces and look for string matches across overlapping chunks
@@ -784,7 +835,11 @@ class OmnissiahRetriever:
 
     def _term_matches(self, term: str, haystack: str) -> bool:
         variants = TERM_VARIANTS.get(term, {term})
-        return any(variant in haystack for variant in variants)
+        # A query term such as 'turn' must not match 'returned' in unrelated prose.
+        return any(
+            re.search(r"(?<![a-z0-9])" + re.escape(variant) + r"(?![a-z0-9])", haystack)
+            for variant in variants
+        )
 
     def _enrich_query(self, query: str) -> str:
         return f"Represent this sentence for searching relevant passages: {query}"
