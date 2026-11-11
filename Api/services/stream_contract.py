@@ -63,3 +63,16 @@ def validated_sse_frames(upstream: Iterable[str]) -> Iterator[str]:
     else:
         yield "data: __STAGE__:complete\n\n"
         yield "data: [DONE]\n\n"
+
+
+class GenerationFailure(ValueError):
+    """The model did not provide a usable, successfully generated answer."""
+
+
+def validate_generated_response(response: str) -> str:
+    """Validate a synchronous model answer before returning HTTP 200."""
+    if not isinstance(response, str) or not response.strip():
+        raise GenerationFailure("Language model returned no answer.")
+    if response.lstrip().startswith("[ERROR]"):
+        raise GenerationFailure("Language model generation failed.")
+    return response
