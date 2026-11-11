@@ -27,6 +27,7 @@ import torch
 from sentence_transformers import SentenceTransformer
 
 from Core.config_loader import embedding_cfg, machine_role, paths, retrieval_cfg
+from Core.event_recall import scan_event_anchors
 from Core.retrieval_quality import (
     cap_causal_context,
     cap_chronicle_context,
@@ -215,8 +216,26 @@ class OmnissiahRetriever:
         if source_filter:
             merged = [c for c in merged if c["source"] in source_filter]
 
-        merged = self._apply_query_grounding(query, merged)
         causal = is_causal_question(query)
+        chronicle = is_chronicle_request(query) and not causal
+        if chronicle:
+            # FAISS/BM25 top-N can omit the primary narrative entirely.
+            # A bounded scan of already-loaded metadata recalls passages
+            # in which user-named subjects/events actually occur together.
+            # It adds candidates; it does NOT force a particular novel.
+            anchor_hits, anchor_diagnostics = scan_event_anchors(
+                self.metadata,
+                query,
+                limit=max(30, candidate_pool // 2),
+                book_filter=book_filter,
+                source_filter=source_filter,
+            )
+            if anchor_hits:
+                merged = interleave_unique(
+                    anchor_hits, merged,
+                    limit=max(len(merged) + len(anchor_hits), candidate_pool * 3),
+                )
+        merged = self._apply_query_grounding(query, merged)
         if causal:
             merged = rank_causal_evidence(query, merged)
             # Rank SHORT ORIGINAL chunks, not giant stitched chunks. This is both
@@ -282,9 +301,21 @@ class OmnissiahRetriever:
         if source_filter:
             merged = [c for c in merged if c["source"] in source_filter]
 
-        grounded = self._apply_query_grounding(query, merged)
         causal = is_causal_question(query)
         chronicle = is_chronicle_request(query) and not causal
+        anchor_diagnostics = {}
+        if chronicle:
+            anchor_hits, anchor_diagnostics = scan_event_anchors(
+                self.metadata, query,
+                limit=max(30, candidate_pool // 2),
+                book_filter=book_filter, source_filter=source_filter,
+            )
+            if anchor_hits:
+                merged = interleave_unique(
+                    anchor_hits, merged,
+                    limit=max(len(merged) + len(anchor_hits), candidate_pool * 3),
+                )
+        grounded = self._apply_query_grounding(query, merged)
         if causal:
             grounded = rank_causal_evidence(query, grounded)
         elif chronicle:
@@ -305,6 +336,7 @@ class OmnissiahRetriever:
             "causal_mode": causal,
             "chronicle_mode": chronicle,
             "facet_queries": chronicle_probes(query) if chronicle else [],
+            "anchor_recall": anchor_diagnostics,
             "inspect_note": "Pre-cross-encoder diagnostic; search() performs final reranking.",
             "query_terms": sorted(self._query_terms(query)),
             "faiss_hits": faiss_hits[:min(5, len(faiss_hits))],
