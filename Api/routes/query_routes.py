@@ -163,14 +163,20 @@ async def query_narrate_stream(req: QueryRequest):
 
         threading.Thread(target=_producer, daemon=True).start()
 
+        terminal_failure = False
         while True:
             token = await queue.get()
             if token is None:
                 break
+            if token.startswith("data: [ERROR]") or token.startswith(
+                "data: __STAGE__:failed"
+            ):
+                terminal_failure = True
             yield token
 
-        # Exactly one [DONE] — runtime_service.stream_query_mode does NOT yield it
-        yield "data: [DONE]\n\n"
+        # The backend does not emit [DONE]; add it only after success.
+        if not terminal_failure:
+            yield "data: [DONE]\n\n"
 
     return StreamingResponse(
         _stream(),
