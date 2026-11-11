@@ -210,7 +210,7 @@ async def query_respond_stream(req: QueryRequest):
                     asyncio.run_coroutine_threadsafe(queue.put(token), loop)
             except Exception as exc:
                 asyncio.run_coroutine_threadsafe(
-                    queue.put(f"data: [ERROR] Adaptive response failed: {exc}\\n\\n"), loop
+                    queue.put(f"data: [ERROR] Adaptive response failed: {exc}\n\n"), loop
                 )
             finally:
                 asyncio.run_coroutine_threadsafe(queue.put(None), loop)
