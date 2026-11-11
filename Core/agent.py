@@ -14,6 +14,7 @@ from Core.app_text import app_text
 from Core.config_loader import llm_cfg
 from Core.gemini_provider import generate, ProviderError
 from Core.prompt import (
+    build_explorer_prompt,
     build_focus_prompt,
     build_narrate_prompt,
     build_object_explorer_prompt,
@@ -21,6 +22,7 @@ from Core.prompt import (
     format_debug,
 )
 from Core.retriever import OmnissiahRetriever
+from Core.response_style import resolve_response_options
 
 
 class OmnissiahAgent:
@@ -29,9 +31,13 @@ class OmnissiahAgent:
         verbose: bool = False,
         mode: str = "remembrancer",
         retriever: Optional[OmnissiahRetriever] = None,
+        response_style: Optional[str] = None,
+        retrieval_scope: Optional[str] = None,
     ):
         self.verbose = verbose
         self.mode = mode
+        self.requested_style = response_style
+        self.requested_scope = retrieval_scope
         self.retriever = retriever or OmnissiahRetriever()
         self._memory: list[dict] = []
         self._MAX_MEM = 4
@@ -47,14 +53,14 @@ class OmnissiahAgent:
         max_sources: int = None,
         stream: bool = None,
     ) -> tuple[str, list[dict]]:
-        intent = self._classify_intent(query)
+        style, scope = self._response_options(query)
         if self.verbose:
-            print(f"   [Agent] Intent: {intent}  Mode: {self.mode}")
+            print(f"   [Agent] Style: {style}  Scope: {scope}  Endpoint: {self.mode}")
 
         # CHANGED: book_filter/source_filter now forwarded into search_focus()
         # (previously silently dropped here even though this method accepted
         # them — focus mode never actually saw them).
-        if self.mode == "focus":
+        if scope == "focus":
             chunks = self.retriever.search_focus(
                 query=query,
                 max_sources=max_sources,
@@ -77,7 +83,7 @@ class OmnissiahAgent:
         if not chunks:
             return app_text["agent"]["no_chunks_message"], []
 
-        if self.mode == "focus" and self._is_pure_scene_response(chunks):
+        if scope == "focus" and style == "narrator" and self._is_pure_scene_response(chunks):
             # Pre-woven chronicles are already finished, curated prose.
             # Handing them to the LLM a second time to "narrate" them again
             # only adds a second chance to invent details that aren't in the
@@ -90,7 +96,7 @@ class OmnissiahAgent:
                 print(format_debug(query, chunks, response))
             return response, chunks
 
-        system_prompt, user_msg = self._build_prompt(query, chunks)
+        system_prompt, user_msg = self._build_prompt(query, chunks, style=style, scope=scope)
 
         if self._memory:
             user_msg = self._format_memory() + "\n\n" + user_msg
@@ -120,11 +126,11 @@ class OmnissiahAgent:
             max_sources: int = None,
             on_stage=None,  # optional callable(str) -> None
     ) -> Generator[str, None, None]:
-        _ = self._classify_intent(query)
+        style, scope = self._response_options(query)
 
         # CHANGED: same fix as ask() above — book_filter/source_filter now
         # forwarded into search_focus() instead of being dropped.
-        if self.mode == "focus":
+        if scope == "focus":
             chunks = self.retriever.search_focus(
                 query=query,
                 max_sources=max_sources,
@@ -147,7 +153,7 @@ class OmnissiahAgent:
             yield app_text["agent"]["stream_no_chunks_message"]
             return
 
-        if self.mode == "focus" and self._is_pure_scene_response(chunks):
+        if scope == "focus" and style == "narrator" and self._is_pure_scene_response(chunks):
             # Same reasoning as ask(): pre-woven chronicles are already
             # finished prose, so stream them back directly instead of
             # re-narrating through the LLM a second time.
@@ -167,7 +173,7 @@ class OmnissiahAgent:
             yield f"__SOURCES__:{json.dumps(sources_data)}"
             return
 
-        system_prompt, user_msg = self._build_prompt(query, chunks)
+        system_prompt, user_msg = self._build_prompt(query, chunks, style=style, scope=scope)
 
         if self._memory:
             user_msg = self._format_memory() + "\n\n" + user_msg
@@ -203,19 +209,28 @@ class OmnissiahAgent:
             self._update_memory(query, full_response)
         yield f"__SOURCES__:{json.dumps(sources_data)}"
 
-    def _build_prompt(self, query: str, chunks: list[dict]) -> tuple[str, str]:
-        """Dispatch to the right prompt builder based on current mode."""
-        if self.mode == "narrator":
-            return build_narrate_prompt(query, chunks)
-        elif self.mode == "explorer":
-            return build_object_explorer_prompt(query, chunks)
-        elif self.mode == "focus":
-            # Only reached for the FALLBACK path (raw corpus chunks) — the
-            # scene-library path returns chronicles directly and never
-            # calls the LLM at all (see _is_pure_scene_response check above).
+    def _response_options(self, query: str) -> tuple[str, str]:
+        """Determine explanation vs drama independently of Focus vs Wide Net."""
+        return resolve_response_options(
+            query,
+            endpoint_mode=self.mode,
+            requested_style=self.requested_style,
+            requested_scope=self.requested_scope,
+        )
+
+    def _build_prompt(
+        self, query: str, chunks: list[dict],
+        style: Optional[str] = None, scope: Optional[str] = None,
+    ) -> tuple[str, str]:
+        """The same evidence can be answered in an explanatory or cinematic voice."""
+        if style is None or scope is None:
+            style, scope = self._response_options(query)
+        if style == "explorer":
+            return build_explorer_prompt(query, chunks)
+        if scope == "focus":
+            # Curated scenes are returned directly only for narration.
             return build_focus_prompt(query, chunks)
-        else:
-            return build_prompt(query, chunks)
+        return build_narrate_prompt(query, chunks)
 
     @staticmethod
     def _is_pure_scene_response(chunks: list[dict]) -> bool:
