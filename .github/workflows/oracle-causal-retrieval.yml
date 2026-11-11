@@ -22,5 +22,7 @@ jobs:
         run: |
           python -m compileall -q Core/retriever.py Core/retrieval_quality.py Api/routes/query_routes.py tools/oracle_horus_smoke.py tools/oracle_chronicle_smoke.py Tests/unit/test_oracle_retrieval_quality.py Tests/unit/test_oracle_chronicle_quality.py
           python -m json.tool app_text.json > /dev/null
+      - name: Validate Oracle deployment shell script
+        run: bash -n tools/deploy_oracle_chronicle.sh
       - name: Run model-free retrieval regressions
         run: python -m unittest discover -s Tests/unit -p 'test_oracle_*quality.py' -v
