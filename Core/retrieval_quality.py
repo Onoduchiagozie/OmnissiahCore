@@ -288,9 +288,20 @@ def select_chronicle_evidence(query: str, ranked_hits: list[dict], top_k: int) -
             break
         if len(chosen) >= top_k:
             return chosen
+    named_anchors = [
+        name.lower() for name in re.findall(r"\b[A-Z][a-zA-Z'-]{2,}\b", query)
+        if name.lower() not in _INTRO_WORDS
+    ]
     for hit in docs:
         identity = (hit.get("source"), hit.get("chunk_id"))
-        if identity not in used and hit.get("rerank_score", 0.0) >= 0.0:
+        body = (hit.get("text") or "").lower()
+        # A high semantic score alone is insufficient for a sprawling
+        # story query: supporting passages must mention a requested entity.
+        anchored = any(
+            re.search(r"\b" + re.escape(name) + r"\b", body)
+            for name in named_anchors
+        )
+        if identity not in used and anchored and hit.get("rerank_score", 0.0) >= 0.0:
             chosen.append(hit)
             used.add(identity)
         if len(chosen) >= top_k:
