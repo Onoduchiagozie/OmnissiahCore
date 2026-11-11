@@ -25,7 +25,7 @@ jobs:
       - name: Compile retrieval, API and diagnostic modules
         run: |
           python -m compileall -q Core/retriever.py Core/retrieval_quality.py Api/routes/query_routes.py tools/oracle_horus_smoke.py tools/oracle_chronicle_smoke.py Tests/unit/test_oracle_retrieval_quality.py Tests/unit/test_oracle_chronicle_quality.py
-          python -m compileall -q Core/agent.py Core/prompt.py Core/response_style.py Api/models.py Api/services/runtime_service.py Tests/unit/test_oracle_adaptive_voice.py tools/oracle_voice_smoke.py tools/oracle_benchmark_70_30.py Tests/unit/test_warhammer_eval_corpus.py
+          python -m compileall -q Core/agent.py Core/prompt.py Core/response_style.py Api/models.py Api/services/runtime_service.py Tests/unit/test_oracle_adaptive_voice.py tools/oracle_voice_smoke.py tools/oracle_benchmark_70_30.py tools/oracle_compare_voices.py Tests/unit/test_warhammer_eval_corpus.py
           python -m json.tool app_text.json > /dev/null
       - name: Validate Oracle deployment shell script
         run: |
