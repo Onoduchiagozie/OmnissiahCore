@@ -31,6 +31,8 @@ from Core.retrieval_quality import (
     cap_causal_context,
     cap_chronicle_context,
     chronicle_probes,
+    compact_chronicle_probes,
+    chronicle_facet_score,
     explanation_rewrites,
     interleave_unique,
     is_causal_question,
@@ -168,16 +170,18 @@ class OmnissiahRetriever:
         bm25_groups = [self._bm25_search(query, k=candidate_pool)] if self.bm25 else []
 
         probes = explanation_rewrites(query)
-        if not probes and is_chronicle_request(query):
-            probes = chronicle_probes(query)
+        chronicle = is_chronicle_request(query) and not is_causal_question(query)
+        if not probes and chronicle:
+            probes = chronicle_probes(query) + compact_chronicle_probes(query)
         if probes:
-            # Interleaving avoids saturating the pool with just the first wording.
-            probe_k = max(5, candidate_pool // 2)
+            # Short, user-derived stage probes improve recall of direct
+            # scenes over generic references in distant books.
+            probe_k = max(20, candidate_pool) if chronicle else max(5, candidate_pool // 2)
             for probe in probes:
                 faiss_groups.append(self._faiss_search(self._enrich_query(probe), k=probe_k))
                 if self.bm25:
                     bm25_groups.append(self._bm25_search(probe, k=probe_k))
-            limit = candidate_pool * (3 if is_chronicle_request(query) else 2)
+            limit = candidate_pool * (4 if chronicle else 2)
             faiss_hits = interleave_unique(*faiss_groups, limit=limit)
             bm25_hits = interleave_unique(*bm25_groups, limit=limit) if bm25_groups else []
             merged = self._rrf_merge(faiss_hits, bm25_hits, k=limit)
@@ -239,9 +243,7 @@ class OmnissiahRetriever:
             if self.reranker and len(candidates) > 1:
                 if on_stage:
                     on_stage("reranking")
-                candidates = self._rerank(
-                    query, candidates, top_k=len(candidates)
-                )
+                candidates = self._rerank_chronicle(query, candidates)
             selected = select_chronicle_evidence(query, candidates, top_k=top_k)
             stitched = self._stitch_chunks(
                 selected, window=min(stitching_window, 2)
@@ -860,6 +862,34 @@ class OmnissiahRetriever:
             reverse=True,
         )
         return candidates[:top_k]
+
+    def _rerank_chronicle(self, query: str, candidates: list[dict]) -> list[dict]:
+        """Relevance for the overall arc AND each requested stage.
+
+        A cross-encoder that only sees the whole question tends to score
+        later events about the same characters higher than the crucial
+        early scene. A small, bounded pass for each query-derived stage
+        prevents that single global score from excluding direct evidence.
+        """
+        candidates = self._rerank(query, candidates, top_k=len(candidates))
+        for probe in chronicle_probes(query):
+            facet_hits = [
+                hit for hit in candidates
+                if chronicle_facet_score(probe, hit, query) >= 5
+            ]
+            facet_hits.sort(
+                key=lambda hit: chronicle_facet_score(probe, hit, query),
+                reverse=True,
+            )
+            # Only a small local cross-encoder batch per facet. This is
+            # important for the Oracle aarch64 CPU and its 11 GiB RAM.
+            selected = facet_hits[:12]
+            if not selected:
+                continue
+            scores = self.reranker.predict([[probe, h["text"]] for h in selected])
+            for hit, score in zip(selected, scores):
+                hit.setdefault("facet_rerank_scores", {})[probe] = float(score)
+        return candidates
 
     def _query_terms(self, query: str) -> set[str]:
         raw_terms = re.findall(r"[a-z0-9']+", query.lower())
