@@ -129,7 +129,7 @@ async def query_default_stream(req: QueryRequest):
             except Exception:
                 logger.exception("FastAPI Remembrancer producer failed")
                 asyncio.run_coroutine_threadsafe(
-                    queue.put("data: [ERROR] Remembrancer stream failed. See server logs.\\n\\n"), loop
+                    queue.put("data: [ERROR] Remembrancer stream failed. See server logs.\n\n"), loop
                 )
             finally:
                 asyncio.run_coroutine_threadsafe(queue.put(None), loop)
