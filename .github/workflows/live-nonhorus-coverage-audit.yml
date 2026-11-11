@@ -1,0 +1,26 @@
+name: Live non-Horus retrieval coverage (no LLM)
+on:
+  push:
+    branches:
+      - test/nonhorus-coverage-20261111
+    paths:
+      - tools/nonhorus_retrieval_audit.py
+      - .github/workflows/live-nonhorus-coverage-audit.yml
+  workflow_dispatch:
+jobs:
+  live-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - name: Run 15 real Oracle retrieval probes without Gemini
+        run: python tools/nonhorus_retrieval_audit.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nonhorus-retrieval-audit
+          path: /tmp/nonhorus_retrieval_audit.json
+          if-no-files-found: warn
