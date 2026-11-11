@@ -6,6 +6,7 @@ on:
       - fix/oracle-causal-retrieval-20261110
       - fix/oracle-chronicle-coverage-20261111
       - fix/oracle-adaptive-voice-20261111
+      - fix/oracle-eval-corpus-20261111
   pull_request:
     branches:
       - oracle
@@ -23,7 +24,7 @@ jobs:
       - name: Compile retrieval, API and diagnostic modules
         run: |
           python -m compileall -q Core/retriever.py Core/retrieval_quality.py Api/routes/query_routes.py tools/oracle_horus_smoke.py tools/oracle_chronicle_smoke.py Tests/unit/test_oracle_retrieval_quality.py Tests/unit/test_oracle_chronicle_quality.py
-          python -m compileall -q Core/agent.py Core/prompt.py Core/response_style.py Api/models.py Api/services/runtime_service.py Tests/unit/test_oracle_adaptive_voice.py tools/oracle_voice_smoke.py
+          python -m compileall -q Core/agent.py Core/prompt.py Core/response_style.py Api/models.py Api/services/runtime_service.py Tests/unit/test_oracle_adaptive_voice.py tools/oracle_voice_smoke.py Tests/unit/test_warhammer_eval_corpus.py
           python -m json.tool app_text.json > /dev/null
       - name: Validate Oracle deployment shell script
         run: |
@@ -33,3 +34,5 @@ jobs:
         run: python -m unittest discover -s Tests/unit -p 'test_oracle_*quality.py' -v
       - name: Run adaptive voice and scope tests
         run: python -m unittest discover -s Tests/unit -p 'test_oracle_adaptive_voice.py' -v
+      - name: Validate all 100 Warhammer user and Reddit-inspired questions
+        run: python -m unittest discover -s Tests/unit -p 'test_warhammer_eval_corpus.py' -v
