@@ -20,6 +20,7 @@ from Core.prompt import (
     build_prompt,
     format_debug,
 )
+from Core.stream_contract import has_answer_text
 from Core.retriever import OmnissiahRetriever
 
 
@@ -199,7 +200,7 @@ class OmnissiahAgent:
             }
             for c in chunks
         ]
-        if not full_response.strip():
+        if not has_answer_text(full_response):
             # Retrieval may succeed but the provider can produce zero tokens.
             # Never advertise sources followed by a successful completion
             # when the actual answer is empty.
