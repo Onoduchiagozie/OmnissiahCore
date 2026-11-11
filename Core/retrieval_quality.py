@@ -175,6 +175,40 @@ def chronicle_probes(query: str) -> list[str]:
     return output
 
 
+def compact_chronicle_probes(query: str) -> list[str]:
+    """Concentrate corpus lookup on the actual named subject and stage.
+
+    'Horus events on Davin' -> 'Horus Davin'. The query itself supplies
+    all names and locations. These are retrieval probes, not claims.
+    """
+    subject = _chronicle_subject(query)
+    output = []
+    for probe in chronicle_probes(query):
+        terms = [
+            w for w in re.findall(r"[a-zA-Z'-]+", probe)
+            if w.lower() not in _FACET_STOP and w.lower() != subject
+        ]
+        if not terms:
+            continue
+        compact = " ".join(([subject] if subject else []) + terms[:3])
+        if compact.casefold() != probe.casefold() and compact not in output:
+            output.append(compact)
+    return output
+
+
+_BOILERPLATE = re.compile(
+    r"more (?:horus heresy|warhammer) (?:books|stories) from blacklibrary"
+    r"|blacklibrary\.com|\\bisbn\\b"
+    r"|all rights reserved|copyright \\d{4}",
+    re.IGNORECASE,
+)
+
+
+def is_archive_boilerplate(text: str) -> bool:
+    """Reject marketing/index pages, which are not scene evidence."""
+    return bool(_BOILERPLATE.search(text or ""))
+
+
 def _chronicle_subject(query: str) -> str:
     names = [
         word for word in re.findall(r"\b[A-Z][a-zA-Z'-]{2,}\b", query)
@@ -186,7 +220,7 @@ def _chronicle_subject(query: str) -> str:
 def _facet_score(probe: str, passage: dict, subject: str) -> int:
     """Demand content evidence; filenames alone cannot satisfy an event facet."""
     body = (passage.get("text") or "").lower()
-    if not body:
+    if not body or is_archive_boilerplate(body):
         return 0
     terms = [
         w.lower() for w in re.findall(r"[a-zA-Z'-]+", probe)
@@ -203,7 +237,21 @@ def _facet_score(probe: str, passage: dict, subject: str) -> int:
     if not matches:
         return 0
     subject_present = bool(subject and re.search(r"\b" + re.escape(subject) + r"\b", body))
-    return matches * 2 + (3 if subject_present else 0)
+    # Give local event evidence more weight than an isolated reference
+    # to the subject hundreds of words away from a place/event.
+    proximity = 0
+    if subject_present:
+        for word in terms:
+            root = word[:-1] if word.endswith("s") and len(word) > 5 else word
+            if re.search(
+                r"\b" + re.escape(subject) + r"\b.{0,240}\b" + re.escape(root)
+                + r"[a-z]*\b|\b" + re.escape(root)
+                + r"[a-z]*\b.{0,240}\b" + re.escape(subject) + r"\b",
+                body, flags=re.DOTALL,
+            ):
+                proximity = 3
+                break
+    return matches * 2 + (3 if subject_present else 0) + proximity
 
 
 def _dedupe_chronicle(hits: list[dict]) -> list[dict]:
@@ -211,6 +259,8 @@ def _dedupe_chronicle(hits: list[dict]) -> list[dict]:
     selected = []
     seen = set()
     for hit in hits:
+        if is_archive_boilerplate(hit.get("text", "")):
+            continue
         normalized = "".join(re.findall(r"[a-z0-9]+", (hit.get("text") or "").lower()))
         signature = normalized[:160] if len(normalized) >= 160 else normalized
         if not signature or signature in seen:
@@ -263,13 +313,9 @@ def prioritize_chronicle_candidates(query: str, hits: list[dict], limit: int) ->
             break
     return chosen
 
-def select_chronicle_evidence(query: str, ranked_hits: list[dict], top_k: int) -> list[dict]:
-    """Guarantee grounded stage coverage when available; retain varied supporting evidence.
-
-    Low-scoring chunks do not qualify merely for containing a location name.
-    Every reserved stage hit must have a subject + facet overlap, and a
-    cross-encoder logit >= -1 if a reranker was used.
-    """
+def select_chronicle_evidence(query: str, ranked_hits: list[dict],
+                              top_k: int) -> list[dict]:
+    """Stage-specific relevance before broad support, without forced quotas."""
     docs = _dedupe_chronicle(ranked_hits)
     if not is_chronicle_request(query):
         return docs[:top_k]
@@ -277,37 +323,45 @@ def select_chronicle_evidence(query: str, ranked_hits: list[dict], top_k: int) -
     chosen = []
     used = set()
     for probe in chronicle_probes(query):
-        for hit in docs:
-            identity = (hit.get("source"), hit.get("chunk_id"))
-            if identity in used or _facet_score(probe, hit, subject) < 5:
-                continue
-            if hit.get("rerank_score", 0.0) < -1.0:
-                continue
-            chosen.append(hit)
-            used.add(identity)
-            break
+        options = [
+            hit for hit in docs
+            if (hit.get("source"), hit.get("chunk_id")) not in used
+            and _facet_score(probe, hit, subject) >= 5
+            and (
+                hit.get("facet_rerank_scores", {}).get(probe, -99) >= 0.0
+                if "facet_rerank_scores" in hit else
+                hit.get("rerank_score", 0.0) >= -1.0
+            )
+        ]
+        options.sort(
+            key=lambda hit: (
+                hit.get("facet_rerank_scores", {}).get(
+                    probe, hit.get("rerank_score", 0.0)),
+                _facet_score(probe, hit, subject),
+            ),
+            reverse=True,
+        )
+        if options:
+            pick = options[0]
+            chosen.append(pick)
+            used.add((pick.get("source"), pick.get("chunk_id")))
         if len(chosen) >= top_k:
             return chosen
-    named_anchors = [
-        name.lower() for name in re.findall(r"\b[A-Z][a-zA-Z'-]{2,}\b", query)
-        if name.lower() not in _INTRO_WORDS
-    ]
+
+    # Broader supporting passages still belong in the story, but must
+    # actually contain the requested subject and pass semantic screening.
     for hit in docs:
         identity = (hit.get("source"), hit.get("chunk_id"))
         body = (hit.get("text") or "").lower()
-        # A high semantic score alone is insufficient for a sprawling
-        # story query: supporting passages must mention a requested entity.
-        anchored = any(
-            re.search(r"\b" + re.escape(name) + r"\b", body)
-            for name in named_anchors
+        subject_present = not subject or bool(
+            re.search(r"\b" + re.escape(subject) + r"\b", body)
         )
-        if identity not in used and anchored and hit.get("rerank_score", 0.0) >= 0.0:
+        if identity not in used and subject_present and hit.get("rerank_score", 0.0) >= 0.0:
             chosen.append(hit)
             used.add(identity)
         if len(chosen) >= top_k:
             break
     return chosen
-
 
 def cap_chronicle_context(chunks: list[dict],
                           total_chars: int = 40000,
