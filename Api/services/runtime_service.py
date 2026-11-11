@@ -25,6 +25,7 @@ import faiss
 import numpy as np
 
 from Api.models import QueryRequest
+from Api.services.stream_contract import GenerationFailure, validate_generated_response
 from Core.agent import OmnissiahAgent
 from Core.config_loader import active_profile, machine_role, llm_cfg, paths, retrieval_cfg
 from Core.prompt import build_prompt
@@ -194,8 +195,15 @@ class RuntimeService:
         finally:
             _release_llm_slot()
 
-        self._set_session_memory(session_id, agent.memory)
         response = clean_response(response)
+        try:
+            validate_generated_response(response)
+        except GenerationFailure as exc:
+            # A provider failure is not a successful JSON answer. In
+            # particular, don't hand Forge a 200 with "[ERROR]" as prose.
+            from fastapi import HTTPException
+            raise HTTPException(status_code=502, detail=str(exc)) from exc
+        self._set_session_memory(session_id, agent.memory)
         return response, chunks
 
     def stream_query_mode(self, req: QueryRequest, mode: str = "remembrancer"):
