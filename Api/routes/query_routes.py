@@ -1,5 +1,6 @@
 import asyncio
 import json
+import logging
 import threading
 from concurrent.futures import ThreadPoolExecutor
 
@@ -8,10 +9,12 @@ from fastapi.responses import StreamingResponse
 
 from Api.models import QueryRequest, QueryResponse, SourceInfo
 from Api.services.runtime_service import runtime_service
+from Api.services.stream_contract import validated_sse_frames
 from Core.config_loader import paths
 
 
 router = APIRouter(tags=["Query"])
+logger = logging.getLogger(__name__)
 
 _ollama_pool = ThreadPoolExecutor(max_workers=4, thread_name_prefix="ollama")
 
@@ -146,17 +149,18 @@ async def query_narrate_stream(req: QueryRequest):
     )
 
     async def _stream():
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         queue: asyncio.Queue = asyncio.Queue()
 
         def _producer():
             try:
-                for token in runtime_service.stream_query_mode(
+                for token in validated_sse_frames(runtime_service.stream_query_mode(
                     req_narrator, mode="narrator"
-                ):
+                )):
                     asyncio.run_coroutine_threadsafe(queue.put(token), loop)
-            except Exception as exc:
-                err_token = f"data: [ERROR] Narrator stream failed: {exc}\n\n"
+            except Exception:
+                logger.exception("FastAPI streaming producer failed")
+                err_token = "data: [ERROR] Narrator stream failed. See server logs.\n\n"
                 asyncio.run_coroutine_threadsafe(queue.put(err_token), loop)
             finally:
                 asyncio.run_coroutine_threadsafe(queue.put(None), loop)
@@ -169,8 +173,8 @@ async def query_narrate_stream(req: QueryRequest):
                 break
             yield token
 
-        # Exactly one [DONE] — runtime_service.stream_query_mode does NOT yield it
-        yield "data: [DONE]\n\n"
+        # The stream contract emits [DONE] only after a real answer and
+        # upstream completion. Exceptions and empty responses emit [ERROR].
 
     return StreamingResponse(
         _stream(),
@@ -263,12 +267,13 @@ async def query_focus_stream(req: QueryRequest):
 
         def _producer():
             try:
-                for token in runtime_service.stream_query_mode(
+                for token in validated_sse_frames(runtime_service.stream_query_mode(
                     req_focus, mode="focus"
-                ):
+                )):
                     asyncio.run_coroutine_threadsafe(queue.put(token), loop)
-            except Exception as exc:
-                err_token = f"data: [ERROR] Focus stream failed: {exc}\n\n"
+            except Exception:
+                logger.exception("FastAPI streaming producer failed")
+                err_token = "data: [ERROR] Focus stream failed. See server logs.\n\n"
                 asyncio.run_coroutine_threadsafe(queue.put(err_token), loop)
             finally:
                 asyncio.run_coroutine_threadsafe(queue.put(None), loop)
@@ -281,8 +286,8 @@ async def query_focus_stream(req: QueryRequest):
                 break
             yield token
 
-        # Exactly one [DONE] — runtime_service.stream_query_mode does NOT yield it
-        yield "data: [DONE]\n\n"
+        # The stream contract emits [DONE] only after a real answer and
+        # upstream completion. Exceptions and empty responses emit [ERROR].
 
     return StreamingResponse(
         _stream(),
