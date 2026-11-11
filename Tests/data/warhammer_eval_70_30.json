@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "notes": "70% narrative / 30% explanatory evaluation target. Reddit-inspired prompts are original paraphrases, NOT quotations or verified canonical answers. User-history prompts reflect recoverable chat tests; incomplete old test lists are not represented as recovered.",
+  "notes": "70% narrative / 30% explanatory evaluation target. Reddit-inspired questions are original paraphrases, NOT quotations or verified canonical answers. 'user-history' marks questions based on earlier tests/topics, not necessarily verbatim: only verbatim_from_accessible_tests=true indicates recovered wording. Some older test prompts and raw outputs remain unavailable.",
   "sources": [
     "https://www.reddit.com/r/40kLore/comments/fr7gso",
     "https://www.reddit.com/r/40kLore/comments/1v8of5q/",
@@ -20,7 +20,8 @@
     "explorer": 30,
     "user_history": 23,
     "reddit_inspired": 32,
-    "original": 45
+    "original": 45,
+    "verified_verbatim": 7
   },
   "questions": [
     {
@@ -34,7 +35,9 @@
       "tags": [
         "wide",
         "narrative"
-      ]
+      ],
+      "verbatim_from_accessible_tests": true,
+      "provenance_note": "Recovered test wording in available history"
     },
     {
       "id": "N002",
@@ -47,7 +50,9 @@
       "tags": [
         "focus",
         "narrative"
-      ]
+      ],
+      "verbatim_from_accessible_tests": false,
+      "provenance_note": "Adapted from a known earlier user test topic or request; not verified as exact wording"
     },
     {
       "id": "N003",
@@ -60,7 +65,9 @@
       "tags": [
         "focus",
         "narrative"
-      ]
+      ],
+      "verbatim_from_accessible_tests": false,
+      "provenance_note": "Adapted from a known earlier user test topic or request; not verified as exact wording"
     },
     {
       "id": "N004",
@@ -73,7 +80,9 @@
       "tags": [
         "focus",
         "narrative"
-      ]
+      ],
+      "verbatim_from_accessible_tests": false,
+      "provenance_note": "Adapted from a known earlier user test topic or request; not verified as exact wording"
     },
     {
       "id": "N005",
@@ -86,7 +95,9 @@
       "tags": [
         "focus",
         "narrative"
-      ]
+      ],
+      "verbatim_from_accessible_tests": false,
+      "provenance_note": "Adapted from a known earlier user test topic or request; not verified as exact wording"
     },
     {
       "id": "N006",
@@ -99,7 +110,9 @@
       "tags": [
         "wide",
         "narrative"
-      ]
+      ],
+      "verbatim_from_accessible_tests": false,
+      "provenance_note": "Adapted from a known earlier user test topic or request; not verified as exact wording"
     },
     {
       "id": "N007",
@@ -112,7 +125,9 @@
       "tags": [
         "wide",
         "narrative"
-      ]
+      ],
+      "verbatim_from_accessible_tests": false,
+      "provenance_note": "Adapted from a known earlier user test topic or request; not verified as exact wording"
     },
     {
       "id": "N008",
@@ -125,7 +140,9 @@
       "tags": [
         "wide",
         "narrative"
-      ]
+      ],
+      "verbatim_from_accessible_tests": false,
+      "provenance_note": "Adapted from a known earlier user test topic or request; not verified as exact wording"
     },
     {
       "id": "N009",
@@ -138,7 +155,9 @@
       "tags": [
         "wide",
         "narrative"
-      ]
+      ],
+      "verbatim_from_accessible_tests": false,
+      "provenance_note": "Adapted from a known earlier user test topic or request; not verified as exact wording"
     },
     {
       "id": "N010",
@@ -151,7 +170,9 @@
       "tags": [
         "focus",
         "narrative"
-      ]
+      ],
+      "verbatim_from_accessible_tests": false,
+      "provenance_note": "Adapted from a known earlier user test topic or request; not verified as exact wording"
     },
     {
       "id": "N011",
@@ -164,7 +185,9 @@
       "tags": [
         "focus",
         "narrative"
-      ]
+      ],
+      "verbatim_from_accessible_tests": false,
+      "provenance_note": "Adapted from a known earlier user test topic or request; not verified as exact wording"
     },
     {
       "id": "N012",
@@ -944,7 +967,9 @@
       "tags": [
         "wide",
         "explanation"
-      ]
+      ],
+      "verbatim_from_accessible_tests": true,
+      "provenance_note": "Recovered test wording in available history"
     },
     {
       "id": "E002",
@@ -957,7 +982,9 @@
       "tags": [
         "focus",
         "explanation"
-      ]
+      ],
+      "verbatim_from_accessible_tests": true,
+      "provenance_note": "Recovered test wording in available history"
     },
     {
       "id": "E003",
@@ -970,7 +997,9 @@
       "tags": [
         "focus",
         "explanation"
-      ]
+      ],
+      "verbatim_from_accessible_tests": true,
+      "provenance_note": "Recovered test wording in available history"
     },
     {
       "id": "E004",
@@ -983,7 +1012,9 @@
       "tags": [
         "focus",
         "explanation"
-      ]
+      ],
+      "verbatim_from_accessible_tests": true,
+      "provenance_note": "Recovered test wording in available history"
     },
     {
       "id": "E005",
@@ -996,7 +1027,9 @@
       "tags": [
         "wide",
         "explanation"
-      ]
+      ],
+      "verbatim_from_accessible_tests": true,
+      "provenance_note": "Recovered test wording in available history"
     },
     {
       "id": "E006",
@@ -1009,7 +1042,9 @@
       "tags": [
         "wide",
         "explanation"
-      ]
+      ],
+      "verbatim_from_accessible_tests": true,
+      "provenance_note": "Recovered test wording in available history"
     },
     {
       "id": "E007",
@@ -1022,7 +1057,9 @@
       "tags": [
         "wide",
         "explanation"
-      ]
+      ],
+      "verbatim_from_accessible_tests": false,
+      "provenance_note": "Adapted from a known earlier user test topic or request; not verified as exact wording"
     },
     {
       "id": "E008",
@@ -1035,7 +1072,9 @@
       "tags": [
         "wide",
         "explanation"
-      ]
+      ],
+      "verbatim_from_accessible_tests": false,
+      "provenance_note": "Adapted from a known earlier user test topic or request; not verified as exact wording"
     },
     {
       "id": "E009",
@@ -1048,7 +1087,9 @@
       "tags": [
         "wide",
         "explanation"
-      ]
+      ],
+      "verbatim_from_accessible_tests": false,
+      "provenance_note": "Adapted from a known earlier user test topic or request; not verified as exact wording"
     },
     {
       "id": "E010",
@@ -1061,7 +1102,9 @@
       "tags": [
         "focus",
         "explanation"
-      ]
+      ],
+      "verbatim_from_accessible_tests": false,
+      "provenance_note": "Adapted from a known earlier user test topic or request; not verified as exact wording"
     },
     {
       "id": "E011",
@@ -1074,7 +1117,9 @@
       "tags": [
         "focus",
         "explanation"
-      ]
+      ],
+      "verbatim_from_accessible_tests": false,
+      "provenance_note": "Adapted from a known earlier user test topic or request; not verified as exact wording"
     },
     {
       "id": "E012",
@@ -1087,7 +1132,9 @@
       "tags": [
         "focus",
         "explanation"
-      ]
+      ],
+      "verbatim_from_accessible_tests": false,
+      "provenance_note": "Adapted from a known earlier user test topic or request; not verified as exact wording"
     },
     {
       "id": "E013",
