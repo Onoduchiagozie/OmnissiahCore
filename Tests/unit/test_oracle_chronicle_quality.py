@@ -4,6 +4,8 @@ import unittest
 from Core.retrieval_quality import (
     cap_chronicle_context,
     chronicle_probes,
+    compact_chronicle_probes,
+    is_archive_boilerplate,
     is_chronicle_request,
     prioritize_chronicle_candidates,
     select_chronicle_evidence,
@@ -76,6 +78,44 @@ class ChronicleQualityTests(unittest.TestCase):
         epub = hit(2, passage.replace(" ", "\n"), "False Gods.epub")
         chosen = select_chronicle_evidence(QUERY, [pdf, epub], top_k=2)
         self.assertEqual(len(chosen), 1)
+
+    def test_compact_recall_probes_do_not_invent_lore(self):
+        probes = [p.casefold() for p in compact_chronicle_probes(QUERY)]
+        self.assertEqual(probes, ["horus doubts", "horus davin", "horus betrayal"])
+        self.assertFalse(any("erebus" in p or "serpent lodge" in p for p in probes))
+
+    def test_marketing_pages_are_not_event_evidence(self):
+        ad = hit(
+            7, "More Horus Heresy stories from blacklibrary.com. "
+               "Book 1 Horus Rising Book 2 False Gods. "
+               "Horus Davin betrayal and other summaries."
+        )
+        self.assertTrue(is_archive_boilerplate(ad["text"]))
+        chosen = prioritize_chronicle_candidates(QUERY, [ad], limit=5)
+        self.assertEqual(chosen, [])
+
+    def test_direct_davin_source_beats_high_scoring_later_mentions(self):
+        # Synthetic evidence: direct event should survive even when its
+        # global cross-encoder score is lower than later references.
+        facet = "Horus events on Davin"
+        direct = hit(
+            100,
+            "Horus landed on Davin and confronted the rebels. " * 8,
+            source="02. False Gods.pdf",
+            score=0.3,
+        )
+        direct["facet_rerank_scores"] = {facet: 4.2}
+        later = hit(
+            101,
+            "Horus was remembered by loyal soldiers in many distant wars. " * 8
+            + "Horus had once fought on Davin before returning to battle.",
+            source="46. Ruinstorm.pdf",
+            score=6.4,
+        )
+        later["facet_rerank_scores"] = {facet: -1.7}
+        candidates = [later, direct]
+        chosen = select_chronicle_evidence(QUERY, candidates, top_k=2)
+        self.assertEqual(chosen[0]["source"], "02. False Gods.pdf")
 
     def test_chronicle_limit_caps_long_context_and_keeps_source(self):
         chunks = [
