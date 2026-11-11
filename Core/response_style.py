@@ -11,12 +11,16 @@ STYLES = frozenset({"auto", "explorer", "narrator"})
 SCOPES = frozenset({"focus", "wide"})
 
 _NARRATE = re.compile(
-    r"\b(narrate|recount|dramatize|dramatise|reenact|re-enact|"
-    r"cinematic|storytelling|scene|chronicle|show me|"
-    r"tell (?:me )?(?:the |a )?(?:complete |full |whole |entire )?story|"
+    r"\b(?:narrate|recount|reconstruct|recreate|dramatize|dramatise|"
+    r"reenact|re-enact|cinematic|storytelling|chronicle|"
     r"play out|bring (?:it|this) to life)\b"
+    r"|\b(?:take|walk) me through\b"
+    r"|\bshow me (?:the|a) (?:fight|battle|duel|scene)\b"
+    r"|\btell (?:me )?(?:the |a )?(?:complete |full |whole |entire )?story\b"
     r"|\b(?:complete|full|whole|entire)\s+(?:story|chronicle|saga)\b"
-    r"|\b(?:as if (?:i|we) (?:was|were) there)\b",
+    r"|\b(?:fight|battle|duel)\s+scene\b"
+    r"|\bas if (?:i|we) (?:was|were) there\b"
+    r"|^\s*(?:battle|duel|fight|siege|clash|confrontation)\s+(?:between|of|at|on)\b",
     re.IGNORECASE,
 )
 _EXPLAIN = re.compile(
@@ -34,6 +38,10 @@ def infer_response_style(query: str) -> str:
     Explicit narration beats other general words such as 'what happened'.
     Unclear text defaults to explorer rather than manufacturing a scene.
     """
+    # An explicit request for analysis should not become drama merely
+    # because it mentions a fight scene.
+    if re.match(r"\s*(?:explain|analy[sz]e|compare|define)\b", query, re.I):
+        return "explorer"
     if _NARRATE.search(query):
         return "narrator"
     if _EXPLAIN.search(query):
