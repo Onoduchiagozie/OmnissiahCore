@@ -198,6 +198,22 @@ def build_focus_prompt(query: str, chunks: list[dict]) -> tuple[str, str]:
     return system_prompt, user_message
 
 
+
+def build_explorer_prompt(query: str, chunks: list[dict]) -> tuple[str, str]:
+    """Human, question-shaped explanation regardless of retrieval scope.
+
+    Use the same retrieved evidence as narrator, but explain instead of
+    dramatizing events. Focus versus wide is handled by the retriever.
+    """
+    context_block = _format_context_block(chunks, include_viewpoint=False)
+    system_prompt = (
+        app_text["prompts"]["explorer_system"].format(context=context_block)
+        + CLEAN_TEXT_MANDATE
+    )
+    user_message = USER_TEMPLATE.format(query=query)
+    return system_prompt, user_message
+
+
 def build_object_explorer_prompt(query: str, chunks: list[dict]) -> tuple[str, str]:
     """Alternate prompt for object-oriented analysis."""
     system = app_text["prompts"]["object_explorer_system"]
