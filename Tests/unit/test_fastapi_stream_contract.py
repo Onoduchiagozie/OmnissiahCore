@@ -1,6 +1,8 @@
 """FastAPI terminal SSE contract: no provider calls or Warhammer corpus needed."""
 import unittest
-from Api.services.stream_contract import validated_sse_frames
+from Api.services.stream_contract import (
+    validated_sse_frames, validate_generated_response, GenerationFailure,
+)
 
 
 def guard(*frames):
@@ -66,6 +68,18 @@ class StreamContractTests(unittest.TestCase):
                        "data: The tomb stirred.\n\n",
                        "data: __STAGE__:complete\n\n")
         self.assertEqual(result[-1], "data: [DONE]\n\n")
+
+    def test_sync_output_rejects_empty_answer(self):
+        with self.assertRaisesRegex(GenerationFailure, "no answer"):
+            validate_generated_response("   ")
+
+    def test_sync_output_rejects_provider_error(self):
+        with self.assertRaisesRegex(GenerationFailure, "generation failed"):
+            validate_generated_response(" [ERROR] Gemini quota exhausted")
+
+    def test_sync_output_preserves_successful_text(self):
+        answer = "The Necron tomb stirred."
+        self.assertEqual(validate_generated_response(answer), answer)
 
     def test_upstream_exception_is_not_swallowed(self):
         def upstream():
