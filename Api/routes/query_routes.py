@@ -104,6 +104,58 @@ async def query_inspect(req: QueryRequest):
 
 
 # ---------------------------------------------------------------------------
+# POST /query/evidence — final retrieval, with cross-encoder, but NO LLM.
+# This is intentionally different from /query/inspect (pre-rerank).
+# ---------------------------------------------------------------------------
+
+@router.post("/query/evidence")
+async def query_evidence(req: QueryRequest):
+    """Display the actual chunks narrate would send to the LLM.
+
+    No session memory, provider tokens, or model calls are involved.
+    """
+    runtime_service.ensure_ready()
+    if not req.query.strip():
+        raise HTTPException(status_code=400, detail="Query cannot be empty.")
+
+    def _retrieve():
+        return runtime_service.retriever.search(
+            query=req.query,
+            book_filter=req.book_filter,
+            source_filter=req.source_filter,
+            top_k=req.top_k,
+            candidate_pool=req.candidate_pool,
+            stitching_window=req.stitching_window,
+        )
+
+    loop = asyncio.get_event_loop()
+    hits = await loop.run_in_executor(_ollama_pool, _retrieve)
+    from Core.retrieval_quality import (
+        is_causal_question, is_chronicle_request, chronicle_probes,
+    )
+
+    return {
+        "query": req.query,
+        "causal_mode": is_causal_question(req.query),
+        "chronicle_mode": is_chronicle_request(req.query),
+        "facet_queries": chronicle_probes(req.query),
+        "count": len(hits),
+        "total_chars": sum(len(h.get("text", "")) for h in hits),
+        "hits": [
+            {
+                "source": h.get("source"),
+                "chunk_id": h.get("chunk_id"),
+                "stitch_range": h.get("stitch_range"),
+                "rerank_score": h.get("rerank_score"),
+                "query_overlap_score": h.get("query_overlap_score"),
+                "text": h.get("text", ""),
+            }
+            for h in hits
+        ],
+    }
+
+
+# ---------------------------------------------------------------------------
 # POST /query/narrate — primary "cast a wide net" experience (SSE)
 #
 # Reverted back to TRUE broad narrator mode (mode="narrator") — pools
