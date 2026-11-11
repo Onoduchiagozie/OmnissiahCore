@@ -29,6 +29,7 @@ class DummyRuntime:
         self.frames = list(frames)
         self.exception = exception
         self.modes = []
+        self.sync_modes = []
 
     def ensure_ready(self):
         pass
@@ -39,6 +40,10 @@ class DummyRuntime:
             yield frame
         if self.exception:
             raise self.exception
+
+    def run_query(self, request, mode="remembrancer", stream=False):
+        self.sync_modes.append(mode)
+        return ("The tomb awoke.", [{"source": "Necrons.pdf"}])
 
 
 class FakeRouter:
@@ -68,7 +73,7 @@ def get_route_module(runtime):
     models = types.ModuleType("Api.models")
     models.QueryRequest = DummyRequest
     models.QueryResponse = object
-    models.SourceInfo = object
+    models.SourceInfo = lambda **kwargs: kwargs
 
     services = types.ModuleType("Api.services.runtime_service")
     services.runtime_service = runtime
@@ -95,7 +100,11 @@ def run_stream(runtime, endpoint="narrator"):
     routes = get_route_module(runtime)
 
     async def collect():
-        fn = routes.query_narrate_stream if endpoint == "narrator" else routes.query_focus_stream
+        fn = {
+            "narrator": routes.query_narrate_stream,
+            "focus": routes.query_focus_stream,
+            "remembrancer": routes.query_default_stream,
+        }[endpoint]
         response = await fn(DummyRequest())
         return "".join([part async for part in response.body_iterator])
 
@@ -139,6 +148,23 @@ class RealRouteContractTests(unittest.TestCase):
         text = run_stream(DummyRuntime(["data: Partial.\n\n"]), endpoint="focus")
         self.assertIn("without confirmed completion", text)
         self.assertNotIn("[DONE]", text)
+
+    def test_legacy_remembrancer_stream_is_registered_and_completes(self):
+        runtime = DummyRuntime([
+            "data: The tomb opened.\\n\\n",
+            "data: __STAGE__:complete\\n\\n",
+        ])
+        text = run_stream(runtime, endpoint="remembrancer")
+        self.assertEqual(text.count("data: [DONE]"), 1)
+        self.assertEqual(runtime.modes, ["remembrancer"])
+
+    def test_legacy_remembrancer_sync_returns_source_and_answer(self):
+        runtime = DummyRuntime()
+        route = get_route_module(runtime)
+        result = asyncio.run(route.query_default(DummyRequest()))
+        self.assertEqual(result["response"], "The tomb awoke.")
+        self.assertEqual(result["sources"][0]["source"], "Necrons.pdf")
+        self.assertEqual(runtime.sync_modes, ["remembrancer"])
 
     def test_narrator_worker_exception_is_terminal(self):
         runtime = DummyRuntime(
