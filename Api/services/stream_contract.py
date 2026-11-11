@@ -73,6 +73,6 @@ def validate_generated_response(response: str) -> str:
     """Validate a synchronous model answer before returning HTTP 200."""
     if not isinstance(response, str) or not response.strip():
         raise GenerationFailure("Language model returned no answer.")
-    if response.lstrip().startswith("[ERROR]"):
+    if "[ERROR]" in response:
         raise GenerationFailure("Language model generation failed.")
     return response
