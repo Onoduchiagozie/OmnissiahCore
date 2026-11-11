@@ -66,6 +66,8 @@ class ChronicleQualityTests(unittest.TestCase):
         self.assertIn(2, ids)
         self.assertIn(3, ids)
         self.assertIn(4, ids)
+        self.assertIn(5, ids)
+        self.assertNotIn(1, ids)
         self.assertEqual(len(chosen), 4)
 
     def test_deduplicates_pdf_and_epub_with_different_spacing(self):
