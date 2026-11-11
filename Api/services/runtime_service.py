@@ -151,8 +151,16 @@ class RuntimeService:
         with self._memory_lock:
             self._session_memory[session_id] = memory
 
-    def _build_agent(self, session_id: str, mode: str) -> OmnissiahAgent:
-        agent = OmnissiahAgent(verbose=False, mode=mode, retriever=self._retriever)
+    def _build_agent(
+        self, session_id: str, mode: str, req: Optional[QueryRequest] = None
+    ) -> OmnissiahAgent:
+        agent = OmnissiahAgent(
+            verbose=False,
+            mode=mode,
+            retriever=self._retriever,
+            response_style=req.response_style if req else None,
+            retrieval_scope=req.retrieval_scope if req else None,
+        )
         agent._memory = self._get_session_memory(session_id)
         return agent
 
@@ -166,7 +174,7 @@ class RuntimeService:
 
     def run_query(self, req: QueryRequest, mode: str, stream: bool) -> tuple[str, list[dict]]:
         session_id = req.session_id or "default"
-        agent = self._build_agent(session_id, mode)
+        agent = self._build_agent(session_id, mode, req)
 
         # Ghost mode never acquires the LLM slot — it never calls the LLM.
         if mode == "ghost":
@@ -200,7 +208,7 @@ class RuntimeService:
 
     def stream_query_mode(self, req: QueryRequest, mode: str = "remembrancer"):
         session_id = req.session_id or "default"
-        agent = self._build_agent(session_id, mode=mode)
+        agent = self._build_agent(session_id, mode=mode, req=req)
         pending_stages: list[str] = []
 
         def _on_stage(stage_name: str):
