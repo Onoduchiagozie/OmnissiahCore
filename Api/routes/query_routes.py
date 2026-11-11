@@ -9,6 +9,7 @@ from fastapi.responses import StreamingResponse
 from Api.models import QueryRequest, QueryResponse, SourceInfo
 from Api.services.runtime_service import runtime_service
 from Core.config_loader import paths
+from Core.response_style import resolve_response_options
 
 
 router = APIRouter(tags=["Query"])
@@ -153,6 +154,82 @@ async def query_evidence(req: QueryRequest):
             for h in hits
         ],
     }
+
+
+# ---------------------------------------------------------------------------
+# POST /query/respond — adaptive explanation or cinematic narration.
+# Response style and evidence scope are intentionally independent.
+# ---------------------------------------------------------------------------
+
+@router.post("/query/respond")
+async def query_respond(req: QueryRequest):
+    """Automatic answer style by query; explicit style/scope overrides supported.
+
+    For example, response_style='explorer', retrieval_scope='focus'
+    explains a small set of passages like a person; selecting narrator
+    with retrieval_scope='wide' produces a broad cinematic chronicle.
+    """
+    runtime_service.ensure_ready()
+    if not req.query.strip():
+        raise HTTPException(status_code=400, detail="Query cannot be empty.")
+
+    style, scope = resolve_response_options(
+        req.query, endpoint_mode="adaptive",
+        requested_style=req.response_style,
+        requested_scope=req.retrieval_scope,
+    )
+    loop = asyncio.get_running_loop()
+    response, chunks = await loop.run_in_executor(
+        _ollama_pool,
+        lambda: runtime_service.run_query(req, mode="adaptive", stream=False),
+    )
+    return {
+        "query": req.query,
+        "response_style": style,
+        "retrieval_scope": scope,
+        "response": response,
+        "chunks_used": len(chunks),
+        "sources": _source_list(chunks),
+    }
+
+
+@router.post("/query/respond/stream")
+async def query_respond_stream(req: QueryRequest):
+    """SSE version of /query/respond; same frames as /query/narrate."""
+    runtime_service.ensure_ready()
+    if not req.query.strip():
+        raise HTTPException(status_code=400, detail="Query cannot be empty.")
+
+    async def _stream():
+        loop = asyncio.get_running_loop()
+        queue: asyncio.Queue = asyncio.Queue()
+
+        def _producer():
+            try:
+                for token in runtime_service.stream_query_mode(req, mode="adaptive"):
+                    asyncio.run_coroutine_threadsafe(queue.put(token), loop)
+            except Exception as exc:
+                asyncio.run_coroutine_threadsafe(
+                    queue.put(f"[ERROR] Adaptive response failed: {exc}"), loop
+                )
+            finally:
+                asyncio.run_coroutine_threadsafe(queue.put(None), loop)
+
+        threading.Thread(target=_producer, daemon=True).start()
+
+        while True:
+            token = await queue.get()
+            if token is None:
+                break
+            # The runtime already emits correctly formatted SSE messages.
+            yield token
+        yield "data: [DONE]\n\n"
+
+    return StreamingResponse(
+        _stream(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
 
 
 # ---------------------------------------------------------------------------
