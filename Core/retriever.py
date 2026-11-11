@@ -29,10 +29,15 @@ from sentence_transformers import SentenceTransformer
 from Core.config_loader import embedding_cfg, machine_role, paths, retrieval_cfg
 from Core.retrieval_quality import (
     cap_causal_context,
+    cap_chronicle_context,
+    chronicle_probes,
     explanation_rewrites,
     interleave_unique,
     is_causal_question,
+    is_chronicle_request,
+    prioritize_chronicle_candidates,
     rank_causal_evidence,
+    select_chronicle_evidence,
 )
 
 try:
@@ -163,6 +168,8 @@ class OmnissiahRetriever:
         bm25_groups = [self._bm25_search(query, k=candidate_pool)] if self.bm25 else []
 
         probes = explanation_rewrites(query)
+        if not probes and is_chronicle_request(query):
+            probes = chronicle_probes(query)
         if probes:
             # Interleaving avoids saturating the pool with just the first wording.
             probe_k = max(5, candidate_pool // 2)
@@ -170,7 +177,7 @@ class OmnissiahRetriever:
                 faiss_groups.append(self._faiss_search(self._enrich_query(probe), k=probe_k))
                 if self.bm25:
                     bm25_groups.append(self._bm25_search(probe, k=probe_k))
-            limit = candidate_pool * 2
+            limit = candidate_pool * (3 if is_chronicle_request(query) else 2)
             faiss_hits = interleave_unique(*faiss_groups, limit=limit)
             bm25_hits = interleave_unique(*bm25_groups, limit=limit) if bm25_groups else []
             merged = self._rrf_merge(faiss_hits, bm25_hits, k=limit)
@@ -223,7 +230,25 @@ class OmnissiahRetriever:
             stitched = self._stitch_chunks(selected, window=min(stitching_window, 1))
             return cap_causal_context(query, stitched)
 
-        # Existing battle/scene/narrator path is intentionally preserved.
+        if is_chronicle_request(query):
+            # Reserve candidates for every requested stage before reranking.
+            # Rank raw chunks, not stitched spans that cross-encoders truncate.
+            candidates = prioritize_chronicle_candidates(
+                query, merged, limit=candidate_pool
+            )
+            if self.reranker and len(candidates) > 1:
+                if on_stage:
+                    on_stage("reranking")
+                candidates = self._rerank(
+                    query, candidates, top_k=len(candidates)
+                )
+            selected = select_chronicle_evidence(query, candidates, top_k=top_k)
+            stitched = self._stitch_chunks(
+                selected, window=min(stitching_window, 2)
+            )
+            return cap_chronicle_context(stitched)
+
+        # Existing single-scene/battle search path is intentionally preserved.
         stitch_limit = candidate_pool if self.reranker else top_k
         stitched = self._stitch_chunks(merged[:stitch_limit], window=stitching_window)
         if self.reranker and len(stitched) > 1:
@@ -257,16 +282,27 @@ class OmnissiahRetriever:
 
         grounded = self._apply_query_grounding(query, merged)
         causal = is_causal_question(query)
+        chronicle = is_chronicle_request(query) and not causal
         if causal:
             grounded = rank_causal_evidence(query, grounded)
+        elif chronicle:
+            grounded = prioritize_chronicle_candidates(
+                query, grounded, limit=candidate_pool
+            )
         stitched = self._stitch_chunks(
-            grounded[:top_k], window=min(stitching_window, 2) if causal else stitching_window
+            grounded[:top_k],
+            window=min(stitching_window, 2) if (causal or chronicle)
+            else stitching_window,
         )
         if causal:
             stitched = cap_causal_context(query, stitched)
+        elif chronicle:
+            stitched = cap_chronicle_context(stitched)
         return {
             "query": query,
             "causal_mode": causal,
+            "chronicle_mode": chronicle,
+            "facet_queries": chronicle_probes(query) if chronicle else [],
             "inspect_note": "Pre-cross-encoder diagnostic; search() performs final reranking.",
             "query_terms": sorted(self._query_terms(query)),
             "faiss_hits": faiss_hits[:min(5, len(faiss_hits))],
