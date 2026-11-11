@@ -1,0 +1,1327 @@
+{
+  "schema_version": 1,
+  "notes": "70% narrative / 30% explanatory evaluation target. Reddit-inspired prompts are original paraphrases, NOT quotations or verified canonical answers. User-history prompts reflect recoverable chat tests; incomplete old test lists are not represented as recovered.",
+  "sources": [
+    "https://www.reddit.com/r/40kLore/comments/fr7gso",
+    "https://www.reddit.com/r/40kLore/comments/1v8of5q/",
+    "https://www.reddit.com/r/40kLore/comments/1wuod1t/",
+    "https://www.reddit.com/r/40kLore/comments/1jcwpls",
+    "https://www.reddit.com/r/40kLore/comments/p41gib",
+    "https://www.reddit.com/r/40kLore/comments/1fbp06t",
+    "https://www.reddit.com/r/40kLore/comments/ohhfwc",
+    "https://www.reddit.com/r/40kLore/comments/1aucy1l",
+    "https://www.reddit.com/r/40kLore/comments/1h37hep",
+    "https://www.reddit.com/r/40kLore/comments/i8ysgy",
+    "https://www.reddit.com/r/40kLore/comments/1u6ildg/"
+  ],
+  "summary": {
+    "total": 100,
+    "narrative": 70,
+    "explorer": 30,
+    "user_history": 23,
+    "reddit_inspired": 32,
+    "original": 45
+  },
+  "questions": [
+    {
+      "id": "N001",
+      "query": "Tell the complete story of Horus falling to Chaos, from his growing doubts and the events on Davin through his eventual betrayal.",
+      "expected_style": "narrator",
+      "retrieval_scope": "wide",
+      "origin": "user-history",
+      "reddit_url": "https://www.reddit.com/r/40kLore/comments/1v8of5q/",
+      "expected_source_hint": "False Gods",
+      "tags": [
+        "wide",
+        "narrative"
+      ]
+    },
+    {
+      "id": "N002",
+      "query": "Narrate the moment Horus faced Erebus and heard of Eugan Temba's rebellion on Davin.",
+      "expected_style": "narrator",
+      "retrieval_scope": "focus",
+      "origin": "user-history",
+      "reddit_url": "https://www.reddit.com/r/40kLore/comments/fr7gso",
+      "expected_source_hint": "False Gods",
+      "tags": [
+        "focus",
+        "narrative"
+      ]
+    },
+    {
+      "id": "N003",
+      "query": "Recount the battle between primarch Ferrus Manus and Fulgrim on Istvaan.",
+      "expected_style": "narrator",
+      "retrieval_scope": "focus",
+      "origin": "user-history",
+      "reddit_url": null,
+      "expected_source_hint": "Fulgrim",
+      "tags": [
+        "focus",
+        "narrative"
+      ]
+    },
+    {
+      "id": "N004",
+      "query": "Reconstruct the full Ferrus Manus versus Fulgrim confrontation.",
+      "expected_style": "narrator",
+      "retrieval_scope": "focus",
+      "origin": "user-history",
+      "reddit_url": null,
+      "expected_source_hint": "Fulgrim",
+      "tags": [
+        "focus",
+        "narrative"
+      ]
+    },
+    {
+      "id": "N005",
+      "query": "Narrate Ferrus Manus and Fulgrim's final confrontation on Isstvan V.",
+      "expected_style": "narrator",
+      "retrieval_scope": "focus",
+      "origin": "user-history",
+      "reddit_url": "https://www.reddit.com/r/40kLore/comments/1fbp06t",
+      "expected_source_hint": "Fulgrim",
+      "tags": [
+        "focus",
+        "narrative"
+      ]
+    },
+    {
+      "id": "N006",
+      "query": "Tell the story of Fulgrim's fall to the daemon in the sword.",
+      "expected_style": "narrator",
+      "retrieval_scope": "wide",
+      "origin": "user-history",
+      "reddit_url": null,
+      "expected_source_hint": "Fulgrim",
+      "tags": [
+        "wide",
+        "narrative"
+      ]
+    },
+    {
+      "id": "N007",
+      "query": "Recount the battle for Isstvan III, from the bombardment to the doomed loyalists.",
+      "expected_style": "narrator",
+      "retrieval_scope": "wide",
+      "origin": "user-history",
+      "reddit_url": null,
+      "expected_source_hint": null,
+      "tags": [
+        "wide",
+        "narrative"
+      ]
+    },
+    {
+      "id": "N008",
+      "query": "Narrate the destruction of Prospero from both sides of the conflict.",
+      "expected_style": "narrator",
+      "retrieval_scope": "wide",
+      "origin": "user-history",
+      "reddit_url": "https://www.reddit.com/r/40kLore/comments/i8ysgy",
+      "expected_source_hint": "Thousand Sons",
+      "tags": [
+        "wide",
+        "narrative"
+      ]
+    },
+    {
+      "id": "N009",
+      "query": "Reconstruct the betrayal at Isstvan V and the Drop Site Massacre.",
+      "expected_style": "narrator",
+      "retrieval_scope": "wide",
+      "origin": "user-history",
+      "reddit_url": "https://www.reddit.com/r/40kLore/comments/1fbp06t",
+      "expected_source_hint": null,
+      "tags": [
+        "wide",
+        "narrative"
+      ]
+    },
+    {
+      "id": "N010",
+      "query": "Narrate the duel between Loken and Abaddon.",
+      "expected_style": "narrator",
+      "retrieval_scope": "focus",
+      "origin": "user-history",
+      "reddit_url": null,
+      "expected_source_hint": null,
+      "tags": [
+        "focus",
+        "narrative"
+      ]
+    },
+    {
+      "id": "N011",
+      "query": "Tell the story of the duel between Kharn and Erebus.",
+      "expected_style": "narrator",
+      "retrieval_scope": "focus",
+      "origin": "user-history",
+      "reddit_url": "https://www.reddit.com/r/40kLore/comments/1jcwpls",
+      "expected_source_hint": "Betrayer",
+      "tags": [
+        "focus",
+        "narrative"
+      ]
+    },
+    {
+      "id": "N012",
+      "query": "Narrate the showdown between Guilliman, Angron and Lorgar on Armatura.",
+      "expected_style": "narrator",
+      "retrieval_scope": "focus",
+      "origin": "reddit-inspired",
+      "reddit_url": "https://www.reddit.com/r/40kLore/comments/i8ysgy",
+      "expected_source_hint": "Betrayer",
+      "tags": [
+        "focus",
+        "narrative"
+      ]
+    },
+    {
+      "id": "N013",
+      "query": "Recreate the fight between Angron and a Warhound Titan in Betrayer.",
+      "expected_style": "narrator",
+      "retrieval_scope": "focus",
+      "origin": "reddit-inspired",
+      "reddit_url": "https://www.reddit.com/r/40kLore/comments/1jcwpls",
+      "expected_source_hint": "Betrayer",
+      "tags": [
+        "focus",
+        "narrative"
+      ]
+    },
+    {
+      "id": "N014",
+      "query": "Show me the fight between Sigismund and Sevatar in the pits.",
+      "expected_style": "narrator",
+      "retrieval_scope": "focus",
+      "origin": "reddit-inspired",
+      "reddit_url": "https://www.reddit.com/r/40kLore/comments/1jcwpls",
+      "expected_source_hint": null,
+      "tags": [
+        "focus",
+        "narrative"
+      ]
+    },
+    {
+      "id": "N015",
+      "query": "Reconstruct the final stand of Camba Diaz at the spaceport bridge.",
+      "expected_style": "narrator",
+      "retrieval_scope": "focus",
+      "origin": "reddit-inspired",
+      "reddit_url": "https://www.reddit.com/r/40kLore/comments/p41gib",
+      "expected_source_hint": "Saturnine",
+      "tags": [
+        "focus",
+        "narrative"
+      ]
+    },
+    {
+      "id": "N016",
+      "query": "Take me through the final battle between the Emperor and Horus aboard the Vengeful Spirit.",
+      "expected_style": "narrator",
+      "retrieval_scope": "wide",
+      "origin": "reddit-inspired",
+      "reddit_url": "https://www.reddit.com/r/40kLore/comments/1u6ildg/",
+      "expected_source_hint": null,
+      "tags": [
+        "wide",
+        "narrative"
+      ]
+    },
+    {
+      "id": "N017",
+      "query": "Recount the confrontation between the Khan and a Keeper of Secrets.",
+      "expected_style": "narrator",
+      "retrieval_scope": "focus",
+      "origin": "reddit-inspired",
+      "reddit_url": "https://www.reddit.com/r/40kLore/comments/p41gib",
+      "expected_source_hint": "Path of Heaven",
+      "tags": [
+        "focus",
+        "narrative"
+      ]
+    },
+    {
+      "id": "N018",
+      "query": "Narrate the clash between the Lion and Konrad Curze.",
+      "expected_style": "narrator",
+      "retrieval_scope": "focus",
+      "origin": "reddit-inspired",
+      "reddit_url": "https://www.reddit.com/r/40kLore/comments/1jcwpls",
+      "expected_source_hint": "Savage Weapons",
+      "tags": [
+        "focus",
+        "narrative"
+      ]
+    },
+    {
+      "id": "N019",
+      "query": "Tell the story of the battle where the Blood Pact assaulted Hinzerhaus.",
+      "expected_style": "narrator",
+      "retrieval_scope": "wide",
+      "origin": "reddit-inspired",
+      "reddit_url": "https://www.reddit.com/r/40kLore/comments/1jcwpls",
+      "expected_source_hint": "Only in Death",
+      "tags": [
+        "wide",
+        "narrative"
+      ]
+    },
+    {
+      "id": "N020",
+      "query": "Recreate the moment Sanguinius faced Angron in the Siege of Terra.",
+      "expected_style": "narrator",
+      "retrieval_scope": "focus",
+      "origin": "reddit-inspired",
+      "reddit_url": "https://www.reddit.com/r/40kLore/comments/1jcwpls",
+      "expected_source_hint": null,
+      "tags": [
+        "focus",
+        "narrative"
+      ]
+    },
+    {
+      "id": "N021",
+      "query": "Describe the fight scene where Sanguinius faced a daemon of Khorne, as a vivid account.",
+      "expected_style": "narrator",
+      "retrieval_scope": "focus",
+      "origin": "reddit-inspired",
+      "reddit_url": "https://www.reddit.com/r/40kLore/comments/p41gib",
+      "expected_source_hint": null,
+      "tags": [
+        "focus",
+        "narrative"
+      ]
+    },
+    {
+      "id": "N022",
+      "query": "Tell the full story of Horus and the Interex, from first contact to the breakdown of peace.",
+      "expected_style": "narrator",
+      "retrieval_scope": "wide",
+      "origin": "reddit-inspired",
+      "reddit_url": "https://www.reddit.com/r/40kLore/comments/ohhfwc",
+      "expected_source_hint": "Horus Rising",
+      "tags": [
+        "wide",
+        "narrative"
+      ]
+    },
+    {
+      "id": "N023",
+      "query": "Narrate how the Luna Wolves changed as Horus turned after Davin.",
+      "expected_style": "narrator",
+      "retrieval_scope": "wide",
+      "origin": "reddit-inspired",
+      "reddit_url": "https://www.reddit.com/r/40kLore/comments/fr7gso",
+      "expected_source_hint": "False Gods",
+      "tags": [
+        "wide",
+        "narrative"
+      ]
+    },
+    {
+      "id": "N024",
+      "query": "Recount Magnus's warnings about Horus and the danger gathering on Davin.",
+      "expected_style": "narrator",
+      "retrieval_scope": "focus",
+      "origin": "reddit-inspired",
+      "reddit_url": "https://www.reddit.com/r/40kLore/comments/1aucy1l",
+      "expected_source_hint": "Thousand Sons",
+      "tags": [
+        "focus",
+        "narrative"
+      ]
+    },
+    {
+      "id": "N025",
+      "query": "Tell the story of Horus being wounded on Davin and what unfolded in the Serpent Lodge.",
+      "expected_style": "narrator",
+      "retrieval_scope": "focus",
+      "origin": "reddit-inspired",
+      "reddit_url": "https://www.reddit.com/r/40kLore/comments/1v8of5q/",
+      "expected_source_hint": "False Gods",
+      "tags": [
+        "focus",
+        "narrative"
+      ]
+    },
+    {
+      "id": "N026",
+      "query": "Reconstruct the conversation in which Magnus confronted Horus's visions.",
+      "expected_style": "narrator",
+      "retrieval_scope": "focus",
+      "origin": "reddit-inspired",
+      "reddit_url": "https://www.reddit.com/r/40kLore/comments/1v8of5q/",
+      "expected_source_hint": "False Gods",
+      "tags": [
+        "focus",
+        "narrative"
+      ]
+    },
+    {
+      "id": "N027",
+      "query": "Narrate how Erebus came to stand so close to the Warmaster.",
+      "expected_style": "narrator",
+      "retrieval_scope": "wide",
+      "origin": "reddit-inspired",
+      "reddit_url": "https://www.reddit.com/r/40kLore/comments/1wuod1t/",
+      "expected_source_hint": "False Gods",
+      "tags": [
+        "wide",
+        "narrative"
+      ]
+    },
+    {
+      "id": "N028",
+      "query": "Tell the complete story of the Interex conflict and the disappearance of the anathame.",
+      "expected_style": "narrator",
+      "retrieval_scope": "wide",
+      "origin": "reddit-inspired",
+      "reddit_url": "https://www.reddit.com/r/40kLore/comments/ohhfwc",
+      "expected_source_hint": "Horus Rising",
+      "tags": [
+        "wide",
+        "narrative"
+      ]
+    },
+    {
+      "id": "N029",
+      "query": "Recount Loken and Torgaddon's growing unease as the legion changed.",
+      "expected_style": "narrator",
+      "retrieval_scope": "wide",
+      "origin": "reddit-inspired",
+      "reddit_url": "https://www.reddit.com/r/40kLore/comments/1aucy1l",
+      "expected_source_hint": null,
+      "tags": [
+        "wide",
+        "narrative"
+      ]
+    },
+    {
+      "id": "N030",
+      "query": "Narrate how Fulgrim approached Ferrus with an offer before the Drop Site Massacre.",
+      "expected_style": "narrator",
+      "retrieval_scope": "focus",
+      "origin": "reddit-inspired",
+      "reddit_url": "https://www.reddit.com/r/40kLore/comments/1fbp06t",
+      "expected_source_hint": "Fulgrim",
+      "tags": [
+        "focus",
+        "narrative"
+      ]
+    },
+    {
+      "id": "N031",
+      "query": "Recreate the final stage of the Siege of Terra as the loyalists fought for survival.",
+      "expected_style": "narrator",
+      "retrieval_scope": "wide",
+      "origin": "reddit-inspired",
+      "reddit_url": "https://www.reddit.com/r/40kLore/comments/1u6ildg/",
+      "expected_source_hint": null,
+      "tags": [
+        "wide",
+        "narrative"
+      ]
+    },
+    {
+      "id": "N032",
+      "query": "Tell the story of Horus's last confrontation with the Emperor.",
+      "expected_style": "narrator",
+      "retrieval_scope": "focus",
+      "origin": "reddit-inspired",
+      "reddit_url": "https://www.reddit.com/r/40kLore/comments/1u6ildg/",
+      "expected_source_hint": null,
+      "tags": [
+        "focus",
+        "narrative"
+      ]
+    },
+    {
+      "id": "N033",
+      "query": "Reconstruct the moment Erebus's manipulation set the Heresy into motion.",
+      "expected_style": "narrator",
+      "retrieval_scope": "wide",
+      "origin": "reddit-inspired",
+      "reddit_url": "https://www.reddit.com/r/40kLore/comments/1wuod1t/",
+      "expected_source_hint": null,
+      "tags": [
+        "wide",
+        "narrative"
+      ]
+    },
+    {
+      "id": "N034",
+      "query": "Narrate the moments leading to Erebus surviving despite the damage he caused.",
+      "expected_style": "narrator",
+      "retrieval_scope": "wide",
+      "origin": "reddit-inspired",
+      "reddit_url": "https://www.reddit.com/r/40kLore/comments/1h37hep",
+      "expected_source_hint": null,
+      "tags": [
+        "wide",
+        "narrative"
+      ]
+    },
+    {
+      "id": "N035",
+      "query": "Recount the tragic collapse of Horus's relationship with his Mournival.",
+      "expected_style": "narrator",
+      "retrieval_scope": "wide",
+      "origin": "reddit-inspired",
+      "reddit_url": "https://www.reddit.com/r/40kLore/comments/1aucy1l",
+      "expected_source_hint": "False Gods",
+      "tags": [
+        "wide",
+        "narrative"
+      ]
+    },
+    {
+      "id": "N036",
+      "query": "Narrate the Warmaster's journey from triumph during the Great Crusade to open rebellion.",
+      "expected_style": "narrator",
+      "retrieval_scope": "wide",
+      "origin": "original",
+      "reddit_url": null,
+      "expected_source_hint": null,
+      "tags": [
+        "wide",
+        "narrative"
+      ]
+    },
+    {
+      "id": "N037",
+      "query": "Tell the full story of Garviel Loken's trials during Horus's fall.",
+      "expected_style": "narrator",
+      "retrieval_scope": "wide",
+      "origin": "original",
+      "reddit_url": null,
+      "expected_source_hint": null,
+      "tags": [
+        "wide",
+        "narrative"
+      ]
+    },
+    {
+      "id": "N038",
+      "query": "Recreate the Isstvan III loyalists' last desperate resistance.",
+      "expected_style": "narrator",
+      "retrieval_scope": "focus",
+      "origin": "original",
+      "reddit_url": null,
+      "expected_source_hint": null,
+      "tags": [
+        "focus",
+        "narrative"
+      ]
+    },
+    {
+      "id": "N039",
+      "query": "Take me through Tarik Torgaddon's final days in the Luna Wolves.",
+      "expected_style": "narrator",
+      "retrieval_scope": "wide",
+      "origin": "original",
+      "reddit_url": null,
+      "expected_source_hint": null,
+      "tags": [
+        "wide",
+        "narrative"
+      ]
+    },
+    {
+      "id": "N040",
+      "query": "Narrate the moment Ferrus Manus realized Fulgrim had betrayed him.",
+      "expected_style": "narrator",
+      "retrieval_scope": "focus",
+      "origin": "original",
+      "reddit_url": null,
+      "expected_source_hint": "Fulgrim",
+      "tags": [
+        "focus",
+        "narrative"
+      ]
+    },
+    {
+      "id": "N041",
+      "query": "Tell the story of the Emperor's departure from the Great Crusade and Horus's elevation.",
+      "expected_style": "narrator",
+      "retrieval_scope": "wide",
+      "origin": "original",
+      "reddit_url": null,
+      "expected_source_hint": null,
+      "tags": [
+        "wide",
+        "narrative"
+      ]
+    },
+    {
+      "id": "N042",
+      "query": "Recount the burning of Prospero through the eyes of its defenders.",
+      "expected_style": "narrator",
+      "retrieval_scope": "focus",
+      "origin": "original",
+      "reddit_url": null,
+      "expected_source_hint": "Thousand Sons",
+      "tags": [
+        "focus",
+        "narrative"
+      ]
+    },
+    {
+      "id": "N043",
+      "query": "Narrate the duel between Garro and an enemy aboard a damaged warship.",
+      "expected_style": "narrator",
+      "retrieval_scope": "focus",
+      "origin": "original",
+      "reddit_url": null,
+      "expected_source_hint": null,
+      "tags": [
+        "focus",
+        "narrative"
+      ]
+    },
+    {
+      "id": "N044",
+      "query": "Tell the story of the Word Bearers' transformation after Monarchia.",
+      "expected_style": "narrator",
+      "retrieval_scope": "wide",
+      "origin": "original",
+      "reddit_url": null,
+      "expected_source_hint": "First Heretic",
+      "tags": [
+        "wide",
+        "narrative"
+      ]
+    },
+    {
+      "id": "N045",
+      "query": "Reconstruct the events of the Battle of Calth as a flowing chronicle.",
+      "expected_style": "narrator",
+      "retrieval_scope": "wide",
+      "origin": "original",
+      "reddit_url": null,
+      "expected_source_hint": "Know No Fear",
+      "tags": [
+        "wide",
+        "narrative"
+      ]
+    },
+    {
+      "id": "N046",
+      "query": "Narrate the battle of Nuceria and the fate of Angron's comrades.",
+      "expected_style": "narrator",
+      "retrieval_scope": "wide",
+      "origin": "original",
+      "reddit_url": null,
+      "expected_source_hint": null,
+      "tags": [
+        "wide",
+        "narrative"
+      ]
+    },
+    {
+      "id": "N047",
+      "query": "Take me through the siege of the Imperial Palace step by step.",
+      "expected_style": "narrator",
+      "retrieval_scope": "wide",
+      "origin": "original",
+      "reddit_url": null,
+      "expected_source_hint": null,
+      "tags": [
+        "wide",
+        "narrative"
+      ]
+    },
+    {
+      "id": "N048",
+      "query": "Recreate the duel between Kharn and Sigismund.",
+      "expected_style": "narrator",
+      "retrieval_scope": "focus",
+      "origin": "original",
+      "reddit_url": null,
+      "expected_source_hint": null,
+      "tags": [
+        "focus",
+        "narrative"
+      ]
+    },
+    {
+      "id": "N049",
+      "query": "Tell the full story of the Night Lords' actions in the Thramas Crusade.",
+      "expected_style": "narrator",
+      "retrieval_scope": "wide",
+      "origin": "original",
+      "reddit_url": null,
+      "expected_source_hint": null,
+      "tags": [
+        "wide",
+        "narrative"
+      ]
+    },
+    {
+      "id": "N050",
+      "query": "Narrate the moment Corax discovered the betrayal at Isstvan V.",
+      "expected_style": "narrator",
+      "retrieval_scope": "focus",
+      "origin": "original",
+      "reddit_url": null,
+      "expected_source_hint": null,
+      "tags": [
+        "focus",
+        "narrative"
+      ]
+    },
+    {
+      "id": "N051",
+      "query": "Recount the crisis when a Primarch confronted the truth about Chaos.",
+      "expected_style": "narrator",
+      "retrieval_scope": "wide",
+      "origin": "original",
+      "reddit_url": null,
+      "expected_source_hint": null,
+      "tags": [
+        "wide",
+        "narrative"
+      ]
+    },
+    {
+      "id": "N052",
+      "query": "Narrate the sacrifice and desperate fighting aboard the Eisenstein.",
+      "expected_style": "narrator",
+      "retrieval_scope": "wide",
+      "origin": "original",
+      "reddit_url": null,
+      "expected_source_hint": "Flight of the Eisenstein",
+      "tags": [
+        "wide",
+        "narrative"
+      ]
+    },
+    {
+      "id": "N053",
+      "query": "Tell the story of Mortarion's origins on Barbarus as a bleak chronicle.",
+      "expected_style": "narrator",
+      "retrieval_scope": "wide",
+      "origin": "original",
+      "reddit_url": null,
+      "expected_source_hint": "Buried Dagger",
+      "tags": [
+        "wide",
+        "narrative"
+      ]
+    },
+    {
+      "id": "N054",
+      "query": "Reconstruct the betrayal of Argel Tal in the shadows of the Heresy.",
+      "expected_style": "narrator",
+      "retrieval_scope": "focus",
+      "origin": "original",
+      "reddit_url": null,
+      "expected_source_hint": "Betrayer",
+      "tags": [
+        "focus",
+        "narrative"
+      ]
+    },
+    {
+      "id": "N055",
+      "query": "Tell the story of a Black Templars crusade battle, from the first assault to the aftermath.",
+      "expected_style": "narrator",
+      "retrieval_scope": "wide",
+      "origin": "original",
+      "reddit_url": null,
+      "expected_source_hint": null,
+      "tags": [
+        "wide",
+        "narrative"
+      ]
+    },
+    {
+      "id": "N056",
+      "query": "Recreate the defence of the Imperial Webway from the first breach to the last stand.",
+      "expected_style": "narrator",
+      "retrieval_scope": "wide",
+      "origin": "original",
+      "reddit_url": null,
+      "expected_source_hint": "Master of Mankind",
+      "tags": [
+        "wide",
+        "narrative"
+      ]
+    },
+    {
+      "id": "N057",
+      "query": "Narrate the battle over Tallarn and the struggle of its defenders.",
+      "expected_style": "narrator",
+      "retrieval_scope": "wide",
+      "origin": "original",
+      "reddit_url": null,
+      "expected_source_hint": "Tallarn",
+      "tags": [
+        "wide",
+        "narrative"
+      ]
+    },
+    {
+      "id": "N058",
+      "query": "Tell the story of a Space Marine boarding action against a Chaos vessel.",
+      "expected_style": "narrator",
+      "retrieval_scope": "focus",
+      "origin": "original",
+      "reddit_url": null,
+      "expected_source_hint": null,
+      "tags": [
+        "focus",
+        "narrative"
+      ]
+    },
+    {
+      "id": "N059",
+      "query": "Reconstruct a duel involving Lucius and another Emperor's Children champion.",
+      "expected_style": "narrator",
+      "retrieval_scope": "focus",
+      "origin": "original",
+      "reddit_url": null,
+      "expected_source_hint": null,
+      "tags": [
+        "focus",
+        "narrative"
+      ]
+    },
+    {
+      "id": "N060",
+      "query": "Narrate Magnus and Ahriman's last discussion before the Space Wolves arrived.",
+      "expected_style": "narrator",
+      "retrieval_scope": "focus",
+      "origin": "original",
+      "reddit_url": null,
+      "expected_source_hint": "Thousand Sons",
+      "tags": [
+        "focus",
+        "narrative"
+      ]
+    },
+    {
+      "id": "N061",
+      "query": "Tell the story of Sanguinius defending Terra against the traitor assault.",
+      "expected_style": "narrator",
+      "retrieval_scope": "wide",
+      "origin": "original",
+      "reddit_url": null,
+      "expected_source_hint": null,
+      "tags": [
+        "wide",
+        "narrative"
+      ]
+    },
+    {
+      "id": "N062",
+      "query": "Recount the events leading to Horus renouncing his father, in chronological order.",
+      "expected_style": "narrator",
+      "retrieval_scope": "wide",
+      "origin": "original",
+      "reddit_url": null,
+      "expected_source_hint": "False Gods",
+      "tags": [
+        "wide",
+        "narrative"
+      ]
+    },
+    {
+      "id": "N063",
+      "query": "Take me through the moments before Fulgrim attacked Ferrus.",
+      "expected_style": "narrator",
+      "retrieval_scope": "focus",
+      "origin": "original",
+      "reddit_url": null,
+      "expected_source_hint": "Fulgrim",
+      "tags": [
+        "focus",
+        "narrative"
+      ]
+    },
+    {
+      "id": "N064",
+      "query": "Tell the complete story of the corruption spreading through a legion.",
+      "expected_style": "narrator",
+      "retrieval_scope": "wide",
+      "origin": "original",
+      "reddit_url": null,
+      "expected_source_hint": null,
+      "tags": [
+        "wide",
+        "narrative"
+      ]
+    },
+    {
+      "id": "N065",
+      "query": "Reconstruct a key battle from Betrayer, emphasizing its character perspectives.",
+      "expected_style": "narrator",
+      "retrieval_scope": "wide",
+      "origin": "original",
+      "reddit_url": null,
+      "expected_source_hint": "Betrayer",
+      "tags": [
+        "wide",
+        "narrative"
+      ]
+    },
+    {
+      "id": "N066",
+      "query": "Narrate the scene in which the Interex peace talks collapsed.",
+      "expected_style": "narrator",
+      "retrieval_scope": "focus",
+      "origin": "original",
+      "reddit_url": null,
+      "expected_source_hint": "Horus Rising",
+      "tags": [
+        "focus",
+        "narrative"
+      ]
+    },
+    {
+      "id": "N067",
+      "query": "Tell the story of the Sons of Horus turning against their former brothers.",
+      "expected_style": "narrator",
+      "retrieval_scope": "wide",
+      "origin": "original",
+      "reddit_url": null,
+      "expected_source_hint": null,
+      "tags": [
+        "wide",
+        "narrative"
+      ]
+    },
+    {
+      "id": "N068",
+      "query": "Recreate the encounter between Horus and Eugan Temba on Davin.",
+      "expected_style": "narrator",
+      "retrieval_scope": "focus",
+      "origin": "original",
+      "reddit_url": null,
+      "expected_source_hint": "False Gods",
+      "tags": [
+        "focus",
+        "narrative"
+      ]
+    },
+    {
+      "id": "N069",
+      "query": "Narrate how the Emperor confronted his favored son at the end of the war.",
+      "expected_style": "narrator",
+      "retrieval_scope": "focus",
+      "origin": "original",
+      "reddit_url": null,
+      "expected_source_hint": null,
+      "tags": [
+        "focus",
+        "narrative"
+      ]
+    },
+    {
+      "id": "N070",
+      "query": "Tell the full story of a battle where the Word Bearers pursued an impossible victory.",
+      "expected_style": "narrator",
+      "retrieval_scope": "wide",
+      "origin": "original",
+      "reddit_url": null,
+      "expected_source_hint": null,
+      "tags": [
+        "wide",
+        "narrative"
+      ]
+    },
+    {
+      "id": "E001",
+      "query": "Why did Horus turn traitor?",
+      "expected_style": "explorer",
+      "retrieval_scope": "wide",
+      "origin": "user-history",
+      "reddit_url": "https://www.reddit.com/r/40kLore/comments/1v8of5q/",
+      "expected_source_hint": "False Gods",
+      "tags": [
+        "wide",
+        "explanation"
+      ]
+    },
+    {
+      "id": "E002",
+      "query": "What caused Horus to reject the Emperor after being wounded on Davin?",
+      "expected_style": "explorer",
+      "retrieval_scope": "focus",
+      "origin": "user-history",
+      "reddit_url": "https://www.reddit.com/r/40kLore/comments/1v8of5q/",
+      "expected_source_hint": "False Gods",
+      "tags": [
+        "focus",
+        "explanation"
+      ]
+    },
+    {
+      "id": "E003",
+      "query": "Why did Horus believe Erebus during the Serpent Lodge visions after being wounded on Davin?",
+      "expected_style": "explorer",
+      "retrieval_scope": "focus",
+      "origin": "user-history",
+      "reddit_url": "https://www.reddit.com/r/40kLore/comments/1v8of5q/",
+      "expected_source_hint": "False Gods",
+      "tags": [
+        "focus",
+        "explanation"
+      ]
+    },
+    {
+      "id": "E004",
+      "query": "What happened between Ferrus Manus and Fulgrim during their final confrontation?",
+      "expected_style": "explorer",
+      "retrieval_scope": "focus",
+      "origin": "user-history",
+      "reddit_url": null,
+      "expected_source_hint": "Fulgrim",
+      "tags": [
+        "focus",
+        "explanation"
+      ]
+    },
+    {
+      "id": "E005",
+      "query": "Describe the confrontation between Ferrus Manus and Fulgrim.",
+      "expected_style": "explorer",
+      "retrieval_scope": "wide",
+      "origin": "user-history",
+      "reddit_url": null,
+      "expected_source_hint": "Fulgrim",
+      "tags": [
+        "wide",
+        "explanation"
+      ]
+    },
+    {
+      "id": "E006",
+      "query": "Who is Kharn?",
+      "expected_style": "explorer",
+      "retrieval_scope": "wide",
+      "origin": "user-history",
+      "reddit_url": null,
+      "expected_source_hint": null,
+      "tags": [
+        "wide",
+        "explanation"
+      ]
+    },
+    {
+      "id": "E007",
+      "query": "Who was Kharn's best friend?",
+      "expected_style": "explorer",
+      "retrieval_scope": "wide",
+      "origin": "user-history",
+      "reddit_url": null,
+      "expected_source_hint": null,
+      "tags": [
+        "wide",
+        "explanation"
+      ]
+    },
+    {
+      "id": "E008",
+      "query": "How are the Word Bearers and Black Templars similar in their fanaticism?",
+      "expected_style": "explorer",
+      "retrieval_scope": "wide",
+      "origin": "user-history",
+      "reddit_url": null,
+      "expected_source_hint": null,
+      "tags": [
+        "wide",
+        "explanation"
+      ]
+    },
+    {
+      "id": "E009",
+      "query": "Explain the causes of Fulgrim's corruption through the sword.",
+      "expected_style": "explorer",
+      "retrieval_scope": "wide",
+      "origin": "user-history",
+      "reddit_url": null,
+      "expected_source_hint": "Fulgrim",
+      "tags": [
+        "wide",
+        "explanation"
+      ]
+    },
+    {
+      "id": "E010",
+      "query": "What is known about the Anathame blade?",
+      "expected_style": "explorer",
+      "retrieval_scope": "focus",
+      "origin": "user-history",
+      "reddit_url": null,
+      "expected_source_hint": null,
+      "tags": [
+        "focus",
+        "explanation"
+      ]
+    },
+    {
+      "id": "E011",
+      "query": "Describe the Laer blade that Fulgrim recovered.",
+      "expected_style": "explorer",
+      "retrieval_scope": "focus",
+      "origin": "user-history",
+      "reddit_url": null,
+      "expected_source_hint": "Fulgrim",
+      "tags": [
+        "focus",
+        "explanation"
+      ]
+    },
+    {
+      "id": "E012",
+      "query": "What is the Vengeful Spirit flagship?",
+      "expected_style": "explorer",
+      "retrieval_scope": "focus",
+      "origin": "user-history",
+      "reddit_url": null,
+      "expected_source_hint": null,
+      "tags": [
+        "focus",
+        "explanation"
+      ]
+    },
+    {
+      "id": "E013",
+      "query": "Why did Horus distrust the Emperor despite doubting Erebus?",
+      "expected_style": "explorer",
+      "retrieval_scope": "wide",
+      "origin": "reddit-inspired",
+      "reddit_url": "https://www.reddit.com/r/40kLore/comments/1v8of5q/",
+      "expected_source_hint": "False Gods",
+      "tags": [
+        "wide",
+        "explanation"
+      ]
+    },
+    {
+      "id": "E014",
+      "query": "What happened to the Luna Wolves who did not follow Horus after Davin?",
+      "expected_style": "explorer",
+      "retrieval_scope": "wide",
+      "origin": "reddit-inspired",
+      "reddit_url": "https://www.reddit.com/r/40kLore/comments/fr7gso",
+      "expected_source_hint": "False Gods",
+      "tags": [
+        "wide",
+        "explanation"
+      ]
+    },
+    {
+      "id": "E015",
+      "query": "Why did the Interex turn against Horus's expedition?",
+      "expected_style": "explorer",
+      "retrieval_scope": "wide",
+      "origin": "reddit-inspired",
+      "reddit_url": "https://www.reddit.com/r/40kLore/comments/ohhfwc",
+      "expected_source_hint": "Horus Rising",
+      "tags": [
+        "wide",
+        "explanation"
+      ]
+    },
+    {
+      "id": "E016",
+      "query": "Why was Erebus so influential without being a Primarch?",
+      "expected_style": "explorer",
+      "retrieval_scope": "wide",
+      "origin": "reddit-inspired",
+      "reddit_url": "https://www.reddit.com/r/40kLore/comments/1wuod1t/",
+      "expected_source_hint": null,
+      "tags": [
+        "wide",
+        "explanation"
+      ]
+    },
+    {
+      "id": "E017",
+      "query": "Why did Horus spare Erebus?",
+      "expected_style": "explorer",
+      "retrieval_scope": "wide",
+      "origin": "reddit-inspired",
+      "reddit_url": "https://www.reddit.com/r/40kLore/comments/1h37hep",
+      "expected_source_hint": null,
+      "tags": [
+        "wide",
+        "explanation"
+      ]
+    },
+    {
+      "id": "E018",
+      "query": "Could Ferrus Manus have exposed the betrayal before Isstvan V?",
+      "expected_style": "explorer",
+      "retrieval_scope": "wide",
+      "origin": "reddit-inspired",
+      "reddit_url": "https://www.reddit.com/r/40kLore/comments/1fbp06t",
+      "expected_source_hint": "Fulgrim",
+      "tags": [
+        "wide",
+        "explanation"
+      ]
+    },
+    {
+      "id": "E019",
+      "query": "Why do so many readers consider Horus's transformation rushed?",
+      "expected_style": "explorer",
+      "retrieval_scope": "wide",
+      "origin": "reddit-inspired",
+      "reddit_url": "https://www.reddit.com/r/40kLore/comments/1v8of5q/",
+      "expected_source_hint": null,
+      "tags": [
+        "wide",
+        "explanation"
+      ]
+    },
+    {
+      "id": "E020",
+      "query": "Why did Loken and Torgaddon resist the legion's change?",
+      "expected_style": "explorer",
+      "retrieval_scope": "wide",
+      "origin": "reddit-inspired",
+      "reddit_url": "https://www.reddit.com/r/40kLore/comments/1aucy1l",
+      "expected_source_hint": null,
+      "tags": [
+        "wide",
+        "explanation"
+      ]
+    },
+    {
+      "id": "E021",
+      "query": "How does the anathame connect the Interex and Horus's fall?",
+      "expected_style": "explorer",
+      "retrieval_scope": "wide",
+      "origin": "original",
+      "reddit_url": null,
+      "expected_source_hint": null,
+      "tags": [
+        "wide",
+        "explanation"
+      ]
+    },
+    {
+      "id": "E022",
+      "query": "Compare the fanaticism of the Black Templars and the Word Bearers.",
+      "expected_style": "explorer",
+      "retrieval_scope": "wide",
+      "origin": "original",
+      "reddit_url": null,
+      "expected_source_hint": null,
+      "tags": [
+        "wide",
+        "explanation"
+      ]
+    },
+    {
+      "id": "E023",
+      "query": "What is the difference between a Primarch and a Chapter Master?",
+      "expected_style": "explorer",
+      "retrieval_scope": "wide",
+      "origin": "original",
+      "reddit_url": null,
+      "expected_source_hint": null,
+      "tags": [
+        "wide",
+        "explanation"
+      ]
+    },
+    {
+      "id": "E024",
+      "query": "How did the Emperor organize the Great Crusade?",
+      "expected_style": "explorer",
+      "retrieval_scope": "wide",
+      "origin": "original",
+      "reddit_url": null,
+      "expected_source_hint": null,
+      "tags": [
+        "wide",
+        "explanation"
+      ]
+    },
+    {
+      "id": "E025",
+      "query": "Explain the importance of the Council of Nikaea.",
+      "expected_style": "explorer",
+      "retrieval_scope": "wide",
+      "origin": "original",
+      "reddit_url": null,
+      "expected_source_hint": null,
+      "tags": [
+        "wide",
+        "explanation"
+      ]
+    },
+    {
+      "id": "E026",
+      "query": "How did Horus's Mournival function?",
+      "expected_style": "explorer",
+      "retrieval_scope": "focus",
+      "origin": "original",
+      "reddit_url": null,
+      "expected_source_hint": "Horus Rising",
+      "tags": [
+        "focus",
+        "explanation"
+      ]
+    },
+    {
+      "id": "E027",
+      "query": "What role did Magnus play in the events surrounding Davin?",
+      "expected_style": "explorer",
+      "retrieval_scope": "wide",
+      "origin": "original",
+      "reddit_url": null,
+      "expected_source_hint": "Thousand Sons",
+      "tags": [
+        "wide",
+        "explanation"
+      ]
+    },
+    {
+      "id": "E028",
+      "query": "What were the strategic consequences of the Drop Site Massacre?",
+      "expected_style": "explorer",
+      "retrieval_scope": "wide",
+      "origin": "original",
+      "reddit_url": null,
+      "expected_source_hint": null,
+      "tags": [
+        "wide",
+        "explanation"
+      ]
+    },
+    {
+      "id": "E029",
+      "query": "Explain the difference between Loyalist and Traitor legions.",
+      "expected_style": "explorer",
+      "retrieval_scope": "wide",
+      "origin": "original",
+      "reddit_url": null,
+      "expected_source_hint": null,
+      "tags": [
+        "wide",
+        "explanation"
+      ]
+    },
+    {
+      "id": "E030",
+      "query": "What motives did Lorgar have for rejecting the Imperial Truth?",
+      "expected_style": "explorer",
+      "retrieval_scope": "wide",
+      "origin": "original",
+      "reddit_url": null,
+      "expected_source_hint": null,
+      "tags": [
+        "wide",
+        "explanation"
+      ]
+    }
+  ]
+}
