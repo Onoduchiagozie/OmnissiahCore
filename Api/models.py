@@ -3,13 +3,19 @@ OmnissiahCore - Api/models.py
 """
 import uuid
 from datetime import datetime, timezone
-from typing import Optional
+from typing import Optional, Literal
 
 from pydantic import BaseModel, Field
 
 
 class QueryRequest(BaseModel):
     query: str = Field(..., description="The lore question to answer.")
+    response_style: Optional[Literal["auto", "explorer", "narrator"]] = Field(
+        None, description="How the answer sounds. Auto infers from query; narrator is cinematic, explorer explains."
+    )
+    retrieval_scope: Optional[Literal["wide", "focus"]] = Field(
+        None, description="How broadly to search evidence, independent of response_style."
+    )
     session_id: Optional[str] = Field("default", description="Client session identifier.")
     book_filter: Optional[str] = Field(None, description="Substring filter on book name.")
     source_filter: Optional[list[str]] = Field(None, description="Exact source name list.")
