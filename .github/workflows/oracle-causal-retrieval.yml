@@ -5,10 +5,12 @@ on:
     branches:
       - fix/oracle-causal-retrieval-20261110
       - fix/oracle-chronicle-coverage-20261111
+      - fix/oracle-adaptive-voice-20261111
   pull_request:
     branches:
       - oracle
       - fix/oracle-causal-retrieval-20261110
+      - fix/oracle-chronicle-coverage-20261111
 
 jobs:
   unit:
@@ -21,8 +23,11 @@ jobs:
       - name: Compile retrieval, API and diagnostic modules
         run: |
           python -m compileall -q Core/retriever.py Core/retrieval_quality.py Api/routes/query_routes.py tools/oracle_horus_smoke.py tools/oracle_chronicle_smoke.py Tests/unit/test_oracle_retrieval_quality.py Tests/unit/test_oracle_chronicle_quality.py
+          python -m compileall -q Core/agent.py Core/prompt.py Core/response_style.py Api/models.py Api/services/runtime_service.py Tests/unit/test_oracle_adaptive_voice.py
           python -m json.tool app_text.json > /dev/null
       - name: Validate Oracle deployment shell script
         run: bash -n tools/deploy_oracle_chronicle.sh
       - name: Run model-free retrieval regressions
         run: python -m unittest discover -s Tests/unit -p 'test_oracle_*quality.py' -v
+      - name: Run adaptive voice and scope tests
+        run: python -m unittest discover -s Tests/unit -p 'test_oracle_adaptive_voice.py' -v
