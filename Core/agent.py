@@ -199,6 +199,12 @@ class OmnissiahAgent:
             }
             for c in chunks
         ]
+        if not full_response.strip():
+            # Retrieval may succeed but the provider can produce zero tokens.
+            # Never advertise sources followed by a successful completion
+            # when the actual answer is empty.
+            yield "[ERROR] The language model returned no answer text."
+            return
         if "[ERROR]" not in full_response:
             self._update_memory(query, full_response)
         yield f"__SOURCES__:{json.dumps(sources_data)}"
