@@ -119,7 +119,20 @@ async def query_evidence(req: QueryRequest):
     if not req.query.strip():
         raise HTTPException(status_code=400, detail="Query cannot be empty.")
 
+    style, scope = resolve_response_options(
+        req.query, endpoint_mode="adaptive",
+        requested_style=req.response_style,
+        requested_scope=req.retrieval_scope,
+    )
+
     def _retrieve():
+        if scope == "focus":
+            return runtime_service.retriever.search_focus(
+                query=req.query,
+                book_filter=req.book_filter,
+                source_filter=req.source_filter,
+                max_sources=req.max_sources,
+            )
         return runtime_service.retriever.search(
             query=req.query,
             book_filter=req.book_filter,
@@ -137,6 +150,8 @@ async def query_evidence(req: QueryRequest):
 
     return {
         "query": req.query,
+        "response_style": style,
+        "retrieval_scope": scope,
         "causal_mode": is_causal_question(req.query),
         "chronicle_mode": is_chronicle_request(req.query),
         "facet_queries": chronicle_probes(req.query),
@@ -148,6 +163,7 @@ async def query_evidence(req: QueryRequest):
                 "chunk_id": h.get("chunk_id"),
                 "stitch_range": h.get("stitch_range"),
                 "rerank_score": h.get("rerank_score"),
+                "facet_rerank_scores": h.get("facet_rerank_scores", {}),
                 "query_overlap_score": h.get("query_overlap_score"),
                 "text": h.get("text", ""),
             }
