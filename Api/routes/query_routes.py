@@ -84,6 +84,70 @@ def _source_list(chunks: list[dict]) -> list[SourceInfo]:
     ]
 
 
+
+# ---------------------------------------------------------------------------
+# Backward-compatible Remembrancer endpoints used by TheForge's general
+# Query and Chat clients. These were absent from the registered router.
+# ---------------------------------------------------------------------------
+
+@router.post("/query")
+async def query_default(req: QueryRequest):
+    """General synchronous RAG answer (legacy Forge API contract)."""
+    runtime_service.ensure_ready()
+    if not req.query.strip():
+        raise HTTPException(status_code=400, detail="Query cannot be empty.")
+    loop = asyncio.get_running_loop()
+    answer, chunks = await loop.run_in_executor(
+        _ollama_pool,
+        lambda: runtime_service.run_query(req, mode="remembrancer", stream=False),
+    )
+    return {
+        "query": req.query,
+        "response": answer,
+        "chunks_used": len(chunks),
+        "sources": _source_list(chunks),
+    }
+
+
+@router.post("/query/stream")
+async def query_default_stream(req: QueryRequest):
+    """General streamed RAG answer with the same SSE contract as Narrator."""
+    runtime_service.ensure_ready()
+    if not req.query.strip():
+        raise HTTPException(status_code=400, detail="Query cannot be empty.")
+
+    async def _stream():
+        loop = asyncio.get_running_loop()
+        queue: asyncio.Queue = asyncio.Queue()
+
+        def _producer():
+            try:
+                for event in validated_sse_frames(
+                    runtime_service.stream_query_mode(req, mode="remembrancer")
+                ):
+                    asyncio.run_coroutine_threadsafe(queue.put(event), loop)
+            except Exception:
+                logger.exception("FastAPI Remembrancer producer failed")
+                asyncio.run_coroutine_threadsafe(
+                    queue.put("data: [ERROR] Remembrancer stream failed. See server logs.\\n\\n"), loop
+                )
+            finally:
+                asyncio.run_coroutine_threadsafe(queue.put(None), loop)
+
+        threading.Thread(target=_producer, daemon=True).start()
+        while True:
+            event = await queue.get()
+            if event is None:
+                break
+            yield event
+
+    return StreamingResponse(
+        _stream(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
+
+
 # ---------------------------------------------------------------------------
 # POST /query/inspect — retrieval diagnostics, no LLM call
 # ---------------------------------------------------------------------------
