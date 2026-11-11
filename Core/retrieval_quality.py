@@ -254,6 +254,11 @@ def _facet_score(probe: str, passage: dict, subject: str) -> int:
     return matches * 2 + (3 if subject_present else 0) + proximity
 
 
+def chronicle_facet_score(probe: str, passage: dict, query: str) -> int:
+    """Public scoring function shared by stage selection and cross-encoder."""
+    return _facet_score(probe, passage, _chronicle_subject(query))
+
+
 def _dedupe_chronicle(hits: list[dict]) -> list[dict]:
     """Suppress near-identical passages from PDF/EPUB editions of the same text."""
     selected = []
@@ -293,7 +298,11 @@ def prioritize_chronicle_candidates(query: str, hits: list[dict], limit: int) ->
     used = set()
     # Round-robin: each timeline stage gets first refusal before an
     # earlier stage can consume several candidate slots.
-    for _ in range(3):
+    # Keep several candidates per stage for semantic reranking. Three
+    # candidates per stage were too few: tangential references displaced
+    # the primary novel before the cross-encoder ever saw its passages.
+    stage_capacity = min(10, max(3, limit // max(1, len(probes) * 2)))
+    for _ in range(stage_capacity):
         for ranked in ranked_facets:
             for hit in ranked:
                 identity = (hit.get("source"), hit.get("chunk_id"))
