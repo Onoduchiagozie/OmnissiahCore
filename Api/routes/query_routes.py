@@ -8,6 +8,7 @@ from fastapi.responses import StreamingResponse
 
 from Api.models import QueryRequest, QueryResponse, SourceInfo
 from Api.services.runtime_service import runtime_service
+from Core.stream_contract import is_failure_frame
 from Core.config_loader import paths
 
 
@@ -168,9 +169,7 @@ async def query_narrate_stream(req: QueryRequest):
             token = await queue.get()
             if token is None:
                 break
-            if token.startswith("data: [ERROR]") or token.startswith(
-                "data: __STAGE__:failed"
-            ):
+            if is_failure_frame(token):
                 terminal_failure = True
             yield token
 
