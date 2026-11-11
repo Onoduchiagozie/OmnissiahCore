@@ -31,6 +31,7 @@ jobs:
         run: |
           bash -n tools/deploy_oracle_chronicle.sh
           bash -n tools/deploy_oracle_adaptive.sh
+          bash -n tools/deploy_oracle_eval_70_30.sh
       - name: Run model-free retrieval regressions
         run: python -m unittest discover -s Tests/unit -p 'test_oracle_*quality.py' -v
       - name: Run adaptive voice and scope tests
