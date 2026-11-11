@@ -198,8 +198,8 @@ def compact_chronicle_probes(query: str) -> list[str]:
 
 _BOILERPLATE = re.compile(
     r"more (?:horus heresy|warhammer) (?:books|stories) from blacklibrary"
-    r"|blacklibrary\.com|\\bisbn\\b"
-    r"|all rights reserved|copyright \\d{4}",
+    r"|blacklibrary\.com|\bisbn\b"
+    r"|all rights reserved|copyright \d{4}",
     re.IGNORECASE,
 )
 
