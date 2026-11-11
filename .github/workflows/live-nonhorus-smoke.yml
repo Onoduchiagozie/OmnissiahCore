@@ -1,0 +1,23 @@
+name: Live non-Horus Oracle integration smoke
+on:
+  push:
+    branches:
+      - test/nonhorus-coverage-20261111
+    paths:
+      - tools/live_nonhorus_smoke.py
+      - .github/workflows/live-nonhorus-smoke.yml
+  workflow_dispatch:
+jobs:
+  live-nonhorus:
+    runs-on: ubuntu-latest
+    timeout-minutes: 14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - name: Verify smoke-test script syntax
+        run: python -m py_compile tools/live_nonhorus_smoke.py
+      - name: Check real Oracle retrieval (3) and one Gemini narration
+        run: |
+          python tools/live_nonhorus_smoke.py --base "https://emerald-nativity-guacamole.ngrok-free.dev"
