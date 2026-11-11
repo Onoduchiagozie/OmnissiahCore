@@ -77,6 +77,12 @@ class StreamContractTests(unittest.TestCase):
         with self.assertRaisesRegex(GenerationFailure, "generation failed"):
             validate_generated_response(" [ERROR] Gemini quota exhausted")
 
+    def test_sync_partial_answer_followed_by_provider_error_is_rejected(self):
+        with self.assertRaises(GenerationFailure):
+            validate_generated_response(
+                "The Necrons awoke. [ERROR] Gemini connection lost"
+            )
+
     def test_sync_output_preserves_successful_text(self):
         answer = "The Necron tomb stirred."
         self.assertEqual(validate_generated_response(answer), answer)
