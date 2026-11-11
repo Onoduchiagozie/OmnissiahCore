@@ -221,38 +221,47 @@ def _dedupe_chronicle(hits: list[dict]) -> list[dict]:
 
 
 def prioritize_chronicle_candidates(query: str, hits: list[dict], limit: int) -> list[dict]:
-    """Reserve candidate capacity for requested stages before cross-encoding."""
+    """Fairly reserve candidate capacity for each requested stage."""
     if not is_chronicle_request(query):
         return hits[:limit]
+    hits = _dedupe_chronicle(hits)
     probes = chronicle_probes(query)
     subject = _chronicle_subject(query)
-    ordered = []
-    seen = set()
+    ranked_facets = []
     for probe in probes:
-        ranked = sorted(
-            enumerate(hits),
+        matches = [
+            (idx, hit) for idx, hit in enumerate(hits)
+            if _facet_score(probe, hit, subject) >= 3
+        ]
+        matches.sort(
             key=lambda pair: (_facet_score(probe, pair[1], subject), -pair[0]),
             reverse=True,
         )
-        added = 0
-        for _, hit in ranked:
-            if _facet_score(probe, hit, subject) == 0:
-                break
-            identity = (hit.get("source"), hit.get("chunk_id"))
-            if identity in seen:
-                continue
-            seen.add(identity)
-            ordered.append(hit)
-            added += 1
-            if added == 3 or len(ordered) >= limit:
-                break
+        ranked_facets.append([hit for _, hit in matches])
+
+    chosen = []
+    used = set()
+    # Round-robin: each timeline stage gets first refusal before an
+    # earlier stage can consume several candidate slots.
+    for _ in range(3):
+        for ranked in ranked_facets:
+            for hit in ranked:
+                identity = (hit.get("source"), hit.get("chunk_id"))
+                if identity not in used:
+                    chosen.append(hit)
+                    used.add(identity)
+                    break
+            if len(chosen) >= limit:
+                return chosen
+
     for hit in hits:
         identity = (hit.get("source"), hit.get("chunk_id"))
-        if identity not in seen and len(ordered) < limit:
-            ordered.append(hit)
-            seen.add(identity)
-    return _dedupe_chronicle(ordered)[:limit]
-
+        if identity not in used:
+            chosen.append(hit)
+            used.add(identity)
+        if len(chosen) >= limit:
+            break
+    return chosen
 
 def select_chronicle_evidence(query: str, ranked_hits: list[dict], top_k: int) -> list[dict]:
     """Guarantee grounded stage coverage when available; retain varied supporting evidence.
