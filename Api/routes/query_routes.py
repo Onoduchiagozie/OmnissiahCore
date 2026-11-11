@@ -161,6 +161,24 @@ async def query_evidence(req: QueryRequest):
 # Response style and evidence scope are intentionally independent.
 # ---------------------------------------------------------------------------
 
+@router.post("/query/voice-preview")
+async def query_voice_preview(req: QueryRequest):
+    """Resolve voice and scope without retrieval or an LLM call."""
+    if not req.query.strip():
+        raise HTTPException(status_code=400, detail="Query cannot be empty.")
+    style, scope = resolve_response_options(
+        req.query, endpoint_mode="adaptive",
+        requested_style=req.response_style,
+        requested_scope=req.retrieval_scope,
+    )
+    return {
+        "query": req.query,
+        "response_style": style,
+        "retrieval_scope": scope,
+        "llm_used": False,
+    }
+
+
 @router.post("/query/respond")
 async def query_respond(req: QueryRequest):
     """Automatic answer style by query; explicit style/scope overrides supported.
