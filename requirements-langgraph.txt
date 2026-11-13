@@ -1,0 +1,3 @@
+# OPTIONAL: only install in an isolated test environment until approved.
+# Existing Oracle runtime requirements are unchanged.
+-r requirements-graph.txt

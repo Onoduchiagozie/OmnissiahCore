@@ -1,0 +1,229 @@
+{
+  "title": "OmnissiahCore observed retrieval and generation checks",
+  "note": "Captured from user-provided Oracle terminal logs and prior project discussions. These are historical observations, not fresh runs. Unknown values are omitted; none of these imply current production passed.",
+  "observations": [
+    {
+      "id": "oracle-baseline-match-20261111",
+      "tested": "Core/retriever.py matched pinned GitHub base",
+      "status": "pass",
+      "details": {
+        "matching": true,
+        "current_bytes": 33827,
+        "baseline_bytes": 33827
+      },
+      "evidence": "User's Oracle terminal output"
+    },
+    {
+      "id": "causal-hotfix-units-20261111",
+      "tested": "PR #2 causal retrieval unit tests on Oracle",
+      "status": "pass",
+      "details": {
+        "passed": 7,
+        "failed": 0
+      },
+      "evidence": "User's Oracle terminal output"
+    },
+    {
+      "id": "causal-smoke-broad-20261111",
+      "query": "Why did Horus turn traitor?",
+      "tested": "/query/inspect smoke",
+      "status": "partial",
+      "details": {
+        "faiss_count": 5,
+        "bm25_count": 5,
+        "stitched_count": 4,
+        "stitched_chars": 17769,
+        "sources": [
+          "The Crimson Fist",
+          "Ghosts Speak Not and Patience",
+          "The Imperial Truth",
+          "The Traitor's Gambit"
+        ]
+      },
+      "issue": "Retrieved relevant setting references but not a primary False Gods passage.",
+      "evidence": "User's Oracle terminal output"
+    },
+    {
+      "id": "causal-smoke-filtered-20261111",
+      "query": "What caused Horus to reject the Emperor after being wounded on Davin?",
+      "tested": "/query/inspect with book_filter False Gods",
+      "status": "partial",
+      "details": {
+        "faiss_count": 5,
+        "bm25_count": 5,
+        "stitched_count": 5,
+        "stitched_chars": 17997,
+        "sources": [
+          "False Gods.pdf",
+          "False Gods.epub"
+        ]
+      },
+      "issue": "Book-level source coverage confirmed; passage-level accuracy not established.",
+      "evidence": "User's Oracle terminal output"
+    },
+    {
+      "id": "narrate-first-answer-20261111",
+      "query": "Why did Horus turn traitor?",
+      "tested": "/query/narrate with Gemini",
+      "status": "partial",
+      "details": {
+        "stages": [
+          "embedding",
+          "retrieving",
+          "reranking",
+          "generating",
+          "complete"
+        ],
+        "reported_sources": 5,
+        "errors": 0,
+        "record": "/tmp/oracle-horus-answer.txt"
+      },
+      "issue": "Generated long prose about Magnus, Erebus, later events; completeness of decision/Serpent Lodge narrative needs human evaluation.",
+      "evidence": "User's Oracle terminal output"
+    },
+    {
+      "id": "serpent-lodge-inspect-20261111",
+      "query": "Why did Horus believe Erebus during the Serpent Lodge visions after being wounded on Davin?",
+      "tested": "/query/inspect, book_filter=False Gods, top_k=8, candidate_pool=100",
+      "status": "partial",
+      "details": {
+        "faiss_count": 5,
+        "bm25_count": 5,
+        "grounded_results": 8,
+        "primary_sources": [
+          "False Gods.pdf",
+          "False Gods.epub"
+        ]
+      },
+      "issue": "Displayed 650-character previews of eight passages did not directly show the central vision/decision, but the full passage texts were not reviewed.",
+      "evidence": "User's Oracle terminal output"
+    },
+    {
+      "id": "broad-story-narrate-20261111",
+      "query": "Tell the complete story of Horus falling to Chaos, from his growing doubts and the events on Davin through his eventual betrayal.",
+      "tested": "/query/narrate",
+      "status": "fail",
+      "details": {
+        "stages": [
+          "embedding",
+          "retrieving",
+          "reranking",
+          "generating",
+          "complete"
+        ],
+        "response": "The Archives do not hold enough of this moment.",
+        "sources": [
+          "Tallarn Executioner",
+          "Slaves to Darkness",
+          "Ruinstorm",
+          "Master of Mankind",
+          "The Primarchs",
+          "Deliverance Lost",
+          "Burden of Loyalty",
+          "Codex Chaos Space Marines"
+        ]
+      },
+      "issue": "Refusal despite False Gods being indexed; incorrect source coverage.",
+      "evidence": "User's Oracle terminal output"
+    },
+    {
+      "id": "adaptive-rollout-20261111",
+      "tested": "PR #4 staged unit and voice API smoke tests",
+      "status": "pass",
+      "details": {
+        "unit_tests_passed": 19,
+        "voice_route_cases_passed": 5
+      },
+      "issue": "Unit/voice success is not evidence-quality success.",
+      "evidence": "User's Oracle terminal output"
+    },
+    {
+      "id": "adaptive-evidence-20261111",
+      "query": "Tell the complete story of Horus falling to Chaos, from his growing doubts and the events on Davin through his eventual betrayal.",
+      "tested": "/query/evidence final cross-encoder results",
+      "status": "fail",
+      "details": {
+        "candidate_passages": 8,
+        "found_false_gods": false,
+        "examples": [
+          "Ruinstorm",
+          "A Thousand Sons",
+          "Chaos Space Marines Codex",
+          "Garro Weapon of Fate",
+          "Tallarn Executioner"
+        ]
+      },
+      "issue": "High-scored but incidental material displaced primary source; marketing page leakage. Deployment was rolled back.",
+      "evidence": "User's Oracle terminal output"
+    },
+    {
+      "id": "adaptive-rollback-20261111",
+      "tested": "Oracle scripted rollback following failed evidence acceptance",
+      "status": "partial",
+      "details": {
+        "rollback_triggered": true,
+        "backup": "/opt/omnissiah/backups/adaptive-ReUIRIF9"
+      },
+      "issue": "User log confirms rollback procedure started and ended with deployment failed, but does not confirm service health afterward.",
+      "evidence": "User's Oracle terminal output"
+    },
+    {
+      "id": "ferrus-fulgrim-inspect-20261031",
+      "query": "battle between primarch Ferrus Manus and Fulgrim on Istvaan",
+      "tested": "/query/inspect",
+      "status": "partial",
+      "details": {
+        "faiss_count": 5,
+        "bm25_count": 5,
+        "grounded_count": 6,
+        "stitched_count": 6,
+        "source_example": "Fulgrim.epub"
+      },
+      "issue": "Retrieval returned relevant novel, but narration quality was not confirmed.",
+      "evidence": "Earlier project chat"
+    },
+    {
+      "id": "ferrus-fulgrim-gemini-20261103",
+      "query": "What happened between Ferrus Manus and Fulgrim during their final confrontation?",
+      "tested": "/query/explore",
+      "status": "fail",
+      "details": {
+        "retrieved_relevant_fulgrim_sources": 6,
+        "generation_error": "[ERROR] gemini HTTP 503"
+      },
+      "issue": "Retrieval succeeded but generation provider failed.",
+      "evidence": "Earlier project chat"
+    },
+    {
+      "id": "horus-hallucination-20261103",
+      "tested": "Narrated Horus Heresy response",
+      "status": "fail",
+      "details": {
+        "unsupported_claim": "Horus as primarch of Death Guard; Mortarion as Warmaster"
+      },
+      "issue": "Faction/role hallucination must be checked by supported evidence.",
+      "evidence": "Earlier project chat"
+    },
+    {
+      "id": "loken-jubal-retrieval",
+      "query": "Original Loken/Jubal retrieval query (full exact wording unavailable)",
+      "tested": "/query/inspect",
+      "status": "partial",
+      "details": {
+        "status_code": 200,
+        "passage_groups": 6,
+        "source": "Horus Rising"
+      },
+      "issue": "Full exact query and generated output unavailable in accessible history.",
+      "evidence": "Earlier project file"
+    }
+  ],
+  "next_acceptance_gates": [
+    "Auto voice style must match labelled 100-question test suite.",
+    "For Horus/Davin narrative, final reranked evidence must contain primary False Gods and a direct Horus-on-Davin scene.",
+    "Marketing page boilerplate must not enter final evidence.",
+    "Distinct core events requested by the user must be supported before long narration.",
+    "Provider failures (e.g. HTTP 503) must be reported as provider errors, not invented lore refusals.",
+    "After rollback, verify local /health before claiming API operational."
+  ]
+}

@@ -63,3 +63,7 @@ Db/
 metadata.json
 one_book_sample.json
 backfill_unmatched.json
+
+# Handwritten evaluation fixtures are source, not the private corpus.
+!Tests/data/
+!Tests/data/*.json

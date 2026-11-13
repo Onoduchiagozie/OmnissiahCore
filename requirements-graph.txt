@@ -1,0 +1,2 @@
+# Opt-in graph extension. Install after the existing runtime requirements.
+langgraph==1.2.20

@@ -47,14 +47,12 @@ FOCUS_SYSTEM_TEMPLATE = (
     "You have been given a small number of source passages, deliberately narrowed "
     "to the most relevant material for this exact question rather than a broad "
     "survey of many books.\n\n"
-    "VOICE — read this before anything else:\n"
-    "You were there. Narrate the moment directly, as flowing scene prose — not as "
-    "a report of what happened. Never write 'X stated that', 'X noted', 'X declared "
-    "that', 'X announced', 'X countered by questioning', or any other reported-speech "
-    "construction that stands outside the moment looking in. If a character speaks, "
-    "render it as dialogue or direct address inside the scene, not as a paraphrase of "
-    "what they said. You are not summarising a transcript or a meeting — you are "
-    "recounting what you personally witnessed, in the moment, as it happened.\n\n"
+    "VOICE:\n"
+    "Write substantial, immersive third-person prose. Do not claim to have "
+    "witnessed the event. Preserve the source's sequence, who performed each "
+    "action, and the attribution of each speaker. Never invent spoken lines "
+    "or turn reported speech into fabricated direct quotations. When the "
+    "source gives no exact dialogue, use accurate indirect attribution.\n\n"
     "STRICT ACCURACY RULES — these govern content, not voice, and still apply in full:\n"
     "1. Only state events, characters, injuries, deaths, and outcomes that are "
     "explicitly present in the passages below. Do not invent a confrontation, duel, "
@@ -65,9 +63,10 @@ FOCUS_SYSTEM_TEMPLATE = (
     "inventing an ending or resolution.\n"
     "4. Do not blend in named characters, factions, or events from general setting "
     "knowledge unless they actually appear in the passages themselves.\n\n"
-    "Direct narration and strict accuracy are not in tension: narrate exactly what "
-    "the passages describe, in the moment, as a witness — without adding a single "
-    "beat beyond what they contain.\n\n"
+    "Third-person narration and strict accuracy are compatible: describe "
+    "the events the supplied passages establish, without adding missing "
+    "actions or inventing dialogue. For exact wording, return short sourced "
+    "excerpts through an extractive display rather than fabricated quotes.\n\n"
     "SOURCE PASSAGES:\n{context}"
 )
 
@@ -215,9 +214,9 @@ def build_object_explorer_prompt(query: str, chunks: list[dict]) -> tuple[str, s
         "For event, historical, causal, or identity questions, assert a fact only when "
         "a supplied passage explicitly supports that fact or relationship. Related names "
         "or matching words are not evidence by themselves. Do not infer that something "
-        "was unrecorded unless a passage explicitly says so. If the passages mention the "
-        "subject but do not establish the requested fact, say exactly: "
-        "'The Archives do not clearly record enough here.' Then stop."
+        "was unrecorded unless a passage explicitly says so. Answer the portions that "
+        "the supplied passages support. When important evidence is missing, state the "
+        "specific limitation without claiming the source books do not contain it."
     )
     system_prompt = system.format(context=context_block) + evidence_mandate + CLEAN_TEXT_MANDATE
     return system_prompt, app_text["prompts"]["object_query_template"].format(query=query)
@@ -259,3 +258,18 @@ def format_debug(query: str, chunks: list[dict], response: str) -> str:
         f"RESPONSE:\n{response}\n"
         f"{sep}\n"
     )
+
+
+def build_explorer_prompt(query: str, chunks: list[dict]) -> tuple[str, str]:
+    """Human, question-shaped explanation regardless of retrieval scope.
+
+    Use the same retrieved evidence as narrator, but explain instead of
+    dramatizing events. Focus versus wide is handled by the retriever.
+    """
+    context_block = _format_context_block(chunks, include_viewpoint=False)
+    system_prompt = (
+        app_text["prompts"]["explorer_system"].format(context=context_block)
+        + CLEAN_TEXT_MANDATE
+    )
+    user_message = USER_TEMPLATE.format(query=query)
+    return system_prompt, user_message

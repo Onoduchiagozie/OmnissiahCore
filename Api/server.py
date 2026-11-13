@@ -50,6 +50,9 @@ def create_app() -> FastAPI:
 
     app.include_router(system_router)
     app.include_router(query_router)
+    if os.getenv("OMNISSIAH_GRAPH_ENABLED", "0").strip() == "1":
+        from Api.routes.graph_routes import router as graph_router
+        app.include_router(graph_router)
     return app
 
 

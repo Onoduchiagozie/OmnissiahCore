@@ -76,7 +76,8 @@ class PrivateSettingsTests(unittest.TestCase):
 
 class PackagingTests(unittest.TestCase):
     def test_runtime_allowlist_excludes_data_keys_and_experiments(self):
-        for name in ("Core/agent.py", "Api/routes/query_routes.py", "config.json"):
+        for name in ("Core/agent.py", "Api/routes/query_routes.py", "config.json",
+                     "requirements-graph.txt", "requirements-graph-test.txt"):
             self.assertTrue(manage.runtime_path(name))
         for name in (".env", "Data/book.pdf", "Db/metadata.json", "../Core/agent.py",
                      "staging/openai-migration/agent.py", "/Core/agent.py"):
