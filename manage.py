@@ -18,7 +18,8 @@ ROOT = Path(__file__).resolve().parent
 PRIVATE = Path.home() / ".config" / "omnissiahcore"
 RUNTIME_ROOTS = ("Api/", "Core/", "Scripts/")
 RUNTIME_FILES = {"config.json", "app_text.json", "main.py", "manage.py",
-                 "requirements-runtime.txt", "requirements-build.txt", "requirements-test.txt"}
+                 "requirements-runtime.txt", "requirements-build.txt", "requirements-test.txt",
+                 "requirements-graph.txt", "requirements-graph-test.txt", "requirements-langgraph.txt"}
 
 
 def run(args, **kwargs):
@@ -117,6 +118,10 @@ def doctor(args):
 def test(args):
     run([sys.executable, "-m", "unittest", "discover", "-s", str(ROOT / "Tests" / "unit"), "-v"],
         cwd=ROOT)
+    for pattern in ("test_langgraph_retrieval.py", "test_retrieval_recovery.py",
+                    "test_retrieval_invariants.py", "test_conversation_store.py"):
+        run([sys.executable, "-m", "unittest", "discover", "-s", str(ROOT / "Tests"),
+             "-p", pattern, "-v"], cwd=ROOT)
 
 
 def serve(args):

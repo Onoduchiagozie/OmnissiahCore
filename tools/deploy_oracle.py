@@ -16,7 +16,8 @@ import time
 import urllib.request
 
 TOP_FILES = {"config.json", "app_text.json", "main.py", "manage.py",
-             "requirements-runtime.txt", "requirements-build.txt", "requirements-test.txt"}
+             "requirements-runtime.txt", "requirements-build.txt", "requirements-test.txt",
+             "requirements-graph.txt", "requirements-graph-test.txt", "requirements-langgraph.txt"}
 
 
 def permitted(name):

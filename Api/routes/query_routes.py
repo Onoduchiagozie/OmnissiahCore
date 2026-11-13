@@ -1,14 +1,15 @@
 import asyncio
 import json
-import threading
 from concurrent.futures import ThreadPoolExecutor
 
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
 
 from Api.models import QueryRequest, QueryResponse, SourceInfo
+from Api.services.stream_bridge import stream_events
 from Api.services.runtime_service import runtime_service
 from Core.config_loader import paths
+from Core.response_style import resolve_response_options
 
 
 router = APIRouter(tags=["Query"])
@@ -85,6 +86,22 @@ def _source_list(chunks: list[dict]) -> list[SourceInfo]:
 # POST /query/inspect — retrieval diagnostics, no LLM call
 # ---------------------------------------------------------------------------
 
+@router.post("/query")
+async def query_default(req: QueryRequest):
+    """Legacy JSON query contract for direct API clients."""
+    runtime_service.ensure_ready()
+    if not req.query.strip():
+        raise HTTPException(status_code=400, detail="Query cannot be empty.")
+    response, chunks = await asyncio.to_thread(
+        runtime_service.run_query, req, "remembrancer", False)
+    return {"query": req.query, "response": response,
+            "chunks_used": len(chunks), "sources": _source_list(chunks)}
+
+
+@router.post("/query/stream")
+async def query_default_stream(req: QueryRequest):
+    return _query_stream(req, "remembrancer")
+
 @router.post("/query/inspect")
 async def query_inspect(req: QueryRequest):
     """
@@ -116,67 +133,7 @@ async def query_inspect(req: QueryRequest):
 
 @router.post("/query/narrate")
 async def query_narrate_stream(req: QueryRequest):
-    """
-    Broad narrator mode, streamed via Server-Sent Events.
-
-    Reconstructs events, battles, character arcs, and chronicles as a
-    single flowing cinematic narrative, pooling from however many books
-    are relevant — no source cap. Use this when you want breadth (a
-    faction's whole arc, a "why did X happen" question) rather than one
-    specific scene. For a narrowed, accuracy-first single-scene answer,
-    use /query/focus or /query/focus/stream instead.
-
-    SSE frame contract:
-      data: token text
-      data: __SOURCES__:[{...}]
-      data: [DONE]
-      data: [ERROR] message
-
-    Recommended parameters for deep narratives:
-      top_k: 15
-      candidate_pool: 80
-      stitching_window: 6
-    """
-    runtime_service.ensure_ready()
-    if not req.query.strip():
-        raise HTTPException(status_code=400, detail="Query cannot be empty.")
-
-    req_narrator = req.model_copy(
-        update={"session_id": req.session_id or "narrate-default"}
-    )
-
-    async def _stream():
-        loop = asyncio.get_event_loop()
-        queue: asyncio.Queue = asyncio.Queue()
-
-        def _producer():
-            try:
-                for token in runtime_service.stream_query_mode(
-                    req_narrator, mode="narrator"
-                ):
-                    asyncio.run_coroutine_threadsafe(queue.put(token), loop)
-            except Exception as exc:
-                err_token = f"data: [ERROR] Narrator stream failed: {exc}\n\n"
-                asyncio.run_coroutine_threadsafe(queue.put(err_token), loop)
-            finally:
-                asyncio.run_coroutine_threadsafe(queue.put(None), loop)
-
-        threading.Thread(target=_producer, daemon=True).start()
-
-        while True:
-            token = await queue.get()
-            if token is None:
-                break
-            yield token
-
-        # Exactly one [DONE] — runtime_service.stream_query_mode does NOT yield it
-        yield "data: [DONE]\n\n"
-
-    return StreamingResponse(
-        _stream(),
-        media_type="text/event-stream",
-        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
-    )
+    return _query_stream(req, "narrator")
 
 
 # ---------------------------------------------------------------------------
@@ -235,60 +192,7 @@ async def query_explore(req: QueryRequest):
 
 @router.post("/query/focus/stream")
 async def query_focus_stream(req: QueryRequest):
-    """
-    Focus mode, streamed. Identical SSE frame contract to /query/narrate —
-    same "data: token", "data: __STAGE__:x", "data: __SOURCES__:[...]",
-    "data: [DONE]", "data: [ERROR] msg" shape — so a client already wired
-    for /query/narrate's stream only needs its target URL changed, nothing
-    else (parsing logic, controller, UI all stay identical).
-
-    When the scene library has a confident match, the "stream" is a fake
-    typewriter effect over already-finished text (see agent.py) since no
-    LLM call happens in that path. When it falls back to a live corpus
-    search, tokens are real, generated live, same as narrator.
-
-    Narrows to at most `req.max_sources` (default 2) stitched groups.
-    """
-    runtime_service.ensure_ready()
-    if not req.query.strip():
-        raise HTTPException(status_code=400, detail="Query cannot be empty.")
-
-    req_focus = req.model_copy(
-        update={"session_id": req.session_id or "focus-default"}
-    )
-
-    async def _stream():
-        loop = asyncio.get_event_loop()
-        queue: asyncio.Queue = asyncio.Queue()
-
-        def _producer():
-            try:
-                for token in runtime_service.stream_query_mode(
-                    req_focus, mode="focus"
-                ):
-                    asyncio.run_coroutine_threadsafe(queue.put(token), loop)
-            except Exception as exc:
-                err_token = f"data: [ERROR] Focus stream failed: {exc}\n\n"
-                asyncio.run_coroutine_threadsafe(queue.put(err_token), loop)
-            finally:
-                asyncio.run_coroutine_threadsafe(queue.put(None), loop)
-
-        threading.Thread(target=_producer, daemon=True).start()
-
-        while True:
-            token = await queue.get()
-            if token is None:
-                break
-            yield token
-
-        # Exactly one [DONE] — runtime_service.stream_query_mode does NOT yield it
-        yield "data: [DONE]\n\n"
-
-    return StreamingResponse(
-        _stream(),
-        media_type="text/event-stream",
-        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
-    )
+    return _query_stream(req, "focus")
 
 @router.post("/query/focus")
 async def query_focus(req: QueryRequest):
@@ -372,4 +276,141 @@ async def query_ghost(req: QueryRequest):
         "response": response_text,
         "sources": _source_list(chunks),
         "llm_used": False,
+    }
+
+
+def _query_stream(req: QueryRequest, mode: str):
+    runtime_service.ensure_ready()
+    if not req.query.strip():
+        raise HTTPException(status_code=400, detail="Query cannot be empty.")
+    # Reject invalid sessions before sending HTTP 200 headers.
+    try:
+        runtime_service._resolve_session(req.session_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail="Invalid session identifier.") from exc
+    return StreamingResponse(
+        stream_events(lambda stopped: runtime_service.stream_query_mode(
+            req, mode=mode, cancel_event=stopped)),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
+
+
+@router.post("/query/respond/stream")
+async def query_respond_stream(req: QueryRequest):
+    return _query_stream(req, "adaptive")
+
+
+@router.post("/query/evidence")
+async def query_evidence(req: QueryRequest):
+    """Display the actual chunks narrate would send to the LLM.
+
+    No session memory, provider tokens, or model calls are involved.
+    """
+    runtime_service.ensure_ready()
+    if not req.query.strip():
+        raise HTTPException(status_code=400, detail="Query cannot be empty.")
+
+    style, scope = resolve_response_options(
+        req.query, endpoint_mode="adaptive",
+        requested_style=req.response_style,
+        requested_scope=req.retrieval_scope,
+    )
+
+    def _retrieve():
+        if scope == "focus":
+            return runtime_service.retriever.search_focus(
+                query=req.query,
+                book_filter=req.book_filter,
+                source_filter=req.source_filter,
+                max_sources=req.max_sources,
+            )
+        return runtime_service.retriever.search(
+            query=req.query,
+            book_filter=req.book_filter,
+            source_filter=req.source_filter,
+            top_k=req.top_k,
+            candidate_pool=req.candidate_pool,
+            stitching_window=req.stitching_window,
+        )
+
+    loop = asyncio.get_event_loop()
+    hits = await loop.run_in_executor(_ollama_pool, _retrieve)
+    from Core.retrieval_quality import (
+        is_causal_question, is_chronicle_request, chronicle_probes,
+    )
+
+    return {
+        "query": req.query,
+        "response_style": style,
+        "retrieval_scope": scope,
+        "causal_mode": is_causal_question(req.query),
+        "chronicle_mode": is_chronicle_request(req.query),
+        "facet_queries": chronicle_probes(req.query),
+        "count": len(hits),
+        "total_chars": sum(len(h.get("text", "")) for h in hits),
+        "hits": [
+            {
+                "source": h.get("source"),
+                "chunk_id": h.get("chunk_id"),
+                "stitch_range": h.get("stitch_range"),
+                "rerank_score": h.get("rerank_score"),
+                "facet_rerank_scores": h.get("facet_rerank_scores", {}),
+                "query_overlap_score": h.get("query_overlap_score"),
+                "text": h.get("text", ""),
+            }
+            for h in hits
+        ],
+    }
+
+
+
+@router.post("/query/voice-preview")
+async def query_voice_preview(req: QueryRequest):
+    """Resolve voice and scope without retrieval or an LLM call."""
+    if not req.query.strip():
+        raise HTTPException(status_code=400, detail="Query cannot be empty.")
+    style, scope = resolve_response_options(
+        req.query, endpoint_mode="adaptive",
+        requested_style=req.response_style,
+        requested_scope=req.retrieval_scope,
+    )
+    return {
+        "query": req.query,
+        "response_style": style,
+        "retrieval_scope": scope,
+        "llm_used": False,
+    }
+
+
+
+@router.post("/query/respond")
+async def query_respond(req: QueryRequest):
+    """Automatic answer style by query; explicit style/scope overrides supported.
+
+    For example, response_style='explorer', retrieval_scope='focus'
+    explains a small set of passages like a person; selecting narrator
+    with retrieval_scope='wide' produces a broad cinematic chronicle.
+    """
+    runtime_service.ensure_ready()
+    if not req.query.strip():
+        raise HTTPException(status_code=400, detail="Query cannot be empty.")
+
+    style, scope = resolve_response_options(
+        req.query, endpoint_mode="adaptive",
+        requested_style=req.response_style,
+        requested_scope=req.retrieval_scope,
+    )
+    loop = asyncio.get_running_loop()
+    response, chunks = await loop.run_in_executor(
+        _ollama_pool,
+        lambda: runtime_service.run_query(req, mode="adaptive", stream=False),
+    )
+    return {
+        "query": req.query,
+        "response_style": style,
+        "retrieval_scope": scope,
+        "response": response,
+        "chunks_used": len(chunks),
+        "sources": _source_list(chunks),
     }

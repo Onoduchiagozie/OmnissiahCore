@@ -28,6 +28,22 @@ from sentence_transformers import SentenceTransformer
 
 from Core.config_loader import embedding_cfg, machine_role, paths, retrieval_cfg
 
+from Core.event_recall import scan_event_anchors
+from Core.retrieval_quality import (
+    cap_causal_context,
+    cap_chronicle_context,
+    chronicle_probes,
+    compact_chronicle_probes,
+    chronicle_facet_score,
+    explanation_rewrites,
+    interleave_unique,
+    is_causal_question,
+    is_chronicle_request,
+    prioritize_chronicle_candidates,
+    rank_causal_evidence,
+    select_chronicle_evidence,
+)
+
 try:
     import bm25s
 
@@ -47,6 +63,7 @@ STOPWORDS = {
     "the", "a", "an", "and", "or", "of", "to", "in", "on", "for", "with", "at",
     "from", "by", "about", "what", "who", "when", "where", "how", "why", "is",
     "was", "were", "be", "been", "being", "first", "scene", "description", "made",
+    "did", "does", "after", "before", "caused",
     "attack", "battle", "story", "tell", "me", "this", "that", "these", "those",
 }
 
@@ -143,10 +160,210 @@ class OmnissiahRetriever:
         print("Retriever ready\n")
 
     # ------------------------------------------------------------------
-    # Main corpus search (unchanged from before)
+    # Main corpus search
     # ------------------------------------------------------------------
 
+    def _retrieve_candidate_sets(self, query: str, candidate_pool: int) -> tuple[list[dict], list[dict], list[dict]]:
+        """Retrieve the original query and, for causal questions, two explanation-oriented probes.
+
+        Keeps existing FAISS/BM25 indexes and preserves normal queries unchanged.
+        """
+        faiss_groups = [self._faiss_search(self._enrich_query(query), k=candidate_pool)]
+        bm25_groups = [self._bm25_search(query, k=candidate_pool)] if self.bm25 else []
+
+        probes = explanation_rewrites(query)
+        chronicle = is_chronicle_request(query) and not is_causal_question(query)
+        if not probes and chronicle:
+            probes = chronicle_probes(query) + compact_chronicle_probes(query)
+        if probes:
+            # Short, user-derived stage probes improve recall of direct
+            # scenes over generic references in distant books.
+            probe_k = max(20, candidate_pool) if chronicle else max(5, candidate_pool // 2)
+            for probe in probes:
+                faiss_groups.append(self._faiss_search(self._enrich_query(probe), k=probe_k))
+                if self.bm25:
+                    bm25_groups.append(self._bm25_search(probe, k=probe_k))
+            limit = candidate_pool * (4 if chronicle else 2)
+            faiss_hits = interleave_unique(*faiss_groups, limit=limit)
+            bm25_hits = interleave_unique(*bm25_groups, limit=limit) if bm25_groups else []
+            merged = self._rrf_merge(faiss_hits, bm25_hits, k=limit)
+        else:
+            faiss_hits, bm25_hits = faiss_groups[0], bm25_groups[0] if bm25_groups else []
+            merged = self._rrf_merge(faiss_hits, bm25_hits, k=candidate_pool)
+        return faiss_hits, bm25_hits, merged
+
+
+    def _search_quality(
+            self,
+            query: str,
+            top_k: int = None,
+            candidate_pool: int = None,
+            stitching_window: int = None,
+            book_filter: str = None,
+            source_filter: list[str] = None,
+            on_stage=None,
+    ) -> list[dict]:
+        top_k = retrieval_cfg["top_k"] if top_k is None else top_k
+        candidate_pool = retrieval_cfg["candidate_pool"] if candidate_pool is None else candidate_pool
+        stitching_window = retrieval_cfg["stitching_window"] if stitching_window is None else stitching_window
+
+        if on_stage:
+            on_stage("embedding")
+        _, _, merged = self._retrieve_candidate_sets(query, candidate_pool)
+
+        if on_stage:
+            on_stage("retrieving")
+        if book_filter:
+            merged = [c for c in merged if book_filter.lower() in c["source"].lower()]
+        if source_filter:
+            merged = [c for c in merged if c["source"] in source_filter]
+
+        causal = is_causal_question(query)
+        chronicle = is_chronicle_request(query) and not causal
+        if chronicle and retrieval_cfg.get("event_anchor_recall", False):
+            # FAISS/BM25 top-N can omit the primary narrative entirely.
+            # A bounded scan of already-loaded metadata recalls passages
+            # in which user-named subjects/events actually occur together.
+            # It adds candidates; it does NOT force a particular novel.
+            anchor_hits, anchor_diagnostics = scan_event_anchors(
+                self.metadata,
+                query,
+                limit=max(30, candidate_pool // 2),
+                book_filter=book_filter,
+                source_filter=source_filter,
+            )
+            if anchor_hits:
+                merged = interleave_unique(
+                    anchor_hits, merged,
+                    limit=max(len(merged) + len(anchor_hits), candidate_pool * 3),
+                )
+        merged = self._apply_query_grounding(query, merged)
+        if causal:
+            merged = rank_causal_evidence(query, merged)
+            # Rank SHORT ORIGINAL chunks, not giant stitched chunks. This is both
+            # more precise for explanation questions and far cheaper on Oracle CPU.
+            if self.reranker and len(merged) > 1:
+                if on_stage:
+                    on_stage("reranking")
+                reranked = self._rerank(query, merged[:candidate_pool], top_k=top_k)
+                selected = [
+                    c for c in reranked
+                    if c.get("rerank_score", float("-inf")) >= RERANK_RELEVANCE_FLOOR
+                ]
+            else:
+                selected = merged[:top_k]
+            stitched = self._stitch_chunks(selected, window=min(stitching_window, 1))
+            return cap_causal_context(query, stitched)
+
+        if is_chronicle_request(query):
+            # Reserve candidates for every requested stage before reranking.
+            # Rank raw chunks, not stitched spans that cross-encoders truncate.
+            candidates = prioritize_chronicle_candidates(
+                query, merged, limit=candidate_pool
+            )
+            if self.reranker and len(candidates) > 1:
+                if on_stage:
+                    on_stage("reranking")
+                candidates = self._rerank_chronicle(query, candidates)
+            selected = select_chronicle_evidence(query, candidates, top_k=top_k)
+            stitched = self._stitch_chunks(
+                selected, window=min(stitching_window, 2)
+            )
+            return cap_chronicle_context(stitched)
+
+        # Existing single-scene/battle search path is intentionally preserved.
+        stitch_limit = candidate_pool if self.reranker else top_k
+        stitched = self._stitch_chunks(merged[:stitch_limit], window=stitching_window)
+        if self.reranker and len(stitched) > 1:
+            if on_stage:
+                on_stage("reranking")
+            reranked = self._rerank(query, stitched, top_k=top_k)
+            return [
+                c for c in reranked
+                if c.get("rerank_score", float("-inf")) >= RERANK_RELEVANCE_FLOOR
+            ]
+        return stitched[:top_k]
+
+
+    def _rerank_chronicle(self, query: str, candidates: list[dict]) -> list[dict]:
+        """Relevance for the overall arc AND each requested stage.
+
+        A cross-encoder that only sees the whole question tends to score
+        later events about the same characters higher than the crucial
+        early scene. A small, bounded pass for each query-derived stage
+        prevents that single global score from excluding direct evidence.
+        """
+        candidates = self._rerank(query, candidates, top_k=len(candidates))
+        for probe in chronicle_probes(query):
+            facet_hits = [
+                hit for hit in candidates
+                if chronicle_facet_score(probe, hit, query) >= 5
+            ]
+            facet_hits.sort(
+                key=lambda hit: chronicle_facet_score(probe, hit, query),
+                reverse=True,
+            )
+            # Only a small local cross-encoder batch per facet. This is
+            # important for the Oracle aarch64 CPU and its 11 GiB RAM.
+            selected = facet_hits[:12]
+            if not selected:
+                continue
+            scores = self.reranker.predict([[probe, h["text"]] for h in selected])
+            for hit, score in zip(selected, scores):
+                hit.setdefault("facet_rerank_scores", {})[probe] = float(score)
+        return candidates
+
+
     def search(
+            self,
+            query: str,
+            top_k: int = None,
+            candidate_pool: int = None,
+            stitching_window: int = None,
+            book_filter: str = None,
+            source_filter: list[str] = None,
+            on_stage=None,
+    ) -> list[dict]:
+        """Opt-in recovery over the legacy retrieval; never silently change production."""
+        top_k = top_k or retrieval_cfg["top_k"]
+        candidate_pool = candidate_pool or retrieval_cfg["candidate_pool"]
+        stitching_window = (retrieval_cfg["stitching_window"]
+                            if stitching_window is None else stitching_window)
+        if retrieval_cfg.get("langgraph_retrieval", False):
+            # Feature-gated: absent in the deployed Oracle configuration.
+            # Uses the existing loaded FAISS/BM25/embedding/cross-encoder objects.
+            from Core.graphs.retrieval_graph import RetrievalGraph
+            if on_stage:
+                on_stage("retrieving")
+            result = RetrievalGraph(self).run(
+                query, top_k=top_k, candidate_pool=candidate_pool,
+                stitching_window=stitching_window,
+                book_filter=book_filter, source_filter=source_filter,
+            )
+            return result.get("selected_evidence", [])
+        if retrieval_cfg.get("retrieval_quality", False):
+            return self._search_quality(
+                query=query, top_k=top_k, candidate_pool=candidate_pool,
+                stitching_window=stitching_window, book_filter=book_filter,
+                source_filter=source_filter, on_stage=on_stage,
+            )
+        baseline = self._search_base(
+            query=query, top_k=top_k, candidate_pool=candidate_pool,
+            stitching_window=stitching_window, book_filter=book_filter,
+            source_filter=source_filter, on_stage=on_stage,
+        )
+        if not retrieval_cfg.get("adaptive_retrieval", False):
+            return baseline
+        from Core.retrieval_recovery import is_explanatory, recover_evidence
+        if baseline and not is_explanatory(query):
+            return baseline
+        return recover_evidence(
+            self, query, baseline, top_k=top_k, candidate_pool=candidate_pool,
+            stitching_window=stitching_window, book_filter=book_filter,
+            source_filter=source_filter, on_stage=on_stage,
+        )
+
+    def _search_base(
             self,
             query: str,
             top_k: int = None,
@@ -158,7 +375,7 @@ class OmnissiahRetriever:
     ) -> list[dict]:
         top_k = top_k or retrieval_cfg["top_k"]
         candidate_pool = candidate_pool or retrieval_cfg["candidate_pool"]
-        stitching_window = stitching_window or retrieval_cfg["stitching_window"]
+        stitching_window = retrieval_cfg["stitching_window"] if stitching_window is None else stitching_window
 
         if on_stage:
             on_stage("embedding")
@@ -204,7 +421,7 @@ class OmnissiahRetriever:
     ) -> dict:
         top_k = top_k or retrieval_cfg["top_k"]
         candidate_pool = candidate_pool or retrieval_cfg["candidate_pool"]
-        stitching_window = stitching_window or retrieval_cfg["stitching_window"]
+        stitching_window = retrieval_cfg["stitching_window"] if stitching_window is None else stitching_window
 
         enriched_query = self._enrich_query(query)
         faiss_hits = self._faiss_search(enriched_query, k=candidate_pool)
@@ -225,15 +442,19 @@ class OmnissiahRetriever:
             "bm25_hits": bm25_hits[: min(5, len(bm25_hits))],
             "grounded_hits": grounded[: min(top_k, len(grounded))],
             "stitched_hits": stitched,
+            # Full real selection (cross-encoder and score floor included),
+            # unlike stitched_hits, which only shows the raw diagnostic stage.
+            "selected_hits": self.search(
+                query=query, top_k=top_k, candidate_pool=candidate_pool,
+                stitching_window=stitching_window,
+                book_filter=book_filter, source_filter=source_filter,
+            ),
         }
 
     # ------------------------------------------------------------------
-    # Focus mode — new
+    # Focus mode
     # ------------------------------------------------------------------
 
-    # CHANGED: added book_filter/source_filter params — previously this
-    # method had no filtering ability at all, so agent.py had nothing to
-    # forward them into even though it accepted them.
     def search_focus(
             self,
             query: str,
@@ -274,9 +495,7 @@ class OmnissiahRetriever:
 
         scene_hits = self._search_scene_index(query, k=10) if self.scene_index is not None else []
 
-        # CHANGED: filter scene hits by book_filter/source_filter before the
-        # confidence gate runs, so a confidently-scored wrong-book scene
-        # can't block the live fallback from being tried instead.
+        # Apply explicit filters before the scene confidence check.
         if scene_hits and book_filter:
             scene_hits = [
                 s for s in scene_hits
@@ -322,8 +541,6 @@ class OmnissiahRetriever:
         base_window = retrieval_cfg["stitching_window"]
         widened_window = min(6, max(base_window * 2, base_window + 2))
 
-        # CHANGED: book_filter/source_filter now forwarded here — previously
-        # this call to search() left both out entirely.
         stitched = self.search(
             query=query,
             top_k=max_sources,
@@ -555,7 +772,7 @@ class OmnissiahRetriever:
             return {}
 
     # ------------------------------------------------------------------
-    # Internals shared by both search paths (unchanged from before)
+    # Internals shared by both search paths
     # ------------------------------------------------------------------
 
     def _load_or_build_bm25(self):
@@ -738,6 +955,9 @@ class OmnissiahRetriever:
                     continue
                 if nid in self._id_to_idx:
                     chunk = self.metadata[self._id_to_idx[nid]]
+                    # Chunk IDs are global, so never stitch across sources.
+                    if chunk.get("source") != hit.get("source"):
+                        continue
                     chunk_text = chunk.get("text", "").strip()
 
                     # Normalize white-spaces and look for string matches across overlapping chunks
@@ -784,9 +1004,18 @@ class OmnissiahRetriever:
 
     def _term_matches(self, term: str, haystack: str) -> bool:
         variants = TERM_VARIANTS.get(term, {term})
-        return any(variant in haystack for variant in variants)
+        # A query term such as 'turn' must not match 'returned' in unrelated prose.
+        return any(
+            re.search(r"(?<![a-z0-9])" + re.escape(variant) + r"(?:s|ed|ing)?(?![a-z0-9])", haystack)
+            for variant in variants
+        )
+
 
     def _enrich_query(self, query: str) -> str:
+        # Controlled A/B experiment: BGE-M3 does not require BGE-v1.5 instructions.
+        if (retrieval_cfg.get("bge_m3_raw_queries", False)
+                and embedding_cfg.get("model", "").lower().endswith("bge-m3")):
+            return query
         return f"Represent this sentence for searching relevant passages: {query}"
 
     @staticmethod

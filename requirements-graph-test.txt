@@ -1,0 +1,4 @@
+-r requirements-graph.txt
+fastapi==0.136.1
+pydantic==2.13.3
+httpx==0.28.1

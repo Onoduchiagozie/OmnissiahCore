@@ -18,17 +18,21 @@ import json as _json
 import os
 import re
 import threading
+import uuid
 from concurrent.futures import ThreadPoolExecutor
 from typing import Optional
 
 import faiss
 import numpy as np
+from fastapi import HTTPException
+from Api.services.stream_contract import GenerationFailure, validate_generated_response
 
 from Api.models import QueryRequest
 from Core.agent import OmnissiahAgent
 from Core.config_loader import active_profile, machine_role, llm_cfg, paths, retrieval_cfg
 from Core.prompt import build_prompt
 from Core.retriever import OmnissiahRetriever
+from Core.conversation_store import ConversationStore
 
 
 # ---------------------------------------------------------------------------
@@ -45,14 +49,22 @@ _queued_queries = 0
 _concurrency_lock = threading.Lock()
 
 
-def _acquire_llm_slot():
+def _acquire_llm_slot(cancel_event=None):
     global _active_queries, _queued_queries
     with _concurrency_lock:
         _queued_queries += 1
-    _query_semaphore.acquire()
-    with _concurrency_lock:
-        _queued_queries -= 1
-        _active_queries += 1
+    acquired = False
+    try:
+        while cancel_event is None or not cancel_event.is_set():
+            if _query_semaphore.acquire(timeout=0.1):
+                acquired = True
+                break
+    finally:
+        with _concurrency_lock:
+            _queued_queries -= 1
+            if acquired:
+                _active_queries += 1
+    return acquired
 
 
 def _release_llm_slot():
@@ -128,6 +140,16 @@ class RuntimeService:
         self._retriever: Optional[OmnissiahRetriever] = None
         self._session_memory: dict[str, list[dict]] = {}
         self._memory_lock = threading.Lock()
+        # Persist completed turns only when a private database path is configured.
+        database_path = os.getenv("OMNISSIAH_CONVERSATION_DB", "").strip()
+        self._conversation_store = (
+            ConversationStore(
+                database_path,
+                max_turns=4,
+                ttl_seconds=int(os.getenv("OMNISSIAH_CONVERSATION_TTL_SECONDS", "604800")),
+            )
+            if database_path else None
+        )
         # NOT loading metadata here — retriever loads it, we reuse that.
         self._metadata_cache: list[dict] = []
 
@@ -143,18 +165,43 @@ class RuntimeService:
         self._metadata_cache = self._retriever.metadata
         print("[Startup] Runtime ready")
 
+    @staticmethod
+    def _resolve_session(session_id: str | None) -> str:
+        # Missing sessions must not share a global conversation.
+        if not session_id or session_id.strip().lower() == "default":
+            return f"anon-{uuid.uuid4().hex}"
+        if not (8 <= len(session_id) <= 128):
+            raise ValueError("Invalid session identifier")
+        if not all(c.isalnum() or c in "-_" for c in session_id):
+            raise ValueError("Invalid session identifier")
+        return session_id
+
     def _get_session_memory(self, session_id: str) -> list[dict]:
+        if self._conversation_store is not None:
+            return self._conversation_store.get(session_id)
         with self._memory_lock:
             return list(self._session_memory.get(session_id, []))
 
     def _set_session_memory(self, session_id: str, memory: list[dict]):
+        if self._conversation_store is not None:
+            self._conversation_store.save(session_id, memory)
+            return
         with self._memory_lock:
-            self._session_memory[session_id] = memory
+            self._session_memory[session_id] = list(memory)
 
-    def _build_agent(self, session_id: str, mode: str) -> OmnissiahAgent:
-        agent = OmnissiahAgent(verbose=False, mode=mode, retriever=self._retriever)
+    def _build_agent(
+        self, session_id: str, mode: str, req: Optional[QueryRequest] = None
+    ) -> OmnissiahAgent:
+        agent = OmnissiahAgent(
+            verbose=False,
+            mode=mode,
+            retriever=self._retriever,
+            response_style=req.response_style if req else None,
+            retrieval_scope=req.retrieval_scope if req else None,
+        )
         agent._memory = self._get_session_memory(session_id)
         return agent
+
 
     def ensure_ready(self):
         if not self._retriever:
@@ -165,8 +212,10 @@ class RuntimeService:
             )
 
     def run_query(self, req: QueryRequest, mode: str, stream: bool) -> tuple[str, list[dict]]:
-        session_id = req.session_id or "default"
-        agent = self._build_agent(session_id, mode)
+        try:
+            session_id = self._resolve_session(req.session_id)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail="Invalid session identifier.") from exc
 
         # Ghost mode never acquires the LLM slot — it never calls the LLM.
         if mode == "ghost":
@@ -181,6 +230,9 @@ class RuntimeService:
         # All other modes acquire the semaphore — only 1 LLM call at a time.
         _acquire_llm_slot()
         try:
+            # Load prior turns only after entering the exclusive LLM slot.
+            # Otherwise a concurrent request can overwrite newer history.
+            agent = self._build_agent(session_id, mode, req)
             response, chunks = agent.ask(
                 query=req.query,
                 book_filter=req.book_filter,
@@ -191,16 +243,17 @@ class RuntimeService:
                 max_sources=req.max_sources,
                 stream=stream,
             )
+            try:
+                validated = validate_generated_response(response)
+            except GenerationFailure as exc:
+                raise HTTPException(status_code=503, detail="Generation failed; retry later.") from exc
+            self._set_session_memory(session_id, agent.memory)
+            return clean_response(validated), chunks
         finally:
             _release_llm_slot()
 
-        self._set_session_memory(session_id, agent.memory)
-        response = clean_response(response)
-        return response, chunks
-
-    def stream_query_mode(self, req: QueryRequest, mode: str = "remembrancer"):
-        session_id = req.session_id or "default"
-        agent = self._build_agent(session_id, mode=mode)
+    def stream_query_mode(self, req: QueryRequest, mode: str = "remembrancer", cancel_event=None):
+        session_id = self._resolve_session(req.session_id)
         pending_stages: list[str] = []
 
         def _on_stage(stage_name: str):
@@ -208,8 +261,11 @@ class RuntimeService:
 
         # Acquire semaphore before streaming starts — holds it for the
         # entire stream duration so a second caller waits, not crashes.
-        _acquire_llm_slot()
+        if not _acquire_llm_slot(cancel_event):
+            return
+        stream = None
         try:
+            agent = self._build_agent(session_id, mode=mode, req=req)
             stream = agent.ask_stream(
                 query=req.query,
                 book_filter=req.book_filter,
@@ -222,7 +278,10 @@ class RuntimeService:
             )
 
             stream_failed = False
+            generated = False
             for token in stream:
+                if cancel_event is not None and cancel_event.is_set():
+                    return
                 while pending_stages:
                     stage_name = pending_stages.pop(0)
                     yield f"data: __STAGE__:{stage_name}\n\n"
@@ -231,23 +290,35 @@ class RuntimeService:
                     yield f"data: {token}\n\n"
                     continue
 
-                clean_token = token.replace(" / ", " ").replace("/", " ")
-                if clean_token.startswith("[ERROR]"):
+                clean_token = token
+                if "[ERROR]" in clean_token:
                     stream_failed = True
+                elif clean_token.strip():
+                    generated = True
                 # Every line of an SSE event needs its own data prefix.
                 # Unprefixed paragraph lines are discarded by SSE clients.
                 yield "\n".join("data: " + line for line in clean_token.split("\n")) + "\n\n"
+                if stream_failed:
+                    return
 
             while pending_stages:
                 stage_name = pending_stages.pop(0)
                 yield f"data: __STAGE__:{stage_name}\n\n"
 
-            final_stage = "failed" if stream_failed else "complete"
-            yield f"data: __STAGE__:{final_stage}\n\n"
+            if not generated:
+                yield "data: [ERROR] No answer text was returned.\n\n"
+                return
+            if cancel_event is not None and cancel_event.is_set():
+                return
             self._set_session_memory(session_id, agent.memory)
+            yield "data: __STAGE__:complete\n\n"
 
         finally:
-            _release_llm_slot()
+            try:
+                if stream is not None:
+                    stream.close()
+            finally:
+                _release_llm_slot()
 
     def inspect_query(self, req: QueryRequest) -> dict:
         inspection = self._retriever.inspect(
@@ -338,9 +409,11 @@ class RuntimeService:
         }
 
     def clear_memory(self, session_id: str) -> dict:
+        if self._conversation_store is not None:
+            self._conversation_store.clear(session_id)
         with self._memory_lock:
             self._session_memory.pop(session_id, None)
-        return {"status": f"Session memory cleared for '{session_id}'."}
+        return {"status": "Session memory cleared."}
 
     def get_memory(self, session_id: str) -> dict:
         return {"session_id": session_id, "memory": self._get_session_memory(session_id)}

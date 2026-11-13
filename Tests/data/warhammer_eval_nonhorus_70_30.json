@@ -1,0 +1,807 @@
+{
+  "schema_version": 1,
+  "description": "100 original non-Horus Warhammer questions: 70 narrative, 30 explanatory. Styles are test labels, not proof of answer accuracy.",
+  "source": "Original evaluation prompts. No scraped or attributed Reddit questions.",
+  "cases": [
+    {
+      "id": "N001",
+      "query": "Narrate the duel between Leman Russ and Magnus on Prospero in a chronological scene.",
+      "expected_style": "narrator",
+      "retrieval_scope": "focus",
+      "category": "primarchs",
+      "origin": "original"
+    },
+    {
+      "id": "N002",
+      "query": "Recount the duel between Leman Russ and Magnus on Prospero as if we were there.",
+      "expected_style": "narrator",
+      "retrieval_scope": "wide",
+      "category": "primarchs",
+      "origin": "original"
+    },
+    {
+      "id": "N003",
+      "query": "Reconstruct the burning of Prospero and evacuation of the Thousand Sons, keeping each event in order.",
+      "expected_style": "narrator",
+      "retrieval_scope": "wide",
+      "category": "legions",
+      "origin": "original"
+    },
+    {
+      "id": "N004",
+      "query": "Dramatize the burning of Prospero and evacuation of the Thousand Sons without inventing dialogue.",
+      "expected_style": "narrator",
+      "retrieval_scope": "focus",
+      "category": "legions",
+      "origin": "original"
+    },
+    {
+      "id": "N005",
+      "query": "Take me through the duel between Fulgrim and Ferrus Manus on Isstvan V from beginning to end.",
+      "expected_style": "narrator",
+      "retrieval_scope": "wide",
+      "category": "primarchs",
+      "origin": "original"
+    },
+    {
+      "id": "N006",
+      "query": "Recount the duel between Fulgrim and Ferrus Manus on Isstvan V as if we were there.",
+      "expected_style": "narrator",
+      "retrieval_scope": "wide",
+      "category": "primarchs",
+      "origin": "original"
+    },
+    {
+      "id": "N007",
+      "query": "Tell the full story of the Ultramarines' defence of Calth against the Word Bearers.",
+      "expected_style": "narrator",
+      "retrieval_scope": "wide",
+      "category": "legions",
+      "origin": "original"
+    },
+    {
+      "id": "N008",
+      "query": "Dramatize the Ultramarines' defence of Calth against the Word Bearers without inventing dialogue.",
+      "expected_style": "narrator",
+      "retrieval_scope": "wide",
+      "category": "legions",
+      "origin": "original"
+    },
+    {
+      "id": "N009",
+      "query": "Narrate the World Eaters' assault on Nuceria in a chronological scene.",
+      "expected_style": "narrator",
+      "retrieval_scope": "focus",
+      "category": "legions",
+      "origin": "original"
+    },
+    {
+      "id": "N010",
+      "query": "Recount the World Eaters' assault on Nuceria as if we were there.",
+      "expected_style": "narrator",
+      "retrieval_scope": "wide",
+      "category": "legions",
+      "origin": "original"
+    },
+    {
+      "id": "N011",
+      "query": "Reconstruct the transformation of Angron into a daemon primarch, keeping each event in order.",
+      "expected_style": "narrator",
+      "retrieval_scope": "wide",
+      "category": "chaos",
+      "origin": "original"
+    },
+    {
+      "id": "N012",
+      "query": "Dramatize the transformation of Angron into a daemon primarch without inventing dialogue.",
+      "expected_style": "narrator",
+      "retrieval_scope": "focus",
+      "category": "chaos",
+      "origin": "original"
+    },
+    {
+      "id": "N013",
+      "query": "Take me through the Blood Angels' defence of Baal against the Tyranids from beginning to end.",
+      "expected_style": "narrator",
+      "retrieval_scope": "wide",
+      "category": "tyranids",
+      "origin": "original"
+    },
+    {
+      "id": "N014",
+      "query": "Recount the Blood Angels' defence of Baal against the Tyranids as if we were there.",
+      "expected_style": "narrator",
+      "retrieval_scope": "wide",
+      "category": "tyranids",
+      "origin": "original"
+    },
+    {
+      "id": "N015",
+      "query": "Tell the full story of the Black Templars' defence of Helsreach.",
+      "expected_style": "narrator",
+      "retrieval_scope": "wide",
+      "category": "imperium",
+      "origin": "original"
+    },
+    {
+      "id": "N016",
+      "query": "Dramatize the Black Templars' defence of Helsreach without inventing dialogue.",
+      "expected_style": "narrator",
+      "retrieval_scope": "wide",
+      "category": "imperium",
+      "origin": "original"
+    },
+    {
+      "id": "N017",
+      "query": "Narrate the Fabius Bile's experiment on a captive Astartes in a chronological scene.",
+      "expected_style": "narrator",
+      "retrieval_scope": "focus",
+      "category": "characters",
+      "origin": "original"
+    },
+    {
+      "id": "N018",
+      "query": "Recount the Fabius Bile's experiment on a captive Astartes as if we were there.",
+      "expected_style": "narrator",
+      "retrieval_scope": "wide",
+      "category": "characters",
+      "origin": "original"
+    },
+    {
+      "id": "N019",
+      "query": "Reconstruct the Night Lords' raid on a fortified world, keeping each event in order.",
+      "expected_style": "narrator",
+      "retrieval_scope": "wide",
+      "category": "legions",
+      "origin": "original"
+    },
+    {
+      "id": "N020",
+      "query": "Dramatize the Night Lords' raid on a fortified world without inventing dialogue.",
+      "expected_style": "narrator",
+      "retrieval_scope": "focus",
+      "category": "legions",
+      "origin": "original"
+    },
+    {
+      "id": "N021",
+      "query": "Take me through the Raven Guard's escape from Isstvan V from beginning to end.",
+      "expected_style": "narrator",
+      "retrieval_scope": "wide",
+      "category": "legions",
+      "origin": "original"
+    },
+    {
+      "id": "N022",
+      "query": "Recount the Raven Guard's escape from Isstvan V as if we were there.",
+      "expected_style": "narrator",
+      "retrieval_scope": "wide",
+      "category": "legions",
+      "origin": "original"
+    },
+    {
+      "id": "N023",
+      "query": "Tell the full story of the Corax's desperate rebuilding efforts on Deliverance.",
+      "expected_style": "narrator",
+      "retrieval_scope": "wide",
+      "category": "primarchs",
+      "origin": "original"
+    },
+    {
+      "id": "N024",
+      "query": "Dramatize the Corax's desperate rebuilding efforts on Deliverance without inventing dialogue.",
+      "expected_style": "narrator",
+      "retrieval_scope": "wide",
+      "category": "primarchs",
+      "origin": "original"
+    },
+    {
+      "id": "N025",
+      "query": "Narrate the defence of Terra by the Imperial Fists in a chronological scene.",
+      "expected_style": "narrator",
+      "retrieval_scope": "focus",
+      "category": "imperium",
+      "origin": "original"
+    },
+    {
+      "id": "N026",
+      "query": "Recount the defence of Terra by the Imperial Fists as if we were there.",
+      "expected_style": "narrator",
+      "retrieval_scope": "wide",
+      "category": "imperium",
+      "origin": "original"
+    },
+    {
+      "id": "N027",
+      "query": "Reconstruct the Captain Uriel Ventris' desperate stand against Tyranids, keeping each event in order.",
+      "expected_style": "narrator",
+      "retrieval_scope": "wide",
+      "category": "imperium",
+      "origin": "original"
+    },
+    {
+      "id": "N028",
+      "query": "Dramatize the Captain Uriel Ventris' desperate stand against Tyranids without inventing dialogue.",
+      "expected_style": "narrator",
+      "retrieval_scope": "focus",
+      "category": "imperium",
+      "origin": "original"
+    },
+    {
+      "id": "N029",
+      "query": "Take me through the Ork invasion of Armageddon from beginning to end.",
+      "expected_style": "narrator",
+      "retrieval_scope": "wide",
+      "category": "imperium",
+      "origin": "original"
+    },
+    {
+      "id": "N030",
+      "query": "Recount the Ork invasion of Armageddon as if we were there.",
+      "expected_style": "narrator",
+      "retrieval_scope": "wide",
+      "category": "imperium",
+      "origin": "original"
+    },
+    {
+      "id": "N031",
+      "query": "Tell the full story of the last stand of the defenders of Cadia.",
+      "expected_style": "narrator",
+      "retrieval_scope": "wide",
+      "category": "imperium",
+      "origin": "original"
+    },
+    {
+      "id": "N032",
+      "query": "Dramatize the last stand of the defenders of Cadia without inventing dialogue.",
+      "expected_style": "narrator",
+      "retrieval_scope": "wide",
+      "category": "imperium",
+      "origin": "original"
+    },
+    {
+      "id": "N033",
+      "query": "Narrate the awakening of an ancient Necron tomb world in a chronological scene.",
+      "expected_style": "narrator",
+      "retrieval_scope": "focus",
+      "category": "necrons",
+      "origin": "original"
+    },
+    {
+      "id": "N034",
+      "query": "Recount the awakening of an ancient Necron tomb world as if we were there.",
+      "expected_style": "narrator",
+      "retrieval_scope": "wide",
+      "category": "necrons",
+      "origin": "original"
+    },
+    {
+      "id": "N035",
+      "query": "Reconstruct the Tyranid assault upon the craftworld Iyanden, keeping each event in order.",
+      "expected_style": "narrator",
+      "retrieval_scope": "wide",
+      "category": "aeldari",
+      "origin": "original"
+    },
+    {
+      "id": "N036",
+      "query": "Dramatize the Tyranid assault upon the craftworld Iyanden without inventing dialogue.",
+      "expected_style": "narrator",
+      "retrieval_scope": "focus",
+      "category": "aeldari",
+      "origin": "original"
+    },
+    {
+      "id": "N037",
+      "query": "Take me through the Eisenhorn's confrontation with a daemonhost from beginning to end.",
+      "expected_style": "narrator",
+      "retrieval_scope": "wide",
+      "category": "inquisition",
+      "origin": "original"
+    },
+    {
+      "id": "N038",
+      "query": "Recount the Eisenhorn's confrontation with a daemonhost as if we were there.",
+      "expected_style": "narrator",
+      "retrieval_scope": "wide",
+      "category": "inquisition",
+      "origin": "original"
+    },
+    {
+      "id": "N039",
+      "query": "Tell the full story of the Ciaphas Cain's evacuation of besieged civilians.",
+      "expected_style": "narrator",
+      "retrieval_scope": "wide",
+      "category": "imperium",
+      "origin": "original"
+    },
+    {
+      "id": "N040",
+      "query": "Dramatize the Ciaphas Cain's evacuation of besieged civilians without inventing dialogue.",
+      "expected_style": "narrator",
+      "retrieval_scope": "wide",
+      "category": "imperium",
+      "origin": "original"
+    },
+    {
+      "id": "N041",
+      "query": "Narrate the Adepta Sororitas defending an isolated shrine in a chronological scene.",
+      "expected_style": "narrator",
+      "retrieval_scope": "focus",
+      "category": "imperium",
+      "origin": "original"
+    },
+    {
+      "id": "N042",
+      "query": "Recount the Adepta Sororitas defending an isolated shrine as if we were there.",
+      "expected_style": "narrator",
+      "retrieval_scope": "wide",
+      "category": "imperium",
+      "origin": "original"
+    },
+    {
+      "id": "N043",
+      "query": "Reconstruct the Salamanders rescuing refugees during a raid, keeping each event in order.",
+      "expected_style": "narrator",
+      "retrieval_scope": "wide",
+      "category": "imperium",
+      "origin": "original"
+    },
+    {
+      "id": "N044",
+      "query": "Dramatize the Salamanders rescuing refugees during a raid without inventing dialogue.",
+      "expected_style": "narrator",
+      "retrieval_scope": "focus",
+      "category": "imperium",
+      "origin": "original"
+    },
+    {
+      "id": "N045",
+      "query": "Take me through the Custodes holding the Imperial Webway against daemons from beginning to end.",
+      "expected_style": "narrator",
+      "retrieval_scope": "wide",
+      "category": "imperium",
+      "origin": "original"
+    },
+    {
+      "id": "N046",
+      "query": "Recount the Custodes holding the Imperial Webway against daemons as if we were there.",
+      "expected_style": "narrator",
+      "retrieval_scope": "wide",
+      "category": "imperium",
+      "origin": "original"
+    },
+    {
+      "id": "N047",
+      "query": "Tell the full story of the Vulkan's confrontation with Konrad Curze.",
+      "expected_style": "narrator",
+      "retrieval_scope": "wide",
+      "category": "primarchs",
+      "origin": "original"
+    },
+    {
+      "id": "N048",
+      "query": "Dramatize the Vulkan's confrontation with Konrad Curze without inventing dialogue.",
+      "expected_style": "narrator",
+      "retrieval_scope": "wide",
+      "category": "primarchs",
+      "origin": "original"
+    },
+    {
+      "id": "N049",
+      "query": "Narrate the Fulgrim's corruption by the Laer blade in a chronological scene.",
+      "expected_style": "narrator",
+      "retrieval_scope": "focus",
+      "category": "chaos",
+      "origin": "original"
+    },
+    {
+      "id": "N050",
+      "query": "Recount the Fulgrim's corruption by the Laer blade as if we were there.",
+      "expected_style": "narrator",
+      "retrieval_scope": "wide",
+      "category": "chaos",
+      "origin": "original"
+    },
+    {
+      "id": "N051",
+      "query": "Reconstruct the friendship and tragedy of Khârn and Argel Tal, keeping each event in order.",
+      "expected_style": "narrator",
+      "retrieval_scope": "wide",
+      "category": "chaos",
+      "origin": "original"
+    },
+    {
+      "id": "N052",
+      "query": "Dramatize the friendship and tragedy of Khârn and Argel Tal without inventing dialogue.",
+      "expected_style": "narrator",
+      "retrieval_scope": "focus",
+      "category": "chaos",
+      "origin": "original"
+    },
+    {
+      "id": "N053",
+      "query": "Take me through the Word Bearers performing a dangerous ritual on Colchis from beginning to end.",
+      "expected_style": "narrator",
+      "retrieval_scope": "wide",
+      "category": "chaos",
+      "origin": "original"
+    },
+    {
+      "id": "N054",
+      "query": "Recount the Word Bearers performing a dangerous ritual on Colchis as if we were there.",
+      "expected_style": "narrator",
+      "retrieval_scope": "wide",
+      "category": "chaos",
+      "origin": "original"
+    },
+    {
+      "id": "N055",
+      "query": "Tell the full story of the T'au Fire Caste defending an Imperial border outpost.",
+      "expected_style": "narrator",
+      "retrieval_scope": "wide",
+      "category": "tau",
+      "origin": "original"
+    },
+    {
+      "id": "N056",
+      "query": "Dramatize the T'au Fire Caste defending an Imperial border outpost without inventing dialogue.",
+      "expected_style": "narrator",
+      "retrieval_scope": "wide",
+      "category": "tau",
+      "origin": "original"
+    },
+    {
+      "id": "N057",
+      "query": "Narrate the Yvraine confronting an unexpected enemy in a chronological scene.",
+      "expected_style": "narrator",
+      "retrieval_scope": "focus",
+      "category": "aeldari",
+      "origin": "original"
+    },
+    {
+      "id": "N058",
+      "query": "Recount the Yvraine confronting an unexpected enemy as if we were there.",
+      "expected_style": "narrator",
+      "retrieval_scope": "wide",
+      "category": "aeldari",
+      "origin": "original"
+    },
+    {
+      "id": "N059",
+      "query": "Reconstruct the Carcharodons conducting a void-borne boarding raid, keeping each event in order.",
+      "expected_style": "narrator",
+      "retrieval_scope": "wide",
+      "category": "imperium",
+      "origin": "original"
+    },
+    {
+      "id": "N060",
+      "query": "Dramatize the Carcharodons conducting a void-borne boarding raid without inventing dialogue.",
+      "expected_style": "narrator",
+      "retrieval_scope": "focus",
+      "category": "imperium",
+      "origin": "original"
+    },
+    {
+      "id": "N061",
+      "query": "Take me through the casting of the Rubric of Ahriman from beginning to end.",
+      "expected_style": "narrator",
+      "retrieval_scope": "wide",
+      "category": "chaos",
+      "origin": "original"
+    },
+    {
+      "id": "N062",
+      "query": "Recount the casting of the Rubric of Ahriman as if we were there.",
+      "expected_style": "narrator",
+      "retrieval_scope": "wide",
+      "category": "chaos",
+      "origin": "original"
+    },
+    {
+      "id": "N063",
+      "query": "Tell the full story of the Adeptus Mechanicus expedition into a forbidden vault.",
+      "expected_style": "narrator",
+      "retrieval_scope": "wide",
+      "category": "mechanicus",
+      "origin": "original"
+    },
+    {
+      "id": "N064",
+      "query": "Dramatize the Adeptus Mechanicus expedition into a forbidden vault without inventing dialogue.",
+      "expected_style": "narrator",
+      "retrieval_scope": "wide",
+      "category": "mechanicus",
+      "origin": "original"
+    },
+    {
+      "id": "N065",
+      "query": "Narrate the confrontation between Ghazghkull and Commissar Yarrick in a chronological scene.",
+      "expected_style": "narrator",
+      "retrieval_scope": "focus",
+      "category": "orks",
+      "origin": "original"
+    },
+    {
+      "id": "N066",
+      "query": "Recount the confrontation between Ghazghkull and Commissar Yarrick as if we were there.",
+      "expected_style": "narrator",
+      "retrieval_scope": "wide",
+      "category": "orks",
+      "origin": "original"
+    },
+    {
+      "id": "N067",
+      "query": "Reconstruct the battle for the Necron-held world of Damnos, keeping each event in order.",
+      "expected_style": "narrator",
+      "retrieval_scope": "wide",
+      "category": "imperium",
+      "origin": "original"
+    },
+    {
+      "id": "N068",
+      "query": "Dramatize the battle for the Necron-held world of Damnos without inventing dialogue.",
+      "expected_style": "narrator",
+      "retrieval_scope": "focus",
+      "category": "imperium",
+      "origin": "original"
+    },
+    {
+      "id": "N069",
+      "query": "Take me through the Crimson Fists' defence of Rynn's World from beginning to end.",
+      "expected_style": "narrator",
+      "retrieval_scope": "wide",
+      "category": "imperium",
+      "origin": "original"
+    },
+    {
+      "id": "N070",
+      "query": "Recount the Crimson Fists' defence of Rynn's World as if we were there.",
+      "expected_style": "narrator",
+      "retrieval_scope": "wide",
+      "category": "imperium",
+      "origin": "original"
+    },
+    {
+      "id": "E001",
+      "query": "Why did Leman Russ fight Magnus on Prospero?",
+      "expected_style": "explorer",
+      "retrieval_scope": "focus",
+      "category": "primarchs",
+      "origin": "original"
+    },
+    {
+      "id": "E002",
+      "query": "How did the Laer blade influence Fulgrim?",
+      "expected_style": "explorer",
+      "retrieval_scope": "wide",
+      "category": "chaos",
+      "origin": "original"
+    },
+    {
+      "id": "E003",
+      "query": "What happened at the Battle of Calth?",
+      "expected_style": "explorer",
+      "retrieval_scope": "wide",
+      "category": "legions",
+      "origin": "original"
+    },
+    {
+      "id": "E004",
+      "query": "Why did the Raven Guard suffer heavy losses at Isstvan V?",
+      "expected_style": "explorer",
+      "retrieval_scope": "focus",
+      "category": "legions",
+      "origin": "original"
+    },
+    {
+      "id": "E005",
+      "query": "Who was Argel Tal and why was he important to Khârn?",
+      "expected_style": "explorer",
+      "retrieval_scope": "wide",
+      "category": "chaos",
+      "origin": "original"
+    },
+    {
+      "id": "E006",
+      "query": "What are the Butcher's Nails and what do they do?",
+      "expected_style": "explorer",
+      "retrieval_scope": "wide",
+      "category": "chaos",
+      "origin": "original"
+    },
+    {
+      "id": "E007",
+      "query": "What caused the fall of Cadia?",
+      "expected_style": "explorer",
+      "retrieval_scope": "focus",
+      "category": "imperium",
+      "origin": "original"
+    },
+    {
+      "id": "E008",
+      "query": "How did the Crimson Fists survive the invasion of Rynn's World?",
+      "expected_style": "explorer",
+      "retrieval_scope": "wide",
+      "category": "imperium",
+      "origin": "original"
+    },
+    {
+      "id": "E009",
+      "query": "Compare the beliefs of the Black Templars and the Word Bearers.",
+      "expected_style": "explorer",
+      "retrieval_scope": "wide",
+      "category": "imperium",
+      "origin": "original"
+    },
+    {
+      "id": "E010",
+      "query": "Why are the Salamanders known for protecting civilians?",
+      "expected_style": "explorer",
+      "retrieval_scope": "focus",
+      "category": "imperium",
+      "origin": "original"
+    },
+    {
+      "id": "E011",
+      "query": "Explain the importance of the Imperial Webway project.",
+      "expected_style": "explorer",
+      "retrieval_scope": "wide",
+      "category": "imperium",
+      "origin": "original"
+    },
+    {
+      "id": "E012",
+      "query": "What made Vulkan different from Konrad Curze?",
+      "expected_style": "explorer",
+      "retrieval_scope": "wide",
+      "category": "primarchs",
+      "origin": "original"
+    },
+    {
+      "id": "E013",
+      "query": "How do Necron tomb worlds awaken?",
+      "expected_style": "explorer",
+      "retrieval_scope": "focus",
+      "category": "necrons",
+      "origin": "original"
+    },
+    {
+      "id": "E014",
+      "query": "Who is Yvraine and what is her role in the Ynnari?",
+      "expected_style": "explorer",
+      "retrieval_scope": "wide",
+      "category": "aeldari",
+      "origin": "original"
+    },
+    {
+      "id": "E015",
+      "query": "What caused the Tyranids to attack Iyanden?",
+      "expected_style": "explorer",
+      "retrieval_scope": "wide",
+      "category": "aeldari",
+      "origin": "original"
+    },
+    {
+      "id": "E016",
+      "query": "What is the Black Rage among the Blood Angels?",
+      "expected_style": "explorer",
+      "retrieval_scope": "focus",
+      "category": "tyranids",
+      "origin": "original"
+    },
+    {
+      "id": "E017",
+      "query": "How do Tyranids adapt to opposing armies?",
+      "expected_style": "explorer",
+      "retrieval_scope": "wide",
+      "category": "tyranids",
+      "origin": "original"
+    },
+    {
+      "id": "E018",
+      "query": "Who is Ghazghkull and why is Yarrick his rival?",
+      "expected_style": "explorer",
+      "retrieval_scope": "wide",
+      "category": "orks",
+      "origin": "original"
+    },
+    {
+      "id": "E019",
+      "query": "What is the Adeptus Mechanicus' relationship with the Omnissiah?",
+      "expected_style": "explorer",
+      "retrieval_scope": "focus",
+      "category": "mechanicus",
+      "origin": "original"
+    },
+    {
+      "id": "E020",
+      "query": "Explain the difference between a Tech-Priest and a Magos.",
+      "expected_style": "explorer",
+      "retrieval_scope": "wide",
+      "category": "mechanicus",
+      "origin": "original"
+    },
+    {
+      "id": "E021",
+      "query": "What powers does an Imperial Inquisitor have?",
+      "expected_style": "explorer",
+      "retrieval_scope": "wide",
+      "category": "inquisition",
+      "origin": "original"
+    },
+    {
+      "id": "E022",
+      "query": "Who is Gregor Eisenhorn and how does he investigate heresy?",
+      "expected_style": "explorer",
+      "retrieval_scope": "focus",
+      "category": "inquisition",
+      "origin": "original"
+    },
+    {
+      "id": "E023",
+      "query": "How does the T'au Fire Caste organize its battle doctrine?",
+      "expected_style": "explorer",
+      "retrieval_scope": "wide",
+      "category": "tau",
+      "origin": "original"
+    },
+    {
+      "id": "E024",
+      "query": "Why was the Rubric of Ahriman performed?",
+      "expected_style": "explorer",
+      "retrieval_scope": "wide",
+      "category": "chaos",
+      "origin": "original"
+    },
+    {
+      "id": "E025",
+      "query": "What are the consequences of the Rubric for the Thousand Sons?",
+      "expected_style": "explorer",
+      "retrieval_scope": "focus",
+      "category": "chaos",
+      "origin": "original"
+    },
+    {
+      "id": "E026",
+      "query": "What is the strategic importance of Helsreach?",
+      "expected_style": "explorer",
+      "retrieval_scope": "wide",
+      "category": "imperium",
+      "origin": "original"
+    },
+    {
+      "id": "E027",
+      "query": "How do Custodes differ from Space Marines?",
+      "expected_style": "explorer",
+      "retrieval_scope": "wide",
+      "category": "imperium",
+      "origin": "original"
+    },
+    {
+      "id": "E028",
+      "query": "What happened to the defenders during the Siege of Terra?",
+      "expected_style": "explorer",
+      "retrieval_scope": "focus",
+      "category": "imperium",
+      "origin": "original"
+    },
+    {
+      "id": "E029",
+      "query": "Explain the Night Lords' use of terror tactics.",
+      "expected_style": "explorer",
+      "retrieval_scope": "wide",
+      "category": "legions",
+      "origin": "original"
+    },
+    {
+      "id": "E030",
+      "query": "How does Fabius Bile approach genetic experimentation?",
+      "expected_style": "explorer",
+      "retrieval_scope": "wide",
+      "category": "characters",
+      "origin": "original"
+    }
+  ]
+}
