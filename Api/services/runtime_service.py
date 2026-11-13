@@ -252,12 +252,16 @@ class RuntimeService:
         finally:
             _release_llm_slot()
 
-    def stream_query_mode(self, req: QueryRequest, mode: str = "remembrancer", cancel_event=None):
+    def stream_query_mode(self, req: QueryRequest, mode: str = "remembrancer", cancel_event=None,
+                          emit_stage=None):
         session_id = self._resolve_session(req.session_id)
         pending_stages: list[str] = []
 
         def _on_stage(stage_name: str):
-            pending_stages.append(stage_name)
+            if emit_stage is None:
+                pending_stages.append(stage_name)
+            else:
+                emit_stage(stage_name)
 
         # Acquire semaphore before streaming starts — holds it for the
         # entire stream duration so a second caller waits, not crashes.

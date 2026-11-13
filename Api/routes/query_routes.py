@@ -289,8 +289,8 @@ def _query_stream(req: QueryRequest, mode: str):
     except ValueError as exc:
         raise HTTPException(status_code=400, detail="Invalid session identifier.") from exc
     return StreamingResponse(
-        stream_events(lambda stopped: runtime_service.stream_query_mode(
-            req, mode=mode, cancel_event=stopped)),
+        stream_events(lambda stopped, stage: runtime_service.stream_query_mode(
+            req, mode=mode, cancel_event=stopped, emit_stage=stage), live_stages=True),
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )
@@ -299,6 +299,11 @@ def _query_stream(req: QueryRequest, mode: str):
 @router.post("/query/respond/stream")
 async def query_respond_stream(req: QueryRequest):
     return _query_stream(req, "adaptive")
+
+
+@router.post("/query/explore/stream")
+async def query_explore_stream(req: QueryRequest):
+    return _query_stream(req, "explorer")
 
 
 @router.post("/query/evidence")

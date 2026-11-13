@@ -386,11 +386,11 @@ class RetrievalGraph:
     def run(self, query: str, *, top_k: int = 6, candidate_pool: int = 20,
             stitching_window: int = 2, book_filter: str | None = None,
             source_filter: list[str] | None = None,
-            max_passes: int = 2) -> EvidenceState:
+            max_passes: int = 2, on_stage=None) -> EvidenceState:
         if not query or not query.strip():
             return {"original_query": query, "selected_evidence": [],
                     "evidence_gaps": ["empty_question"], "diagnostic": []}
-        return self.graph.invoke({
+        request = {
             "original_query": query,
             "top_k": max(1, min(top_k, 20)),
             "candidate_pool": max(4, min(candidate_pool, 64)),
@@ -399,4 +399,24 @@ class RetrievalGraph:
             "book_filter": book_filter,
             "source_filter": source_filter,
             "diagnostic": [],
-        }, config={"recursion_limit": 28})
+        }
+        config = {"recursion_limit": 28}
+        if on_stage is None:
+            return self.graph.invoke(request, config=config)
+        stages = {
+            "interpret": "planning", "plan": "retrieving", "retrieve": "reranking",
+            "stitch": "checking", "assess": "retrying",
+        }
+        previous = None
+        for state in self.graph.stream(request, config=config, stream_mode="values"):
+            trace = state.get("diagnostic", [])
+            latest = trace[-1] if trace else None
+            if latest is None or latest == previous:
+                continue
+            previous = latest
+            step = latest["step"]
+            if step == "assess" and self._route(state) != "recover":
+                continue
+            if step in stages:
+                on_stage(stages[step])
+        return state

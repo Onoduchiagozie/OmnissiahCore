@@ -333,12 +333,10 @@ class OmnissiahRetriever:
             # Feature-gated: absent in the deployed Oracle configuration.
             # Uses the existing loaded FAISS/BM25/embedding/cross-encoder objects.
             from Core.graphs.retrieval_graph import RetrievalGraph
-            if on_stage:
-                on_stage("retrieving")
             result = RetrievalGraph(self).run(
                 query, top_k=top_k, candidate_pool=candidate_pool,
                 stitching_window=stitching_window,
-                book_filter=book_filter, source_filter=source_filter,
+                book_filter=book_filter, source_filter=source_filter, on_stage=on_stage,
             )
             return result.get("selected_evidence", [])
         if retrieval_cfg.get("retrieval_quality", False):

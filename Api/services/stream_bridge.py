@@ -9,7 +9,7 @@ from Api.services.stream_contract import validated_sse_frames
 logger = logging.getLogger(__name__)
 
 
-async def stream_events(factory, buffer_size=16):
+async def stream_events(factory, buffer_size=16, *, live_stages=False):
     """Close the upstream on failure/disconnect and stop queued work.
 
     A blocking provider read cannot be interrupted by Python; it remains
@@ -39,7 +39,10 @@ async def stream_events(factory, buffer_size=16):
         try:
             if stopped.is_set():
                 return
-            upstream = factory(stopped)
+            def stage(name):
+                send(f"data: __STAGE__:{name}\n\n")
+
+            upstream = factory(stopped, stage) if live_stages else factory(stopped)
             validated = validated_sse_frames(upstream)
             for frame in validated:
                 if not send(frame):

@@ -37,7 +37,7 @@ class DummyRuntime:
     def _resolve_session(self, session_id):
         return session_id
 
-    def stream_query_mode(self, request, mode="narrator", cancel_event=None):
+    def stream_query_mode(self, request, mode="narrator", cancel_event=None, emit_stage=None):
         self.modes.append(mode)
         for frame in self.frames:
             yield frame
