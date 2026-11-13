@@ -54,7 +54,9 @@ def _hits(items):
         "stitch_range": x.get("stitch_range"),
         "legacy_rerank_score": x.get("rerank_score"),
         "graph_raw_rerank_logit": x.get("raw_rerank_logit"),
-        "text": x.get("text", "")[:2200],
+        # Preserve the complete selected passage for source review. The
+        # decisive evidence can appear after the first 2,200 characters.
+        "text": x.get("text", ""),
     } for x in items]
 
 

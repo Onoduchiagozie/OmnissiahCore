@@ -46,3 +46,21 @@ not factual verification. A bounded retry does not guarantee the best answer.
 
 No source has been pushed, no production configuration or service changed,
 and the new local changes are not yet ready for deployment.
+
+## Real Oracle comparisons, 13 November
+
+The user approved tests in a separate temporary Oracle directory, using the
+existing index and models. A systemd user scope capped memory at 5 GB and swap
+at 512 MB, with a five-minute timeout. No model generation was invoked.
+
+- Filtered Magnus palace question: the standalone baseline selected zero
+  passages; graph selected four. One stitched group contains the warning and
+  the destruction of the wards, confirmed in the full inspection text. This is
+  evidence of improved retrieval for this one case, not an answer-quality pass.
+- Horus traitor question: baseline selected two passages; graph selected six.
+  One mentions Erebus's influence, while several appear unrelated. The graph
+  graded coverage sufficient and stopped after its first pass. This is not a
+  successful causal-evidence evaluation; improve precision and sufficiency.
+- Reports initially truncated text to 2,200 characters. The evaluator is now
+  changed locally to preserve entire selected passages for future inspection.
+- No graph code or dependencies were installed into the live service.
