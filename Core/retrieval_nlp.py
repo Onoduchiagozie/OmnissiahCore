@@ -22,6 +22,7 @@ _CAUSAL = re.compile(r"^(?:why\b|what\s+(?:caused|made|led)\b)", re.I)
 _COMPARISON = re.compile(r"\b(?:versus|vs\.?|compare|difference between)\b", re.I)
 _SCENE = re.compile(r"\b(?:battle|fight|duel|confront|attacked|killed|rescued|saved|scene)\b", re.I)
 _NON_WORD = re.compile(r"[^a-z0-9]+", re.I)
+_PLANNING_STOP = frozenset("the and for with from this that when while what where why did does was were are into about which who how their they his her its trying want tell describe explain recount scene events event happened".split())
 
 
 @dataclass(frozen=True)
@@ -75,6 +76,13 @@ def interpret(query: str, aliases: Mapping[str, str] | None = None,
     queries = [original]
     if normalized != original:
         queries.append(normalized)
+
+    # Search the user's meaningful words independently of question phrasing.
+    # Never invent names, books or events while decomposing a request.
+    anchors = [word for word in re.findall(r"[A-Za-z0-9']+", core)
+               if len(word) >= 3 and word.casefold() not in _PLANNING_STOP]
+    if len(anchors) >= 3:
+        queries.append(" ".join(anchors[:8]))
 
     if intent == "causal":
         if subject:

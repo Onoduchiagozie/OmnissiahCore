@@ -15,10 +15,45 @@ from __future__ import annotations
 
 from collections import defaultdict
 from hashlib import sha256
+from heapq import heappush, heapreplace
 import re
 from typing import Any, TypedDict
 
 from Core.retrieval_nlp import QueryPlan, interpret, recovery_queries
+from Core.retrieval_quality import is_archive_boilerplate
+
+_QUERY_STOP = frozenset("the and for with from this that when while what where why did does was were are into about which who how their they his her its trying want tell describe explain recount scene events event happened".split())
+_TOKEN = re.compile(r"[a-z0-9]{3,}")
+
+
+def _filtered_candidates(metadata, query, book_filter, source_filter, limit):
+    """Find lexical anchors inside explicitly selected sources on retry.
+
+    Only the selected book(s) are text-scanned. Scores are retrieval hints,
+    not proof of relevance. The metadata list itself is still traversed.
+    """
+    terms = set(_TOKEN.findall(query.casefold())) - _QUERY_STOP
+    if not terms or not (book_filter or source_filter):
+        return []
+    allowed = set(source_filter or [])
+    book = (book_filter or "").casefold()
+    matches = []
+    minimum = min(2, len(terms))
+    for index, item in enumerate(metadata):
+        source = str(item.get("source", ""))
+        if (book and book not in source.casefold()) or (allowed and source not in allowed):
+            continue
+        body = str(item.get("text") or "")
+        if not body or is_archive_boilerplate(body.casefold()):
+            continue
+        found = terms.intersection(_TOKEN.findall(body.casefold()))
+        if len(found) >= minimum:
+            row = (len(found), -index, item)
+            if len(matches) < limit:
+                heappush(matches, row)
+            elif row[:2] > matches[0][:2]:
+                heapreplace(matches, row)
+    return [dict(item) for _, _, item in sorted(matches, key=lambda x: (x[0], x[1]), reverse=True)]
 
 
 class EvidenceState(TypedDict, total=False):
@@ -78,11 +113,10 @@ def _covered(plan: QueryPlan, passages: list[dict]) -> tuple[bool, list[str]]:
         ]
         if not aligned:
             gaps.append("missing_causal_context")
-    elif plan.intent == "scene":
+    elif plan.intent in {"scene", "lookup", "comparison"}:
         words = [
             w for w in re.findall(r"[a-z]{4,}", plan.normalized.lower())
-            if w not in {"when", "with", "from", "they", "that", "about",
-                         "using", "scene", "battle", "fight", "entire"}
+            if w not in _QUERY_STOP | {"using", "scene", "battle", "fight", "entire"}
         ]
         distinct = list(dict.fromkeys(words))
         overlap = max(
@@ -181,6 +215,18 @@ class RetrievalGraph:
                 fused[key] += (1.35 if q_index == 0 and state["pass_number"] == 0
                                else 1.0) / (60.0 + rank + 1)
 
+        local_hits = []
+        if state["pass_number"] > 0 and (book_filter or sources):
+            local_hits = _filtered_candidates(
+                getattr(self.retriever, "metadata", []), state["original_query"],
+                state.get("book_filter"), state.get("source_filter"), pool,
+            )
+            for rank, doc in enumerate(local_hits):
+                key = _doc_id(doc)
+                if key not in by_id:
+                    by_id[key] = dict(doc)
+                fused[key] += 1.0 / (61.0 + rank)
+
         ranked_ids = sorted(by_id, key=lambda k: fused[k], reverse=True)[:96]
         candidates = []
         for key in ranked_ids:
@@ -193,6 +239,7 @@ class RetrievalGraph:
             "diagnostic": self._log(
                 state, "retrieve", pass_number=state["pass_number"],
                 query_count=len(queries), candidate_count=len(candidates),
+                source_fallback_count=len(local_hits),
             ),
         }
 
@@ -243,13 +290,6 @@ class RetrievalGraph:
             window=max(0, min(int(state["stitching_window"]), 6)),
         )
         selected = [dict(d) for d in stitched[:selected_count]]
-        used = {_doc_id(d) for d in selected}
-        for d in raw:
-            if len(selected) >= selected_count:
-                break
-            if _doc_id(d) not in used:
-                selected.append(dict(d))
-                used.add(_doc_id(d))
         return {
             "selected_evidence": selected,
             "diagnostic": self._log(state, "stitch", result_count=len(selected)),

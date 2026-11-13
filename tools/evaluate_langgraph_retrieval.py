@@ -31,6 +31,9 @@ QUERIES = {
     "sea-of-souls": "lorgar speaking about the sea of souls like an ocean",
     "white-scars-daemon": "slaneshi demon facing the white scars as they race to terra entire fight",
     "sharrowkyn-lucius": "sharokin and lucius battle angel exterminatus",
+    "magnus-palace": "Magnus crashes the wards on the Imperial Palace while trying to warn the Emperor.",
+    "fulgrim-ferrus": "Fulgrim's sensations as the daemon in the blade took hold while dueling his brother Ferrus Manus",
+    "nuceria": "the World Eaters' massacre at Nuceria and Angron orders Argel Tal to kill everyone",
 }
 
 
@@ -65,6 +68,8 @@ def main():
     parser.add_argument("--top-k", type=int, default=6)
     parser.add_argument("--pool", type=int, default=20)
     parser.add_argument("--window", type=int, default=2)
+    parser.add_argument("--book-filter", help="Limit both systems to this source-name substring")
+    parser.add_argument("--source", action="append", dest="sources", help="Limit both systems to exact source names; repeat for multiple sources")
     args = parser.parse_args()
 
     checkout = Path(__file__).resolve().parents[1]
@@ -114,14 +119,18 @@ def main():
     for name, question in cases.items():
         legacy = retriever._search_base(
             question, top_k=args.top_k, candidate_pool=args.pool,
-            stitching_window=args.window,
+            stitching_window=args.window, book_filter=args.book_filter,
+            source_filter=args.sources,
         )
         graph_state = graph.run(
             question, top_k=args.top_k, candidate_pool=args.pool,
             stitching_window=args.window, max_passes=2,
+            book_filter=args.book_filter, source_filter=args.sources,
         )
         output[name] = {
             "query": question,
+            "book_filter": args.book_filter,
+            "source_filter": args.sources,
             "baseline": _hits(legacy),
             "langgraph": _hits(graph_state.get("selected_evidence", [])),
             "graph_trace": graph_state.get("diagnostic", []),

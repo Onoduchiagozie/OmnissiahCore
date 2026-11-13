@@ -57,6 +57,9 @@ class FakeHybrid:
 
 
 class NLPTests(unittest.TestCase):
+    def test_long_question_produces_short_search_using_only_user_terms(self):
+        plan = interpret("Magnus crashes the wards on the Imperial Palace while trying to warn the Emperor")
+        self.assertIn("Magnus crashes wards Imperial Palace warn Emperor", plan.variants)
     def test_why_question_extracts_subject_without_facts(self):
         plan = interpret("why did horus turn traitor")
         self.assertEqual(plan.intent, "causal")
@@ -81,6 +84,47 @@ class NLPTests(unittest.TestCase):
 
 @unittest.skipUnless(HAS_GRAPH, "LangGraph optional dependency not installed")
 class GraphTests(unittest.TestCase):
+    def test_filtered_retry_searches_selected_source_after_global_miss(self):
+        fake = FakeHybrid()
+        fake.metadata = [
+            {"source": "other.pdf", "chunk_id": 1, "text": "Magnus broke the wards in the palace."},
+            {"source": "selected.pdf", "chunk_id": 2, "text": "Magnus broke the wards in the palace."},
+            {"source": "selected.pdf", "chunk_id": 3, "text": "An unrelated dinner was served."},
+        ]
+        result = RetrievalGraph(fake).run("Magnus broke the wards", book_filter="selected.pdf")
+        self.assertEqual(result["pass_number"], 1)
+        self.assertEqual([p["chunk_id"] for p in result["selected_evidence"]], [2])
+        retry = [step for step in result["diagnostic"]
+                 if step["step"] == "retrieve" and step["pass_number"] == 1][0]
+        self.assertEqual(retry["source_fallback_count"], 1)
+
+    def test_retry_honors_exact_source_list_and_rejects_other_sources(self):
+        fake = FakeHybrid()
+        fake.metadata = [
+            {"source": "wanted.pdf", "chunk_id": 1, "text": "Magnus broke the wards in the palace."},
+            {"source": "wanted-extra.pdf", "chunk_id": 2, "text": "Magnus broke the wards in the palace."},
+        ]
+        result = RetrievalGraph(fake).run("Magnus broke the wards", source_filter=["wanted.pdf"])
+        self.assertEqual([p["source"] for p in result["selected_evidence"]], ["wanted.pdf"])
+
+    def test_retry_does_not_scan_metadata_without_an_explicit_filter(self):
+        fake = FakeHybrid()
+        fake.metadata = [{"source": "book.pdf", "chunk_id": 2,
+                          "text": "Horus chose rebellion because he was manipulated."}]
+        result = RetrievalGraph(fake).run("why did horus turn traitor")
+        retry = [step for step in result["diagnostic"]
+                 if step["step"] == "retrieve" and step["pass_number"] == 1][0]
+        self.assertEqual(retry["source_fallback_count"], 0)
+
+    def test_stitch_does_not_reintroduce_raw_overlapping_chunks(self):
+        fake = FakeHybrid()
+        fake._stitch_chunks = lambda candidates, window: [dict(candidates[0])]
+        fake._faiss_search = lambda query, k: [
+            {"source": "book.pdf", "chunk_id": i, "text": "Magnus broke the wards"}
+            for i in (1, 2, 3)]
+        result = RetrievalGraph(fake).run("Magnus broke the wards", top_k=3)
+        self.assertEqual(len(result["selected_evidence"]), 1)
+
     def test_bounded_retry_recovers_causal_passage(self):
         fake = FakeHybrid()
         graph = RetrievalGraph(fake)
