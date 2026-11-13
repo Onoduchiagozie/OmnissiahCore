@@ -11,7 +11,7 @@ import unittest
 from Core.retrieval_nlp import interpret, recovery_queries
 
 try:
-    from Core.graphs.retrieval_graph import RetrievalGraph
+    from Core.graphs.retrieval_graph import RetrievalGraph, _covered
     import langgraph  # noqa: F401
     HAS_GRAPH = True
 except ImportError:
@@ -84,6 +84,32 @@ class NLPTests(unittest.TestCase):
 
 @unittest.skipUnless(HAS_GRAPH, "LangGraph optional dependency not installed")
 class GraphTests(unittest.TestCase):
+    def test_betrayal_mentions_and_passive_voice_do_not_explain_the_outcome(self):
+        plan = interpret("Why did Horus turn traitor?")
+        passages = [
+            {"text": "Horus was betrayed by his father because of a disagreement."},
+            {"text": "In the wake of the news of Horus's betrayal many things changed."},
+        ]
+        self.assertIn("missing_outcome_link", _covered(plan, passages)[1])
+
+    def test_influence_without_outcome_triggers_a_search_using_evidence(self):
+        fake = FakeHybrid()
+        def search(query, k):
+            linked = "Erebus betrayal" in query
+            return [{
+                "source": "Selected book", "chunk_id": 2 if linked else 1,
+                "text": ("Horus chose rebellion because Erebus deceived him."
+                         if linked else
+                         "Erebus spoke with Horus. Erebus influenced Horus before the council."),
+            }]
+        fake._faiss_search = search
+        result = RetrievalGraph(fake).run("why did horus turn traitor")
+        self.assertEqual(result["pass_number"], 1)
+        retry = next(step for step in result["diagnostic"] if step["step"] == "recover")
+        self.assertIn("Erebus betrayal", retry["queries"][0])
+        self.assertEqual(result["selected_evidence"][0]["chunk_id"], 2)
+        self.assertFalse(result["evidence_gaps"])
+
     def test_filtered_retry_searches_selected_source_after_global_miss(self):
         fake = FakeHybrid()
         fake.metadata = [

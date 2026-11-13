@@ -79,6 +79,7 @@ class PackagingTests(unittest.TestCase):
         for name in ("Core/agent.py", "Api/routes/query_routes.py", "config.json",
                      "requirements-graph.txt", "requirements-graph-test.txt"):
             self.assertTrue(manage.runtime_path(name))
+            self.assertTrue(deploy.permitted(name))
         for name in (".env", "Data/book.pdf", "Db/metadata.json", "../Core/agent.py",
                      "staging/openai-migration/agent.py", "/Core/agent.py"):
             self.assertFalse(manage.runtime_path(name))

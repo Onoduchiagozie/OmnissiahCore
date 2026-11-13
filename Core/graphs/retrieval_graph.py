@@ -13,7 +13,7 @@ an answer is true. Human-verified benchmark remains the deployment gate.
 """
 from __future__ import annotations
 
-from collections import defaultdict
+from collections import Counter, defaultdict
 from hashlib import sha256
 from heapq import heappush, heapreplace
 import re
@@ -90,6 +90,24 @@ def _word_present(word: str, text: str) -> bool:
     return re.search(r"(?<!\w)" + re.escape(word) + r"(?!\w)", text, re.I) is not None
 
 
+def _causal_leads(subject: str, passages: list[dict]) -> tuple[str, ...]:
+    """Find recurring names near the subject in the strongest passages."""
+    if not subject:
+        return ()
+    names = Counter()
+    excluded = set(subject.casefold().split()) | _QUERY_STOP
+    for passage in passages[:2]:
+        body = " ".join(str(passage.get("text", "")).split())
+        for match in re.finditer(r"\b" + re.escape(subject) + r"\b", body, re.I):
+            window = body[max(0, match.start() - 180):match.end() + 180]
+            for name in re.findall(r"(?<![.!?]\s)\b[A-Z][a-z]{3,}\b", window):
+                if name.casefold() not in excluded:
+                    names[name] += 1
+        if names:
+            break
+    return tuple(name for name, count in names.most_common(1) if count >= 2)
+
+
 def _covered(plan: QueryPlan, passages: list[dict]) -> tuple[bool, list[str]]:
     """A conservative search-retry heuristic, NOT a factual entailment model."""
     if not passages:
@@ -101,9 +119,9 @@ def _covered(plan: QueryPlan, passages: list[dict]) -> tuple[bool, list[str]]:
     if plan.intent == "causal":
         # Generic linguistic markers; no lore/event-specific facts.
         markers = re.compile(
-            r"\b(?:because|reason|cause|caused|led\s+to|after|before|"
-            r"convinced|persuaded|manipulated|influenced|betrayal|"
-            r"betrayed|choice|chose|decision|motivated|resentment)\b",
+            r"\b(?:because|reason|cause|caused|led\s+to|"
+            r"convinced|persuaded|manipulated|influenced|"
+            r"choice|chose|decision|motivated|resentment)\b",
             re.I,
         )
         aligned = [
@@ -113,6 +131,27 @@ def _covered(plan: QueryPlan, passages: list[dict]) -> tuple[bool, list[str]]:
         ]
         if not aligned:
             gaps.append("missing_causal_context")
+        if plan.subject and plan.action:
+            action_terms = set(_TOKEN.findall(plan.action.casefold())) - _QUERY_STOP
+            betrayal = bool(re.fullmatch(r"turn(?:ed)? traitor", plan.action, re.I))
+            def connects_outcome(sentence: str) -> bool:
+                if not (_word_present(plan.subject, sentence) and markers.search(sentence)):
+                    return False
+                if betrayal:
+                    # The subject must be the actor. Being betrayed and
+                    # describing what followed a betrayal do not explain it.
+                    actor = re.escape(plan.subject)
+                    return bool(re.search(
+                        rf"\b{actor}\s+(?:(?:had|then|finally)\s+)*"
+                        r"(?:betrayed|rebelled|turned\s+traitor|chose\s+rebellion)\b",
+                        sentence, re.I,
+                    ))
+                return bool(action_terms) and all(_word_present(term, sentence) for term in action_terms)
+
+            if not any(connects_outcome(sentence)
+                       for passage in aligned
+                       for sentence in re.split(r"[.!?]+", str(passage.get("text", "")))):
+                gaps.append("missing_outcome_link")
     elif plan.intent in {"scene", "lookup", "comparison"}:
         words = [
             w for w in re.findall(r"[a-z]{4,}", plan.normalized.lower())
@@ -126,6 +165,8 @@ def _covered(plan: QueryPlan, passages: list[dict]) -> tuple[bool, list[str]]:
         )
         if distinct and overlap < min(2, len(distinct)):
             gaps.append("missing_scene_alignment")
+            gaps.extend(f"missing_term:{word}" for word in distinct
+                        if not _word_present(word, joined))
     return not gaps, gaps
 
 
@@ -289,6 +330,11 @@ class RetrievalGraph:
             raw[:min(len(raw), selected_count * 3)],
             window=max(0, min(int(state["stitching_window"]), 6)),
         )
+        if state["plan"].intent == "causal":
+            # Keep the ranking within each group, while giving passages that
+            # connect the subject and outcome first claim on the context budget.
+            stitched = sorted(stitched, key=lambda doc: _covered(state["plan"], [doc])[0],
+                              reverse=True)
         selected = [dict(d) for d in stitched[:selected_count]]
         return {
             "selected_evidence": selected,
@@ -313,6 +359,8 @@ class RetrievalGraph:
         next_queries = list(recovery_queries(
             state["plan"], state.get("evidence_gaps", []),
             limit=2,
+            leads=_causal_leads(state["plan"].subject, state.get("selected_evidence", []))
+            if "missing_outcome_link" in state.get("evidence_gaps", []) else (),
         ))
         existing = set(q.casefold() for q in state.get("used_queries", []))
         next_queries = [q for q in next_queries if q.casefold() not in existing]
@@ -320,7 +368,7 @@ class RetrievalGraph:
             "search_queries": next_queries,
             "pass_number": state.get("pass_number", 0) + 1,
             "diagnostic": self._log(
-                state, "recover", new_query_count=len(next_queries),
+                state, "recover", new_query_count=len(next_queries), queries=next_queries,
             ),
         }
 

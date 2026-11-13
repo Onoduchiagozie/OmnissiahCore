@@ -121,7 +121,8 @@ def interpret(query: str, aliases: Mapping[str, str] | None = None,
                      _dedupe(queries, max(1, min(max_queries, 6))))
 
 
-def recovery_queries(plan: QueryPlan, gaps: list[str], limit: int = 2) -> tuple[str, ...]:
+def recovery_queries(plan: QueryPlan, gaps: list[str], limit: int = 2, *,
+                     leads: tuple[str, ...] = ()) -> tuple[str, ...]:
     """Second pass searches for missing relationships without inventing lore."""
     base = plan.normalized.rstrip(" ?!.")
     if plan.intent == "causal":
@@ -132,6 +133,17 @@ def recovery_queries(plan: QueryPlan, gaps: list[str], limit: int = 2) -> tuple[
             f"the decisions events and influences that changed {subject}",
             f"{subject} turning points leading to {action}",
         ]
+        if "missing_outcome_link" in gaps:
+            outcome = action
+            if re.fullmatch(r"turn(?:ed)? traitor", action, re.I):
+                outcome = "betrayal rebellion decision"
+            queries = [
+                *(f"{subject} {lead} {outcome} persuaded influenced" for lead in leads[:1]),
+                f"{subject} {outcome} reasons turning point",
+                *queries,
+            ]
+        elif "missing_subject" in gaps:
+            queries.insert(0, f"{subject} {action} firsthand account")
     elif plan.intent == "scene":
         queries = [
             f"chronology of the encounter {base}",
@@ -142,6 +154,12 @@ def recovery_queries(plan: QueryPlan, gaps: list[str], limit: int = 2) -> tuple[
             f"earlier background and later consequences of {base}",
             f"other accounts and references to {base}",
         ]
+    missing_terms = [gap.removeprefix("missing_term:") for gap in gaps
+                     if gap.startswith("missing_term:")]
+    if missing_terms:
+        anchors = [w for w in _NON_WORD.split(base)
+                   if len(w) >= 3 and w.casefold() not in _PLANNING_STOP]
+        queries.insert(0, " ".join(dict.fromkeys([*missing_terms, *anchors[:3]])))
     existing = {_NON_WORD.sub(" ", q.casefold()).strip() for q in plan.variants}
     remaining = [q for q in queries if _NON_WORD.sub(" ", q.casefold()).strip() not in existing]
     return _dedupe(remaining, max(1, min(limit, 4)))
