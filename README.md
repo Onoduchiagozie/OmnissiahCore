@@ -1,8 +1,27 @@
 # OmnissiahCore
 
-One Python backend, with local GPU and Oracle CPU settings. TheForge remains a
-separate frontend repository. Only main is permanent; make a temporary branch
-for each change, test it, merge it, then delete the merged branch.
+OmnissiahCore is the backend behind [The Kaban Project](https://legion.runasp.net/), a Warhammer 40,000 lore search and storytelling app. Ask a question about the setting or describe a scene the way you remember it. The app searches an indexed collection of books, finds passages that bear on your question, and uses them to write a response with source references.
+
+## What you can do
+
+- **Explorer** investigates lore questions. Try “Why did Horus turn traitor?” to see what the books reveal about his motives, the events leading up to his betrayal, and how others understood it.
+- **Narrator** retells a scene using the passages it finds. Try “Magnus breaks the wards while trying to warn the Emperor,” with *A Thousand Sons* selected as a book filter.
+- **Scene Archive** lets you browse saved chronicles and look up a character or scene name. TheForge serves this collection from its own SQLite database. Browsing and searching the archive require no model call.
+
+Sources help you see which books and passages a response draws on. Coverage varies by question and by the collection available to the backend.
+
+## What happens when you ask
+
+1. **Plan the search.** The LangGraph workflow can break a broad question into smaller searches for the people, events, and explanations it needs to cover.
+2. **Find and rank passages.** Keyword search (BM25) helps find names and phrases, while vector search (FAISS) looks for related meaning. The system combines the results, reranks the strongest candidates, and can pull in neighbouring passages for context.
+3. **Check the evidence.** If an important part of the question is still missing, the workflow can search again for that specific gap. When the available passages only support part of an answer, the response can explain what remains uncertain.
+4. **Write and stream the answer.** The FastAPI backend streams the response, stage updates, and source references to [TheForge](https://github.com/Onoduchiagozie/TheForge), the separate ASP.NET Core and Blazor Server frontend. Search activity can show stages such as searching, checking evidence, and retrying when the backend emits them.
+
+## How it runs
+
+The same Python code can run on a local machine with a compatible GPU and an OpenAI-compatible model server such as LM Studio, or on Oracle with a hosted model provider such as Gemini. Local and hosted runs can differ with the selected model, index, and configuration. Keep credentials, machine paths, and private data outside the repository.
+
+`main` is the permanent branch. Use a temporary branch for a change, test it, merge it, then delete the branch. Publishing to Oracle is a separate step.
 
 ## First run on a new machine
 
@@ -169,12 +188,3 @@ Rollback changes the running version. status makes this visible; revert the bad
 change through a new pull request before the next publish so main and production
 converge again. Source deployments do not install packages, rebuild indexes or
 migrate data. Dependency/data changes need their own tested preparation.
-
-## Known limits at workflow migration
-
-Lenovo has unpushed source that must still be reconciled before declaring every
-source file backed up. Preserve that working tree; do not reset or overwrite it.
-Existing scene indexes are incomplete on Oracle. Answer accuracy is still under
-investigation, including the Horus cause question. Experimental retrieval changes
-under staging/ are archived source, NOT automatically deployed or certified fixes.
-Older docs/deployments are historical evidence; use this README for current setup.
