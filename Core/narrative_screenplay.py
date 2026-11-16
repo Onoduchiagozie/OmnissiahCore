@@ -29,13 +29,15 @@ def compose_screenplay(
     The caller supplies reviewed passages with source, text and optional
     chapter or chunk_id metadata. IDs in the output are scoped to this scene.
     """
-    if not query.strip() or not retelling.strip():
+    if any(not isinstance(value, str) or not value.strip() for value in (query, retelling)):
         raise ValueError("A query and grounded retelling are required.")
-    if not passages:
+    if not isinstance(passages, list) or not passages:
         raise ValueError("At least one reviewed passage is required.")
 
     evidence = {}
     for index, passage in enumerate(passages, start=1):
+        if not isinstance(passage, dict):
+            raise ValueError(f"Passage {index} must be an object.")
         for field in ("source", "text"):
             value = passage.get(field)
             if not isinstance(value, str) or not value.strip():
@@ -87,3 +89,43 @@ def compose_screenplay(
         "beats": beats,
         "sources": sources,
     }
+
+
+def main() -> int:
+    import argparse
+    from pathlib import Path
+    from urllib.request import Request, urlopen
+
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("scene", type=Path, help="JSON with query, retelling and reviewed passages")
+    parser.add_argument("--model", required=True, help="Model ID loaded in your local server")
+    parser.add_argument("--url", default="http://127.0.0.1:1234/v1/chat/completions")
+    args = parser.parse_args()
+
+    def generate(system: str, user: str) -> str:
+        body = json.dumps({
+            "model": args.model,
+            "temperature": 0,
+            "messages": [
+                {"role": "system", "content": system},
+                {"role": "user", "content": user},
+            ],
+        }).encode("utf-8")
+        request = Request(args.url, data=body, headers={"Content-Type": "application/json"})
+        with urlopen(request, timeout=120) as response:
+            return json.load(response)["choices"][0]["message"]["content"]
+
+    try:
+        scene = json.loads(args.scene.read_text(encoding="utf-8-sig"))
+        if not isinstance(scene, dict):
+            raise ValueError("The scene input must be a JSON object.")
+        result = compose_screenplay(scene["query"], scene["retelling"], scene["passages"], generate)
+    except (OSError, ValueError, TypeError, KeyError, IndexError) as error:
+        parser.exit(1, f"Could not compose screenplay: {error}\n")
+
+    print(json.dumps(result, indent=2))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
