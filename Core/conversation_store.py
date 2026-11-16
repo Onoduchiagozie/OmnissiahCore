@@ -11,6 +11,7 @@ import os
 import sqlite3
 import threading
 import time
+from contextlib import closing, contextmanager
 from pathlib import Path
 
 
@@ -49,10 +50,12 @@ class ConversationStore:
                 "ON conversation_memory(updated_at)"
             )
 
+    @contextmanager
     def _connect(self):
-        db = sqlite3.connect(str(self.path), timeout=10)
-        db.execute("PRAGMA busy_timeout=10000")
-        return db
+        with closing(sqlite3.connect(str(self.path), timeout=10)) as db:
+            db.execute("PRAGMA busy_timeout=10000")
+            with db:
+                yield db
 
     def _purge(self, db, now: int) -> None:
         db.execute(
