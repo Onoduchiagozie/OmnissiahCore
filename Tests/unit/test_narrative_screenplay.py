@@ -10,7 +10,7 @@ class NarrativeScreenplayTests(unittest.TestCase):
             "source": "Original test scene",
             "chapter": "The bridge",
             "chunk_id": 17,
-            "text": "Mara told Ivo to wait. A voice in the fog answered.",
+            "text": "Mara told Ivo to wait. An unidentified voice in the fog said, ‘I hear you.’",
         }]
 
     def compose(self, generate):
